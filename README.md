@@ -15,25 +15,28 @@ DianMao 是一款自用 Android 工作任务软件，目标是用一套统一的
 - Kotlin
 - Jetpack Compose
 - Material 3
+- Room
+- Calendar Provider / AlarmManager
 - minSdk 31
 
 ## 当前状态
 
-当前版本是可运行的 Compose 首屏原型，数据暂存在内存中。已经包含：
+当前版本是可运行的 Compose 首屏原型，数据通过 Room 保存在本机。已经包含：
 
 - 四象限筛选
 - 快速新增事项
-- 时间标签
-- 系统日历/响铃意图开关
+- 原生日期/时间选择器
+- 系统 Calendar Provider 写入；无可写日历或权限不足时打开系统日历插入页兜底
+- AlarmManager 本机提醒与 Android 13+ 通知权限请求
 - 完成事项与完成备注
 - 移动端安全区适配
 
-尚未接入：
+尚未接入或仍需完善：
 
-- Room 本地持久化
-- 系统 Calendar Provider
-- AlarmManager / 通知权限
-- 真实日期时间选择器
+- 任务编辑与删除
+- 日历事件去重/更新
+- 设备重启后的提醒恢复
+- Room migration 与正式数据备份策略
 
 ## 开发约定
 

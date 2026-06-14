@@ -1,0 +1,70 @@
+package `fun`.han1997.dianmao.data
+
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+enum class QuadrantType {
+    ImportantUrgent,
+    ImportantNotUrgent,
+    NotImportantUrgent,
+    NotImportantNotUrgent
+}
+
+enum class TaskPriority(val label: String, val shortLabel: String, val description: String, val colorHex: Long) {
+    ImportantUrgent("重要且紧急", "重急", "今天必须推进", 0xFFA94332),
+    ImportantNotUrgent("重要不紧急", "重要", "长期价值任务", 0xFF795C16),
+    NotImportantUrgent("不重要但紧急", "紧急", "有时间压力", 0xFF2D6DA8),
+    NotImportantNotUrgent("不重要不紧急", "低压", "可延后处理", 0xFF4E6D68);
+
+    fun colorInt(): Int = colorHex.toInt()
+}
+
+@Entity(tableName = "tasks")
+data class TaskEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val title: String,
+    val quadrant: QuadrantType,
+    val dueLabel: String?,
+    val dueAtMillis: Long?,
+    val useCalendar: Boolean,
+    val useAlarm: Boolean,
+    val completed: Boolean,
+    val completionNote: String?,
+    val createdAtMillis: Long,
+    val updatedAtMillis: Long
+)
+
+data class TaskFormState(
+    val title: String = "",
+    val quadrant: QuadrantType = QuadrantType.ImportantUrgent,
+    val dueDateMillis: Long? = null,
+    val dueTimeMinutes: Int? = null,
+    val useCalendar: Boolean = false,
+    val useAlarm: Boolean = false
+)
+
+data class TaskUiModel(
+    val id: Long,
+    val title: String,
+    val quadrant: TaskPriority,
+    val dueLabel: String?,
+    val dueAtMillis: Long?,
+    val useCalendar: Boolean,
+    val useAlarm: Boolean,
+    val completed: Boolean,
+    val completionNote: String?
+)
+
+fun TaskEntity.toUiModel(): TaskUiModel {
+    return TaskUiModel(
+        id = id,
+        title = title,
+        quadrant = TaskPriority.valueOf(quadrant.name),
+        dueLabel = dueLabel,
+        dueAtMillis = dueAtMillis,
+        useCalendar = useCalendar,
+        useAlarm = useAlarm,
+        completed = completed,
+        completionNote = completionNote
+    )
+}

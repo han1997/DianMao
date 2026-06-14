@@ -1,10 +1,19 @@
 package `fun`.han1997.dianmao
 
+import android.Manifest
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
+import androidx.activity.compose.BackHandler
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -24,6 +33,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -40,6 +50,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Notes
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Alarm
@@ -71,10 +82,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -82,7 +95,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -92,14 +105,29 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
+import `fun`.han1997.dianmao.alerts.ReminderScheduler
+import `fun`.han1997.dianmao.alerts.TaskNotificationChannels
+import `fun`.han1997.dianmao.calendar.CalendarWriter
+import `fun`.han1997.dianmao.data.QuadrantType
+import `fun`.han1997.dianmao.data.TaskEntity
+import `fun`.han1997.dianmao.data.TaskFormState
+import `fun`.han1997.dianmao.data.TaskPriority
+import `fun`.han1997.dianmao.data.TaskRepository
+import `fun`.han1997.dianmao.data.TaskUiModel
+import kotlinx.coroutines.launch
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Calendar
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        TaskNotificationChannels.ensure(this)
 
         setContent {
             DianMaoTheme {
@@ -109,92 +137,127 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private enum class Quadrant(
-    val title: String,
-    val shortTitle: String,
-    val description: String,
-    val color: Color
-) {
-    ImportantUrgent("重要且紧急", "重急", "今天必须推进", Color(0xFFB94732)),
-    ImportantNotUrgent("重要不紧急", "重要", "长期价值任务", Color(0xFF7C5E16)),
-    NotImportantUrgent("不重要但紧急", "紧急", "有时间压力", Color(0xFF2F6FBB)),
-    NotImportantNotUrgent("不重要不紧急", "低压", "可延后处理", Color(0xFF58706D))
+private val TaskPriority.color: Color
+    get() = Color(colorInt())
+
+private val TaskPriority.title: String
+    get() = label
+
+private val TaskPriority.shortTitle: String
+    get() = shortLabel
+
+private val TaskPriority.type: QuadrantType
+    get() = QuadrantType.valueOf(name)
+
+private val QuadrantType.priority: TaskPriority
+    get() = TaskPriority.valueOf(name)
+
+private fun hasCalendarPermission(context: android.content.Context): Boolean {
+    return ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED &&
+        ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALENDAR) == PackageManager.PERMISSION_GRANTED
 }
 
-private data class TaskItem(
-    val id: Int,
-    val title: String,
-    val quadrant: Quadrant,
-    val dueLabel: String? = null,
-    val useCalendar: Boolean = false,
-    val useAlarm: Boolean = false,
-    val completed: Boolean = false,
-    val completionNote: String? = null
-)
+private fun saveOrOpenCalendarEvent(context: android.content.Context, task: TaskUiModel) {
+    val saved = if (hasCalendarPermission(context)) {
+        CalendarWriter.saveEvent(context, task) != null
+    } else {
+        false
+    }
+    if (!saved) {
+        CalendarWriter.buildInsertIntent(task)?.let { context.startActivity(it) }
+    }
+}
 
-private val seedTasks = listOf(
-    TaskItem(
-        id = 1,
-        title = "梳理本周必须交付的工作",
-        quadrant = Quadrant.ImportantUrgent,
-        dueLabel = "今天 18:00",
-        useCalendar = true,
-        useAlarm = true
-    ),
-    TaskItem(
-        id = 2,
-        title = "设计四象限任务模型",
-        quadrant = Quadrant.ImportantNotUrgent,
-        dueLabel = "长期",
-        useCalendar = false,
-        useAlarm = false
-    ),
-    TaskItem(
-        id = 3,
-        title = "确认明早会议提醒",
-        quadrant = Quadrant.NotImportantUrgent,
-        dueLabel = "明天 09:30",
-        useCalendar = true,
-        useAlarm = true
-    ),
-    TaskItem(
-        id = 4,
-        title = "整理完成任务心得",
-        quadrant = Quadrant.NotImportantNotUrgent,
-        dueLabel = null,
-        useCalendar = false,
-        useAlarm = false,
-        completed = true,
-        completionNote = "完成后记录判断依据，方便以后复盘同类任务。"
+private fun seedTaskEntities(): List<TaskEntity> {
+    val now = System.currentTimeMillis()
+    val today18 = LocalDate.now()
+        .atTime(18, 0)
+        .atZone(ZoneId.systemDefault())
+        .toInstant()
+        .toEpochMilli()
+    val tomorrow930 = LocalDate.now()
+        .plusDays(1)
+        .atTime(9, 30)
+        .atZone(ZoneId.systemDefault())
+        .toInstant()
+        .toEpochMilli()
+    return listOf(
+        TaskEntity(
+            title = "梳理本周必须交付的工作",
+            quadrant = QuadrantType.ImportantUrgent,
+            dueLabel = "今天 18:00",
+            dueAtMillis = today18,
+            useCalendar = false,
+            useAlarm = false,
+            completed = false,
+            completionNote = null,
+            createdAtMillis = now - 3_000,
+            updatedAtMillis = now - 3_000
+        ),
+        TaskEntity(
+            title = "设计四象限任务模型",
+            quadrant = QuadrantType.ImportantNotUrgent,
+            dueLabel = "长期",
+            dueAtMillis = null,
+            useCalendar = false,
+            useAlarm = false,
+            completed = false,
+            completionNote = null,
+            createdAtMillis = now - 2_000,
+            updatedAtMillis = now - 2_000
+        ),
+        TaskEntity(
+            title = "确认明早会议提醒",
+            quadrant = QuadrantType.NotImportantUrgent,
+            dueLabel = "明天 09:30",
+            dueAtMillis = tomorrow930,
+            useCalendar = false,
+            useAlarm = false,
+            completed = false,
+            completionNote = null,
+            createdAtMillis = now - 1_000,
+            updatedAtMillis = now - 1_000
+        ),
+        TaskEntity(
+            title = "整理完成任务心得",
+            quadrant = QuadrantType.NotImportantNotUrgent,
+            dueLabel = null,
+            dueAtMillis = null,
+            useCalendar = false,
+            useAlarm = false,
+            completed = true,
+            completionNote = "完成后记录判断依据，方便以后复盘同类任务。",
+            createdAtMillis = now,
+            updatedAtMillis = now
+        )
     )
-)
-
+}
 @Composable
 private fun DianMaoTheme(content: @Composable () -> Unit) {
     val colorScheme = androidx.compose.material3.lightColorScheme(
-        primary = Color(0xFFB94732),
+        primary = Color(0xFFA94332),
         onPrimary = Color.White,
-        primaryContainer = Color(0xFFFFDAD2),
-        onPrimaryContainer = Color(0xFF3D0700),
-        secondary = Color(0xFF2F6FBB),
+        primaryContainer = Color(0xFFF8DED8),
+        onPrimaryContainer = Color(0xFF3A0B05),
+        secondary = Color(0xFF2D6DA8),
         onSecondary = Color.White,
-        secondaryContainer = Color(0xFFD6E3FF),
-        onSecondaryContainer = Color(0xFF001B3E),
-        background = Color(0xFFFCFCFC),
-        onBackground = Color(0xFF1F1F1F),
+        secondaryContainer = Color(0xFFDCE8F5),
+        onSecondaryContainer = Color(0xFF071E34),
+        background = Color(0xFFF7F8F6),
+        onBackground = Color(0xFF1D211F),
         surface = Color(0xFFFFFFFF),
-        onSurface = Color(0xFF1F1F1F),
-        surfaceVariant = Color(0xFFF0F1F1),
-        onSurfaceVariant = Color(0xFF5F6368),
-        outline = Color(0xFFD7D9DC)
+        onSurface = Color(0xFF1D211F),
+        surfaceVariant = Color(0xFFECEFED),
+        onSurfaceVariant = Color(0xFF58615D),
+        outline = Color(0xFFD1D7D3)
     )
 
     MaterialTheme(
         colorScheme = colorScheme,
         typography = androidx.compose.material3.Typography(
             headlineLarge = androidx.compose.ui.text.TextStyle(
-                fontSize = 28.sp,
-                lineHeight = 34.sp,
+                fontSize = 27.sp,
+                lineHeight = 33.sp,
                 fontWeight = FontWeight.SemiBold
             ),
             titleLarge = androidx.compose.ui.text.TextStyle(
@@ -217,6 +280,11 @@ private fun DianMaoTheme(content: @Composable () -> Unit) {
                 lineHeight = 20.sp,
                 fontWeight = FontWeight.Normal
             ),
+            labelMedium = androidx.compose.ui.text.TextStyle(
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+                fontWeight = FontWeight.Medium
+            ),
             labelLarge = androidx.compose.ui.text.TextStyle(
                 fontSize = 14.sp,
                 lineHeight = 18.sp,
@@ -230,13 +298,43 @@ private fun DianMaoTheme(content: @Composable () -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun DianMaoApp() {
-    val tasks = remember { mutableStateListOf<TaskItem>().apply { addAll(seedTasks) } }
-    var selectedQuadrant by rememberSaveable { mutableStateOf<Quadrant?>(null) }
+    val context = LocalContext.current
+    val repository = remember(context) { TaskRepository(context.applicationContext) }
+    val scheduler = remember(context) { ReminderScheduler(context.applicationContext) }
+    val scope = rememberCoroutineScope()
+    val tasks by repository.tasks.collectAsState(initial = emptyList())
+    var activePriority by rememberSaveable { mutableStateOf<TaskPriority?>(null) }
     var showAddSheet by rememberSaveable { mutableStateOf(false) }
-    var taskForNote by remember { mutableStateOf<TaskItem?>(null) }
+    var taskForNote by remember { mutableStateOf<TaskUiModel?>(null) }
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { }
+    val calendarPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { }
 
-    val visibleTasks = remember(tasks.toList(), selectedQuadrant) {
-        if (selectedQuadrant == null) tasks else tasks.filter { it.quadrant == selectedQuadrant }
+    LaunchedEffect(repository) {
+        repository.seedIfEmpty(seedTaskEntities())
+    }
+
+    val activeTasks = remember(tasks, activePriority) {
+        activePriority?.let { priority -> tasks.filter { it.quadrant == priority } }.orEmpty()
+    }
+    val toggleComplete: (TaskUiModel) -> Unit = { target ->
+        if (target.completed) {
+            scope.launch {
+                repository.toggleCompleted(target, false)
+                scheduler.cancel(target.id)
+            }
+        } else {
+            taskForNote = target
+        }
+    }
+
+    if (activePriority != null) {
+        BackHandler {
+            activePriority = null
+        }
     }
 
     Surface(color = MaterialTheme.colorScheme.background) {
@@ -264,58 +362,66 @@ private fun DianMaoApp() {
                     contentPadding = PaddingValues(start = 20.dp, top = 18.dp, end = 20.dp, bottom = 112.dp),
                     verticalArrangement = Arrangement.spacedBy(18.dp)
                 ) {
-                    item {
-                        AppHeader(tasks = tasks)
-                    }
-                    item {
-                        QuadrantFilter(
-                            selected = selectedQuadrant,
-                            onSelected = { selectedQuadrant = it }
-                        )
-                    }
-                    item {
-                        TodayFocus(tasks = tasks.filter { !it.completed })
-                    }
-                    item {
-                        SectionHeader(
-                            title = selectedQuadrant?.title ?: "全部事项",
-                            subtitle = "${visibleTasks.size} 个事项，按优先级和时间一起管理"
-                        )
-                    }
-                    items(visibleTasks, key = { it.id }) { task ->
-                        TaskRow(
-                            task = task,
-                            onToggleComplete = { target ->
-                                val index = tasks.indexOfFirst { it.id == target.id }
-                                if (index >= 0) {
-                                    if (target.completed) {
-                                        tasks[index] = target.copy(completed = false, completionNote = null)
-                                    } else {
-                                        taskForNote = target
-                                    }
+                    if (activePriority == null) {
+                        item {
+                            AppHeader(tasks = tasks)
+                        }
+                        item {
+                            QuadrantBoard(
+                                tasks = tasks,
+                                onSelected = { priority -> activePriority = priority }
+                            )
+                        }
+                    } else {
+                        activePriority?.let { priority ->
+                            item {
+                                QuadrantDetailHeader(
+                                    quadrant = priority,
+                                    tasks = activeTasks,
+                                    onBack = { activePriority = null }
+                                )
+                            }
+                            if (activeTasks.isEmpty()) {
+                                item {
+                                    QuadrantDetailEmptyState(priority)
                                 }
-                            },
-                            onEditNote = { taskForNote = it }
-                        )
+                            } else {
+                                items(activeTasks, key = { it.id }) { task ->
+                                    TaskRow(
+                                        task = task,
+                                        onToggleComplete = toggleComplete,
+                                        onEditNote = { taskForNote = it }
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
 
                 AddTaskPanel(
                     visible = showAddSheet,
+                    initialPriority = activePriority ?: TaskPriority.ImportantUrgent,
                     onDismiss = { showAddSheet = false },
-                    onCreate = { title, quadrant, dueLabel, useCalendar, useAlarm ->
-                        val nextId = (tasks.maxOfOrNull { it.id } ?: 0) + 1
-                        tasks.add(
-                            0,
-                            TaskItem(
-                                id = nextId,
-                                title = title,
-                                quadrant = quadrant,
-                                dueLabel = dueLabel,
-                                useCalendar = useCalendar,
-                                useAlarm = useAlarm
-                            )
+                    onRequestCalendarPermission = {
+                        calendarPermissionLauncher.launch(
+                            arrayOf(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR)
                         )
+                    },
+                    onCreate = { form ->
+                        scope.launch {
+                            val created = repository.addTask(form)
+                            if (created.useAlarm) {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                                    ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                                ) {
+                                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                }
+                                scheduler.schedule(created)
+                            }
+                            if (created.useCalendar) {
+                                saveOrOpenCalendarEvent(context, created)
+                            }
+                        }
                         showAddSheet = false
                     }
                 )
@@ -328,9 +434,9 @@ private fun DianMaoApp() {
             task = task,
             onDismiss = { taskForNote = null },
             onSave = { note ->
-                val index = tasks.indexOfFirst { it.id == task.id }
-                if (index >= 0) {
-                    tasks[index] = task.copy(completed = true, completionNote = note.trim().ifBlank { null })
+                scope.launch {
+                    repository.saveCompletionNote(task.id, note)
+                    scheduler.cancel(task.id)
                 }
                 taskForNote = null
             }
@@ -339,96 +445,314 @@ private fun DianMaoApp() {
 }
 
 @Composable
-private fun AppHeader(tasks: List<TaskItem>) {
+@OptIn(ExperimentalLayoutApi::class)
+private fun AppHeader(tasks: List<TaskUiModel>) {
     val openTasks = tasks.count { !it.completed }
     val timedTasks = tasks.count { !it.completed && (it.useAlarm || it.useCalendar) }
+    val completedTasks = tasks.count { it.completed }
     val today = LocalDate.now().format(DateTimeFormatter.ofPattern("M月d日"))
 
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text(
-            text = "DianMao",
-            style = MaterialTheme.typography.headlineLarge,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-        Text(
-            text = "$today · $openTasks 个未完成事项 · $timedTasks 个有时间提醒",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = "先写下来，再决定象限、时间和提醒。完成后留下备注，给之后的判断复盘。",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun QuadrantFilter(
-    selected: Quadrant?,
-    onSelected: (Quadrant?) -> Unit
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        SectionHeader(title = "四象限", subtitle = "当天任务和长期任务使用同一套优先级模型")
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            FilterChip(
-                selected = selected == null,
-                onClick = { onSelected(null) },
-                label = { Text("全部") }
-            )
-            Quadrant.entries.forEach { quadrant ->
-                FilterChip(
-                    selected = selected == quadrant,
-                    onClick = { onSelected(quadrant) },
-                    label = { Text(quadrant.title) },
-                    leadingIcon = { ColorDot(quadrant.color) }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun TodayFocus(tasks: List<TaskItem>) {
-    val urgent = tasks.count { it.quadrant == Quadrant.ImportantUrgent || it.useAlarm }
-    val longTerm = tasks.count { it.quadrant == Quadrant.ImportantNotUrgent }
-
-    Card(
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFFFF)),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        shape = RoundedCornerShape(22.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.55f))
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.62f))
     ) {
         Column(
             modifier = Modifier.padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = Icons.Rounded.Schedule,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Spacer(Modifier.width(10.dp))
+            Row(verticalAlignment = Alignment.Top) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(5.dp)
+                ) {
+                    Text(
+                        text = "DianMao",
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Text(
+                        text = "$today · 先写下来，再决定象限、时间和提醒",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Surface(
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text(
+                        text = "今日",
+                        modifier = Modifier.padding(horizontal = 11.dp, vertical = 7.dp),
+                        style = MaterialTheme.typography.labelLarge
+                    )
+                }
+            }
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                SummaryPill(value = openTasks.toString(), label = "未完成", color = MaterialTheme.colorScheme.primary)
+                SummaryPill(value = timedTasks.toString(), label = "有提醒", color = MaterialTheme.colorScheme.secondary)
+                SummaryPill(value = completedTasks.toString(), label = "已复盘", color = TaskPriority.NotImportantNotUrgent.color)
+            }
+        }
+    }
+}
+
+@Composable
+private fun SummaryPill(value: String, label: String, color: Color) {
+    Surface(
+        color = color.copy(alpha = 0.09f),
+        contentColor = color,
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleMedium
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+@OptIn(ExperimentalLayoutApi::class)
+private fun QuadrantDetailHeader(
+    quadrant: TaskPriority,
+    tasks: List<TaskUiModel>,
+    onBack: () -> Unit
+) {
+    val openTasks = tasks.count { !it.completed }
+    val timedTasks = tasks.count { !it.completed && (it.useAlarm || it.useCalendar) }
+    val completedTasks = tasks.count { it.completed }
+
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.62f))
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.Top,
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                IconButton(
+                    onClick = onBack,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
+                        contentDescription = "返回四象限"
+                    )
+                }
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        ColorDot(quadrant.color)
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = quadrant.title,
+                            style = MaterialTheme.typography.headlineLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                    Text(
+                        text = quadrant.description,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                SummaryPill(value = openTasks.toString(), label = "未完成", color = quadrant.color)
+                SummaryPill(value = timedTasks.toString(), label = "有提醒", color = MaterialTheme.colorScheme.secondary)
+                SummaryPill(value = completedTasks.toString(), label = "已复盘", color = TaskPriority.NotImportantNotUrgent.color)
+            }
+        }
+    }
+}
+
+@Composable
+private fun QuadrantDetailEmptyState(quadrant: TaskPriority) {
+    Surface(
+        color = quadrant.color.copy(alpha = 0.055f),
+        shape = RoundedCornerShape(14.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                text = "这个象限还没有事项",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = "点右下角新增事项，会默认放入“${quadrant.title}”。",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun QuadrantBoard(
+    tasks: List<TaskUiModel>,
+    onSelected: (TaskPriority) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SectionHeader(title = "四象限", subtitle = "每个象限直接显示任务预览，点按象限查看完整列表")
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(700.dp),
+            color = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(16.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.70f))
+        ) {
+            Column {
+                Row(modifier = Modifier.weight(1f)) {
+                    QuadrantPane(
+                        quadrant = TaskPriority.ImportantUrgent,
+                        tasks = tasks.filter { it.quadrant == TaskPriority.ImportantUrgent },
+                        modifier = Modifier.weight(1f),
+                        onSelected = onSelected
+                    )
+                    BoardDivider(vertical = true)
+                    QuadrantPane(
+                        quadrant = TaskPriority.ImportantNotUrgent,
+                        tasks = tasks.filter { it.quadrant == TaskPriority.ImportantNotUrgent },
+                        modifier = Modifier.weight(1f),
+                        onSelected = onSelected
+                    )
+                }
+                BoardDivider(vertical = false)
+                Row(modifier = Modifier.weight(1f)) {
+                    QuadrantPane(
+                        quadrant = TaskPriority.NotImportantUrgent,
+                        tasks = tasks.filter { it.quadrant == TaskPriority.NotImportantUrgent },
+                        modifier = Modifier.weight(1f),
+                        onSelected = onSelected
+                    )
+                    BoardDivider(vertical = true)
+                    QuadrantPane(
+                        quadrant = TaskPriority.NotImportantNotUrgent,
+                        tasks = tasks.filter { it.quadrant == TaskPriority.NotImportantNotUrgent },
+                        modifier = Modifier.weight(1f),
+                        onSelected = onSelected
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BoardDivider(vertical: Boolean) {
+    Box(
+        modifier = if (vertical) {
+            Modifier
+                .width(1.dp)
+                .fillMaxHeight()
+                .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.58f))
+        } else {
+            Modifier
+                .height(1.dp)
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.58f))
+        }
+    )
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun QuadrantPane(
+    quadrant: TaskPriority,
+    tasks: List<TaskUiModel>,
+    modifier: Modifier = Modifier,
+    onSelected: (TaskPriority) -> Unit
+) {
+    val visibleTasks = tasks.take(2)
+    val openCount = tasks.count { !it.completed }
+    val paneColor by animateColorAsState(
+        targetValue = quadrant.color.copy(alpha = 0.055f),
+        animationSpec = tween(durationMillis = 180),
+        label = "quadrantPaneColor"
+    )
+
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(paneColor)
+            .clickable { onSelected(quadrant) }
+            .padding(11.dp),
+        verticalArrangement = Arrangement.spacedBy(9.dp)
+    ) {
+        Row(verticalAlignment = Alignment.Top) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(3.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    ColorDot(quadrant.color)
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = quadrant.title,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = quadrant.color,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
                 Text(
-                    text = "今天先看这些",
-                    style = MaterialTheme.typography.titleMedium
+                    text = quadrant.description,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                FocusStat(
-                    value = urgent.toString(),
-                    label = "紧急/响铃",
-                    color = MaterialTheme.colorScheme.primary
-                )
-                FocusStat(
-                    value = longTerm.toString(),
-                    label = "长期重要",
-                    color = Color(0xFF7C5E16)
+            Text(
+                text = openCount.toString(),
+                style = MaterialTheme.typography.titleLarge,
+                color = quadrant.color
+            )
+        }
+        if (visibleTasks.isEmpty()) {
+            EmptyQuadrantHint(quadrant)
+        } else {
+            visibleTasks.forEach { task ->
+                CompactQuadrantTask(task = task)
+            }
+            if (tasks.size > visibleTasks.size) {
+                Text(
+                    text = "还有 ${tasks.size - visibleTasks.size} 个，点按象限查看",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = quadrant.color,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }
@@ -436,23 +760,127 @@ private fun TodayFocus(tasks: List<TaskItem>) {
 }
 
 @Composable
-private fun FocusStat(value: String, label: String, color: Color) {
-    Column(
+private fun EmptyQuadrantHint(quadrant: TaskPriority) {
+    Box(
         modifier = Modifier
-            .background(color.copy(alpha = 0.10f), RoundedCornerShape(16.dp))
-            .padding(horizontal = 16.dp, vertical = 12.dp)
-            .width(112.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp)
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.66f), RoundedCornerShape(11.dp))
+            .padding(11.dp),
+        contentAlignment = Alignment.CenterStart
     ) {
         Text(
-            text = value,
-            style = MaterialTheme.typography.titleLarge,
-            color = color
-        )
-        Text(
-            text = label,
+            text = "暂无${quadrant.shortTitle}事项",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+@OptIn(ExperimentalLayoutApi::class)
+private fun CompactQuadrantTask(
+    task: TaskUiModel
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                if (task.completed) {
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.74f)
+                } else {
+                    MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)
+                },
+                RoundedCornerShape(10.dp)
+            )
+            .padding(9.dp),
+        verticalArrangement = Arrangement.spacedBy(7.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.spacedBy(7.dp)
+        ) {
+            CompletionMark(
+                completed = task.completed,
+                color = task.quadrant.color
+            )
+            Text(
+                text = task.title,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.titleMedium,
+                color = if (task.completed) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                maxLines = 4,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(7.dp),
+            verticalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+            task.dueLabel?.let {
+                CompactMeta(icon = Icons.Rounded.Schedule, text = it)
+            }
+            if (task.useAlarm) {
+                CompactMeta(icon = Icons.Rounded.Alarm, text = "响铃")
+            }
+            if (task.useCalendar) {
+                CompactMeta(icon = Icons.Rounded.CalendarMonth, text = "日历")
+            }
+            if (task.completionNote != null) {
+                CompactMeta(icon = Icons.AutoMirrored.Rounded.Notes, text = "有心得")
+            }
+        }
+    }
+}
+
+@Composable
+private fun CompletionMark(completed: Boolean, color: Color) {
+    Box(
+        modifier = Modifier
+            .padding(top = 2.dp)
+            .size(18.dp)
+            .background(
+                if (completed) color else Color.Transparent,
+                CircleShape
+            )
+            .border(
+                1.5.dp,
+                if (completed) color else MaterialTheme.colorScheme.outline,
+                CircleShape
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        if (completed) {
+            Icon(
+                imageVector = Icons.Rounded.Check,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(12.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun CompactMeta(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    text: String
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(3.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.secondary,
+            modifier = Modifier.size(13.dp)
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }
@@ -476,9 +904,9 @@ private fun SectionHeader(title: String, subtitle: String) {
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun TaskRow(
-    task: TaskItem,
-    onToggleComplete: (TaskItem) -> Unit,
-    onEditNote: (TaskItem) -> Unit
+    task: TaskUiModel,
+    onToggleComplete: (TaskUiModel) -> Unit,
+    onEditNote: (TaskUiModel) -> Unit
 ) {
     val scale by animateFloatAsState(
         targetValue = if (task.completed) 0.985f else 1f,
@@ -494,7 +922,7 @@ private fun TaskRow(
             containerColor = if (task.completed) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.62f) else MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(16.dp),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.55f))
     ) {
         Row(
@@ -605,14 +1033,18 @@ private fun ColorDot(color: Color) {
 @Composable
 private fun AddTaskPanel(
     visible: Boolean,
+    initialPriority: TaskPriority,
     onDismiss: () -> Unit,
-    onCreate: (String, Quadrant, String?, Boolean, Boolean) -> Unit
+    onRequestCalendarPermission: () -> Unit,
+    onCreate: (TaskFormState) -> Unit
 ) {
     var title by rememberSaveable { mutableStateOf("") }
-    var quadrant by rememberSaveable { mutableStateOf(Quadrant.ImportantUrgent) }
-    var dueLabel by rememberSaveable { mutableStateOf("") }
+    var priority by rememberSaveable(initialPriority) { mutableStateOf(initialPriority) }
+    var dueDateMillis by rememberSaveable { mutableStateOf<Long?>(null) }
+    var dueTimeMinutes by rememberSaveable { mutableStateOf<Int?>(null) }
     var useCalendar by rememberSaveable { mutableStateOf(false) }
     var useAlarm by rememberSaveable { mutableStateOf(false) }
+    val context = LocalContext.current
     val focusManager = LocalFocusManager.current
 
     AnimatedVisibility(
@@ -632,7 +1064,7 @@ private fun AddTaskPanel(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable(enabled = false) {},
-                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
             ) {
@@ -677,53 +1109,87 @@ private fun AddTaskPanel(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Quadrant.entries.forEach { item ->
+                            TaskPriority.entries.forEach { item ->
                                 FilterChip(
-                                    selected = item == quadrant,
-                                    onClick = { quadrant = item },
+                                    selected = item == priority,
+                                    onClick = { priority = item },
                                     label = { Text(item.shortTitle) },
                                     leadingIcon = { ColorDot(item.color) }
                                 )
                             }
                         }
                     }
-                    OutlinedTextField(
-                        value = dueLabel,
-                        onValueChange = { dueLabel = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("时间") },
-                        placeholder = { Text("今天 18:00 / 明天 09:30 / 长期") },
-                        singleLine = true
+                    DateTimePickerRow(
+                        dueDateMillis = dueDateMillis,
+                        dueTimeMinutes = dueTimeMinutes,
+                        onPickDate = {
+                            showDatePicker(
+                                context = context,
+                                currentMillis = dueDateMillis,
+                                onSelected = { selected ->
+                                    dueDateMillis = selected
+                                    if (dueTimeMinutes == null) dueTimeMinutes = 9 * 60
+                                }
+                            )
+                        },
+                        onPickTime = {
+                            showTimePicker(
+                                context = context,
+                                currentMinutes = dueTimeMinutes,
+                                onSelected = { dueTimeMinutes = it }
+                            )
+                        },
+                        onClear = {
+                            dueDateMillis = null
+                            dueTimeMinutes = null
+                            useCalendar = false
+                            useAlarm = false
+                        }
                     )
                     ToggleRow(
                         icon = Icons.Rounded.CalendarMonth,
                         title = "同步到系统日历",
-                        subtitle = "当前版本先记录意图，后续接入 Calendar Provider",
+                        subtitle = if (dueDateMillis == null) "先选择日期时间，再写入系统日历" else "保存后打开系统日历确认事件",
                         checked = useCalendar,
-                        onCheckedChange = { useCalendar = it }
+                        enabled = dueDateMillis != null,
+                        onCheckedChange = {
+                            useCalendar = it
+                            if (it) onRequestCalendarPermission()
+                        }
                     )
                     ToggleRow(
                         icon = Icons.Rounded.Alarm,
                         title = "设置响铃提醒",
-                        subtitle = "当前版本先记录意图，后续接入 AlarmManager",
+                        subtitle = if (dueDateMillis == null) "先选择日期时间，再设置本机提醒" else "保存后写入 AlarmManager",
                         checked = useAlarm,
+                        enabled = dueDateMillis != null,
                         onCheckedChange = { useAlarm = it }
                     )
                     Button(
                         onClick = {
                             val trimmed = title.trim()
                             if (trimmed.isNotEmpty()) {
-                                onCreate(trimmed, quadrant, dueLabel.trim().ifBlank { null }, useCalendar, useAlarm)
+                                onCreate(
+                                    TaskFormState(
+                                        title = trimmed,
+                                        quadrant = priority.type,
+                                        dueDateMillis = dueDateMillis,
+                                        dueTimeMinutes = dueTimeMinutes,
+                                        useCalendar = useCalendar,
+                                        useAlarm = useAlarm
+                                    )
+                                )
                                 title = ""
-                                dueLabel = ""
+                                dueDateMillis = null
+                                dueTimeMinutes = null
                                 useCalendar = false
                                 useAlarm = false
-                                quadrant = Quadrant.ImportantUrgent
+                                priority = initialPriority
                             }
                         },
                         enabled = title.isNotBlank(),
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(14.dp),
                         contentPadding = PaddingValues(vertical = 14.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
@@ -737,38 +1203,149 @@ private fun AddTaskPanel(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun DateTimePickerRow(
+    dueDateMillis: Long?,
+    dueTimeMinutes: Int?,
+    onPickDate: () -> Unit,
+    onPickTime: () -> Unit,
+    onClear: () -> Unit
+) {
+    val label = if (dueDateMillis == null) {
+        "未设置时间"
+    } else {
+        val date = Instant.ofEpochMilli(dueDateMillis)
+            .atZone(ZoneId.systemDefault())
+            .toLocalDate()
+            .format(DateTimeFormatter.ofPattern("M月d日"))
+        val time = dueTimeMinutes?.let {
+            val hour = it / 60
+            val minute = it % 60
+            "${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}"
+        }
+        listOfNotNull(date, time).joinToString(" ")
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("时间", style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            OutlinedButton(onClick = onPickDate, shape = RoundedCornerShape(12.dp)) {
+                Icon(Icons.Rounded.CalendarMonth, contentDescription = null)
+                Spacer(Modifier.width(6.dp))
+                Text(if (dueDateMillis == null) "选择日期" else "更改日期")
+            }
+            OutlinedButton(
+                onClick = onPickTime,
+                enabled = dueDateMillis != null,
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(Icons.Rounded.Schedule, contentDescription = null)
+                Spacer(Modifier.width(6.dp))
+                Text(if (dueTimeMinutes == null) "选择时间" else "更改时间")
+            }
+            if (dueDateMillis != null) {
+                TextButton(onClick = onClear) {
+                    Text("清除")
+                }
+            }
+        }
+    }
+}
+
+private fun showDatePicker(
+    context: android.content.Context,
+    currentMillis: Long?,
+    onSelected: (Long) -> Unit
+) {
+    val calendar = Calendar.getInstance().apply {
+        if (currentMillis != null) timeInMillis = currentMillis
+    }
+    DatePickerDialog(
+        context,
+        { _, year, month, dayOfMonth ->
+            val selected = Calendar.getInstance().apply {
+                set(Calendar.YEAR, year)
+                set(Calendar.MONTH, month)
+                set(Calendar.DAY_OF_MONTH, dayOfMonth)
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+            onSelected(selected.timeInMillis)
+        },
+        calendar.get(Calendar.YEAR),
+        calendar.get(Calendar.MONTH),
+        calendar.get(Calendar.DAY_OF_MONTH)
+    ).show()
+}
+
+private fun showTimePicker(
+    context: android.content.Context,
+    currentMinutes: Int?,
+    onSelected: (Int) -> Unit
+) {
+    val calendar = Calendar.getInstance()
+    val hour = currentMinutes?.div(60) ?: calendar.get(Calendar.HOUR_OF_DAY)
+    val minute = currentMinutes?.rem(60) ?: calendar.get(Calendar.MINUTE)
+    TimePickerDialog(
+        context,
+        { _, selectedHour, selectedMinute ->
+            onSelected(selectedHour * 60 + selectedMinute)
+        },
+        hour,
+        minute,
+        true
+    ).show()
+}
+
 @Composable
 private fun ToggleRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
     subtitle: String,
     checked: Boolean,
+    enabled: Boolean = true,
     onCheckedChange: (Boolean) -> Unit
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onCheckedChange(!checked) }
+            .clickable(enabled = enabled) { onCheckedChange(!checked) }
             .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
+        val contentColor = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+        Icon(icon, contentDescription = null, tint = if (enabled) MaterialTheme.colorScheme.secondary else contentColor)
         Spacer(Modifier.width(12.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.titleMedium)
+            Text(title, style = MaterialTheme.typography.titleMedium, color = contentColor)
             Text(
                 subtitle,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
+        Switch(
+            checked = checked && enabled,
+            enabled = enabled,
+            onCheckedChange = onCheckedChange
+        )
     }
 }
 
 @Composable
 private fun CompletionNoteDialog(
-    task: TaskItem,
+    task: TaskUiModel,
     onDismiss: () -> Unit,
     onSave: (String) -> Unit
 ) {
