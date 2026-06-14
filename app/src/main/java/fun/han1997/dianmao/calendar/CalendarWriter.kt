@@ -4,6 +4,7 @@ import android.content.ContentUris
 import android.content.ContentValues
 import android.content.Context
 import android.provider.CalendarContract
+import `fun`.han1997.dianmao.data.RepeatRule
 import `fun`.han1997.dianmao.data.TaskUiModel
 import java.util.TimeZone
 
@@ -24,6 +25,7 @@ object CalendarWriter {
                     put(CalendarContract.Events.DTEND, dueAt + 60 * 60 * 1000)
                     put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().id)
                     put(CalendarContract.Events.DESCRIPTION, "来自 DianMao")
+                    repeatRuleToRRule(task.repeatRule)?.let { put(CalendarContract.Events.RRULE, it) }
                 }
                 val uri = resolver.insert(CalendarContract.Events.CONTENT_URI, values)
                 return uri?.let(ContentUris::parseId)
@@ -40,6 +42,16 @@ object CalendarWriter {
             putExtra(CalendarContract.Events.TITLE, task.title)
             putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, dueAt)
             putExtra(CalendarContract.EXTRA_EVENT_ALL_DAY, false)
+            repeatRuleToRRule(task.repeatRule)?.let { putExtra(CalendarContract.Events.RRULE, it) }
+        }
+    }
+
+    private fun repeatRuleToRRule(repeatRule: RepeatRule): String? {
+        return when (repeatRule) {
+            RepeatRule.None -> null
+            RepeatRule.Daily -> "FREQ=DAILY"
+            RepeatRule.Weekly -> "FREQ=WEEKLY"
+            RepeatRule.Monthly -> "FREQ=MONTHLY"
         }
     }
 }

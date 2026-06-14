@@ -3,6 +3,8 @@ package `fun`.han1997.dianmao.data
 import android.content.Context
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import java.time.Instant
+import java.time.ZoneId
 
 class TaskRepository(context: Context) {
     private val db = TaskDatabase.getInstance(context)
@@ -31,6 +33,7 @@ class TaskRepository(context: Context) {
             dueAtMillis = dueAtMillis,
             useCalendar = form.useCalendar && dueAtMillis != null,
             useAlarm = form.useAlarm && dueAtMillis != null,
+            repeatRule = if (dueAtMillis != null && form.useAlarm) form.repeatRule else RepeatRule.None,
             completed = false,
             completionNote = null,
             createdAtMillis = now,
@@ -60,5 +63,52 @@ class TaskRepository(context: Context) {
                 updatedAtMillis = System.currentTimeMillis()
             )
         )
+    }
+
+    suspend fun advanceRepeatAfterReminder(taskId: Long): TaskUiModel? {
+        val existing = dao.findById(taskId) ?: return null
+        val currentDue = existing.dueAtMillis ?: return null
+        if (existing.repeatRule == RepeatRule.None || !existing.useAlarm || existing.completed) return null
+        val nextDue = nextDueAt(currentDue, existing.repeatRule)
+        val nextLabel = DateTimeFormatters.labelFor(
+            dateMillis = midnightMillis(nextDue),
+            minutesOfDay = minutesOfDay(nextDue)
+        )
+        val updated = existing.copy(
+            dueLabel = nextLabel,
+            dueAtMillis = nextDue,
+            updatedAtMillis = System.currentTimeMillis()
+        )
+        dao.update(updated)
+        return updated.toUiModel()
+    }
+
+    private fun nextDueAt(currentMillis: Long, repeatRule: RepeatRule): Long {
+        val dateTime = Instant.ofEpochMilli(currentMillis)
+            .atZone(ZoneId.systemDefault())
+            .toLocalDateTime()
+        val next = when (repeatRule) {
+            RepeatRule.None -> dateTime
+            RepeatRule.Daily -> dateTime.plusDays(1)
+            RepeatRule.Weekly -> dateTime.plusWeeks(1)
+            RepeatRule.Monthly -> dateTime.plusMonths(1)
+        }
+        return next.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+    }
+
+    private fun midnightMillis(timestamp: Long): Long {
+        return Instant.ofEpochMilli(timestamp)
+            .atZone(ZoneId.systemDefault())
+            .toLocalDate()
+            .atStartOfDay(ZoneId.systemDefault())
+            .toInstant()
+            .toEpochMilli()
+    }
+
+    private fun minutesOfDay(timestamp: Long): Int {
+        val time = Instant.ofEpochMilli(timestamp)
+            .atZone(ZoneId.systemDefault())
+            .toLocalTime()
+        return time.hour * 60 + time.minute
     }
 }

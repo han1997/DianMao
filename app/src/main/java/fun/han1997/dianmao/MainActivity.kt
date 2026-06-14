@@ -24,6 +24,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -111,6 +112,7 @@ import `fun`.han1997.dianmao.alerts.ReminderScheduler
 import `fun`.han1997.dianmao.alerts.TaskNotificationChannels
 import `fun`.han1997.dianmao.calendar.CalendarWriter
 import `fun`.han1997.dianmao.data.QuadrantType
+import `fun`.han1997.dianmao.data.RepeatRule
 import `fun`.han1997.dianmao.data.TaskEntity
 import `fun`.han1997.dianmao.data.TaskFormState
 import `fun`.han1997.dianmao.data.TaskPriority
@@ -189,6 +191,7 @@ private fun seedTaskEntities(): List<TaskEntity> {
             dueAtMillis = today18,
             useCalendar = false,
             useAlarm = false,
+            repeatRule = RepeatRule.None,
             completed = false,
             completionNote = null,
             createdAtMillis = now - 3_000,
@@ -201,6 +204,7 @@ private fun seedTaskEntities(): List<TaskEntity> {
             dueAtMillis = null,
             useCalendar = false,
             useAlarm = false,
+            repeatRule = RepeatRule.None,
             completed = false,
             completionNote = null,
             createdAtMillis = now - 2_000,
@@ -213,6 +217,7 @@ private fun seedTaskEntities(): List<TaskEntity> {
             dueAtMillis = tomorrow930,
             useCalendar = false,
             useAlarm = false,
+            repeatRule = RepeatRule.None,
             completed = false,
             completionNote = null,
             createdAtMillis = now - 1_000,
@@ -225,6 +230,7 @@ private fun seedTaskEntities(): List<TaskEntity> {
             dueAtMillis = null,
             useCalendar = false,
             useAlarm = false,
+            repeatRule = RepeatRule.None,
             completed = true,
             completionNote = "完成后记录判断依据，方便以后复盘同类任务。",
             createdAtMillis = now,
@@ -822,6 +828,9 @@ private fun CompactQuadrantTask(
             if (task.useAlarm) {
                 CompactMeta(icon = Icons.Rounded.Alarm, text = "响铃")
             }
+            if (task.repeatRule != RepeatRule.None) {
+                CompactMeta(icon = Icons.Rounded.Alarm, text = task.repeatRule.label)
+            }
             if (task.useCalendar) {
                 CompactMeta(icon = Icons.Rounded.CalendarMonth, text = "日历")
             }
@@ -973,6 +982,9 @@ private fun TaskRow(
                     if (task.useAlarm) {
                         InfoChip(icon = Icons.Rounded.Alarm, text = "响铃")
                     }
+                    if (task.repeatRule != RepeatRule.None) {
+                        InfoChip(icon = Icons.Rounded.Alarm, text = task.repeatRule.label)
+                    }
                     if (task.completionNote != null) {
                         InfoChip(icon = Icons.AutoMirrored.Rounded.Notes, text = "有心得")
                     }
@@ -1044,6 +1056,7 @@ private fun AddTaskPanel(
     var dueTimeMinutes by rememberSaveable { mutableStateOf<Int?>(null) }
     var useCalendar by rememberSaveable { mutableStateOf(false) }
     var useAlarm by rememberSaveable { mutableStateOf(false) }
+    var repeatRule by rememberSaveable { mutableStateOf(RepeatRule.None) }
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
 
@@ -1056,14 +1069,22 @@ private fun AddTaskPanel(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.Black.copy(alpha = 0.18f))
-                .clickable(onClick = onDismiss)
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() },
+                    onClick = onDismiss
+                )
                 .imePadding(),
             contentAlignment = Alignment.BottomCenter
         ) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable(enabled = false) {},
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() },
+                        onClick = {}
+                    ),
                 shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
@@ -1144,6 +1165,7 @@ private fun AddTaskPanel(
                             dueTimeMinutes = null
                             useCalendar = false
                             useAlarm = false
+                            repeatRule = RepeatRule.None
                         }
                     )
                     ToggleRow(
@@ -1163,7 +1185,15 @@ private fun AddTaskPanel(
                         subtitle = if (dueDateMillis == null) "先选择日期时间，再设置本机提醒" else "保存后写入 AlarmManager",
                         checked = useAlarm,
                         enabled = dueDateMillis != null,
-                        onCheckedChange = { useAlarm = it }
+                        onCheckedChange = {
+                            useAlarm = it
+                            if (!it) repeatRule = RepeatRule.None
+                        }
+                    )
+                    RepeatRulePicker(
+                        selected = repeatRule,
+                        enabled = dueDateMillis != null && useAlarm,
+                        onSelected = { repeatRule = it }
                     )
                     Button(
                         onClick = {
@@ -1176,7 +1206,8 @@ private fun AddTaskPanel(
                                         dueDateMillis = dueDateMillis,
                                         dueTimeMinutes = dueTimeMinutes,
                                         useCalendar = useCalendar,
-                                        useAlarm = useAlarm
+                                        useAlarm = useAlarm,
+                                        repeatRule = repeatRule
                                     )
                                 )
                                 title = ""
@@ -1184,6 +1215,7 @@ private fun AddTaskPanel(
                                 dueTimeMinutes = null
                                 useCalendar = false
                                 useAlarm = false
+                                repeatRule = RepeatRule.None
                                 priority = initialPriority
                             }
                         },
@@ -1198,6 +1230,35 @@ private fun AddTaskPanel(
                         Text("保存事项")
                     }
                 }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun RepeatRulePicker(
+    selected: RepeatRule,
+    enabled: Boolean,
+    onSelected: (RepeatRule) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = "重复提醒",
+            style = MaterialTheme.typography.titleMedium,
+            color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            RepeatRule.entries.forEach { rule ->
+                FilterChip(
+                    selected = selected == rule,
+                    onClick = { if (enabled) onSelected(rule) },
+                    enabled = enabled || rule == RepeatRule.None,
+                    label = { Text(rule.label) }
+                )
             }
         }
     }

@@ -3,6 +3,13 @@ package `fun`.han1997.dianmao.data
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
+enum class RepeatRule(val label: String) {
+    None("不重复"),
+    Daily("每天"),
+    Weekly("每周"),
+    Monthly("每月")
+}
+
 enum class QuadrantType {
     ImportantUrgent,
     ImportantNotUrgent,
@@ -28,6 +35,7 @@ data class TaskEntity(
     val dueAtMillis: Long?,
     val useCalendar: Boolean,
     val useAlarm: Boolean,
+    val repeatRule: RepeatRule = RepeatRule.None,
     val completed: Boolean,
     val completionNote: String?,
     val createdAtMillis: Long,
@@ -40,7 +48,8 @@ data class TaskFormState(
     val dueDateMillis: Long? = null,
     val dueTimeMinutes: Int? = null,
     val useCalendar: Boolean = false,
-    val useAlarm: Boolean = false
+    val useAlarm: Boolean = false,
+    val repeatRule: RepeatRule = RepeatRule.None
 )
 
 data class TaskUiModel(
@@ -51,6 +60,7 @@ data class TaskUiModel(
     val dueAtMillis: Long?,
     val useCalendar: Boolean,
     val useAlarm: Boolean,
+    val repeatRule: RepeatRule,
     val completed: Boolean,
     val completionNote: String?
 )
@@ -64,6 +74,7 @@ fun TaskEntity.toUiModel(): TaskUiModel {
         dueAtMillis = dueAtMillis,
         useCalendar = useCalendar,
         useAlarm = useAlarm,
+        repeatRule = repeatRule,
         completed = completed,
         completionNote = completionNote
     )
