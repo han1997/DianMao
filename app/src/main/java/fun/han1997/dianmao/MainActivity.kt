@@ -58,8 +58,11 @@ import androidx.compose.material.icons.rounded.Alarm
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.DoneAll
+import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.EditNote
+import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
@@ -68,6 +71,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
@@ -312,6 +317,8 @@ private fun DianMaoApp() {
     var activePriority by rememberSaveable { mutableStateOf<TaskPriority?>(null) }
     var showAddSheet by rememberSaveable { mutableStateOf(false) }
     var taskForNote by remember { mutableStateOf<TaskUiModel?>(null) }
+    var taskForEdit by remember { mutableStateOf<TaskUiModel?>(null) }
+    var taskForDelete by remember { mutableStateOf<TaskUiModel?>(null) }
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { }
@@ -396,6 +403,8 @@ private fun DianMaoApp() {
                                     TaskRow(
                                         task = task,
                                         onToggleComplete = toggleComplete,
+                                        onEditTask = { taskForEdit = it },
+                                        onDeleteTask = { taskForDelete = it },
                                         onEditNote = { taskForNote = it }
                                     )
                                 }
@@ -405,30 +414,41 @@ private fun DianMaoApp() {
                 }
 
                 AddTaskPanel(
-                    visible = showAddSheet,
+                    visible = showAddSheet || taskForEdit != null,
+                    editingTask = taskForEdit,
                     initialPriority = activePriority ?: TaskPriority.ImportantUrgent,
-                    onDismiss = { showAddSheet = false },
+                    onDismiss = {
+                        showAddSheet = false
+                        taskForEdit = null
+                    },
                     onRequestCalendarPermission = {
                         calendarPermissionLauncher.launch(
                             arrayOf(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR)
                         )
                     },
-                    onCreate = { form ->
+                    onSave = { form ->
                         scope.launch {
-                            val created = repository.addTask(form)
-                            if (created.useAlarm) {
+                            val previousTask = taskForEdit
+                            val saved = if (previousTask == null) {
+                                repository.addTask(form)
+                            } else {
+                                scheduler.cancel(previousTask.id)
+                                repository.updateTask(previousTask.id, form)
+                            }
+                            if (saved != null && saved.useAlarm) {
                                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
                                     ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
                                 ) {
                                     notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                                 }
-                                scheduler.schedule(created)
+                                scheduler.schedule(saved)
                             }
-                            if (created.useCalendar) {
-                                saveOrOpenCalendarEvent(context, created)
+                            if (saved != null && saved.useCalendar && (previousTask == null || !previousTask.useCalendar)) {
+                                saveOrOpenCalendarEvent(context, saved)
                             }
                         }
                         showAddSheet = false
+                        taskForEdit = null
                     }
                 )
             }
@@ -445,6 +465,20 @@ private fun DianMaoApp() {
                     scheduler.cancel(task.id)
                 }
                 taskForNote = null
+            }
+        )
+    }
+
+    taskForDelete?.let { task ->
+        DeleteTaskDialog(
+            task = task,
+            onDismiss = { taskForDelete = null },
+            onConfirm = {
+                scope.launch {
+                    scheduler.cancel(task.id)
+                    repository.deleteTask(task.id)
+                }
+                taskForDelete = null
             }
         )
     }
@@ -915,8 +949,11 @@ private fun SectionHeader(title: String, subtitle: String) {
 private fun TaskRow(
     task: TaskUiModel,
     onToggleComplete: (TaskUiModel) -> Unit,
+    onEditTask: (TaskUiModel) -> Unit,
+    onDeleteTask: (TaskUiModel) -> Unit,
     onEditNote: (TaskUiModel) -> Unit
 ) {
+    var actionsExpanded by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
         targetValue = if (task.completed) 0.985f else 1f,
         animationSpec = tween(durationMillis = 180),
@@ -1002,12 +1039,55 @@ private fun TaskRow(
                     }
                 }
             }
-            IconButton(onClick = { onEditNote(task) }) {
-                Icon(
-                    imageVector = if (task.completed) Icons.Rounded.EditNote else Icons.Rounded.DoneAll,
-                    contentDescription = if (task.completed) "编辑完成备注" else "完成并写备注",
-                    tint = MaterialTheme.colorScheme.primary
-                )
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                IconButton(onClick = { onEditNote(task) }) {
+                    Icon(
+                        imageVector = if (task.completed) Icons.Rounded.EditNote else Icons.Rounded.DoneAll,
+                        contentDescription = if (task.completed) "编辑完成备注" else "完成并写备注",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Box {
+                    IconButton(onClick = { actionsExpanded = true }) {
+                        Icon(
+                            imageVector = Icons.Rounded.MoreVert,
+                            contentDescription = "更多事项操作",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = actionsExpanded,
+                        onDismissRequest = { actionsExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("编辑事项") },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Rounded.Edit,
+                                    contentDescription = null
+                                )
+                            },
+                            onClick = {
+                                actionsExpanded = false
+                                onEditTask(task)
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("删除事项", color = MaterialTheme.colorScheme.error) },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Rounded.Delete,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            },
+                            onClick = {
+                                actionsExpanded = false
+                                onDeleteTask(task)
+                            }
+                        )
+                    }
+                }
             }
         }
     }
@@ -1045,10 +1125,11 @@ private fun ColorDot(color: Color) {
 @Composable
 private fun AddTaskPanel(
     visible: Boolean,
+    editingTask: TaskUiModel?,
     initialPriority: TaskPriority,
     onDismiss: () -> Unit,
     onRequestCalendarPermission: () -> Unit,
-    onCreate: (TaskFormState) -> Unit
+    onSave: (TaskFormState) -> Unit
 ) {
     var title by rememberSaveable { mutableStateOf("") }
     var priority by rememberSaveable(initialPriority) { mutableStateOf(initialPriority) }
@@ -1059,6 +1140,19 @@ private fun AddTaskPanel(
     var repeatRule by rememberSaveable { mutableStateOf(RepeatRule.None) }
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
+    val isEditing = editingTask != null
+
+    LaunchedEffect(visible, editingTask?.id, initialPriority) {
+        if (visible) {
+            title = editingTask?.title.orEmpty()
+            priority = editingTask?.quadrant ?: initialPriority
+            dueDateMillis = editingTask?.dueAtMillis?.let { midnightMillis(it) }
+            dueTimeMinutes = editingTask?.dueAtMillis?.let { minutesOfDay(it) }
+            useCalendar = editingTask?.useCalendar ?: false
+            useAlarm = editingTask?.useAlarm ?: false
+            repeatRule = editingTask?.repeatRule ?: RepeatRule.None
+        }
+    }
 
     AnimatedVisibility(
         visible = visible,
@@ -1098,15 +1192,18 @@ private fun AddTaskPanel(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("新增事项", style = MaterialTheme.typography.titleLarge)
+                            Text(if (isEditing) "编辑事项" else "新增事项", style = MaterialTheme.typography.titleLarge)
                             Text(
-                                "先记录，再补象限和时间",
+                                if (isEditing) "调整内容、象限、时间和提醒" else "先记录，再补象限和时间",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         IconButton(onClick = onDismiss) {
-                            Icon(Icons.Rounded.Close, contentDescription = "关闭新增面板")
+                            Icon(
+                                Icons.Rounded.Close,
+                                contentDescription = if (isEditing) "关闭编辑面板" else "关闭新增面板"
+                            )
                         }
                     }
                     OutlinedTextField(
@@ -1199,7 +1296,7 @@ private fun AddTaskPanel(
                         onClick = {
                             val trimmed = title.trim()
                             if (trimmed.isNotEmpty()) {
-                                onCreate(
+                                onSave(
                                     TaskFormState(
                                         title = trimmed,
                                         quadrant = priority.type,
@@ -1210,13 +1307,15 @@ private fun AddTaskPanel(
                                         repeatRule = repeatRule
                                     )
                                 )
-                                title = ""
-                                dueDateMillis = null
-                                dueTimeMinutes = null
-                                useCalendar = false
-                                useAlarm = false
-                                repeatRule = RepeatRule.None
-                                priority = initialPriority
+                                if (!isEditing) {
+                                    title = ""
+                                    dueDateMillis = null
+                                    dueTimeMinutes = null
+                                    useCalendar = false
+                                    useAlarm = false
+                                    repeatRule = RepeatRule.None
+                                    priority = initialPriority
+                                }
                             }
                         },
                         enabled = title.isNotBlank(),
@@ -1227,7 +1326,7 @@ private fun AddTaskPanel(
                     ) {
                         Icon(Icons.Rounded.Check, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("保存事项")
+                        Text(if (isEditing) "保存修改" else "保存事项")
                     }
                 }
             }
@@ -1350,6 +1449,22 @@ private fun showDatePicker(
     ).show()
 }
 
+private fun midnightMillis(timestamp: Long): Long {
+    return Instant.ofEpochMilli(timestamp)
+        .atZone(ZoneId.systemDefault())
+        .toLocalDate()
+        .atStartOfDay(ZoneId.systemDefault())
+        .toInstant()
+        .toEpochMilli()
+}
+
+private fun minutesOfDay(timestamp: Long): Int {
+    val time = Instant.ofEpochMilli(timestamp)
+        .atZone(ZoneId.systemDefault())
+        .toLocalTime()
+    return time.hour * 60 + time.minute
+}
+
 private fun showTimePicker(
     context: android.content.Context,
     currentMinutes: Int?,
@@ -1367,6 +1482,41 @@ private fun showTimePicker(
         minute,
         true
     ).show()
+}
+
+@Composable
+private fun DeleteTaskDialog(
+    task: TaskUiModel,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                imageVector = Icons.Rounded.Delete,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error
+            )
+        },
+        title = { Text("删除事项") },
+        text = {
+            Text(
+                text = "确定删除“${task.title}”？删除后不会保留提醒和完成备注。",
+                style = MaterialTheme.typography.bodyLarge
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text("删除", color = MaterialTheme.colorScheme.error)
+            }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
 }
 
 @Composable

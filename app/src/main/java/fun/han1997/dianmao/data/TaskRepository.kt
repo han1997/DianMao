@@ -22,10 +22,7 @@ class TaskRepository(context: Context) {
 
     suspend fun addTask(form: TaskFormState): TaskUiModel {
         val now = System.currentTimeMillis()
-        val dueAtMillis = form.dueDateMillis?.let { dateMillis ->
-            val minutes = form.dueTimeMinutes
-            if (minutes != null) dateMillis + minutes * 60_000L else dateMillis
-        }
+        val dueAtMillis = dueAtMillis(form)
         val entity = TaskEntity(
             title = form.title.trim(),
             quadrant = form.quadrant,
@@ -41,6 +38,28 @@ class TaskRepository(context: Context) {
         )
         val id = dao.insert(entity)
         return entity.copy(id = id).toUiModel()
+    }
+
+    suspend fun updateTask(taskId: Long, form: TaskFormState): TaskUiModel? {
+        val existing = dao.findById(taskId) ?: return null
+        val dueAtMillis = dueAtMillis(form)
+        val updated = existing.copy(
+            title = form.title.trim(),
+            quadrant = form.quadrant,
+            dueLabel = form.dueDateMillis?.let { DateTimeFormatters.labelFor(it, form.dueTimeMinutes) },
+            dueAtMillis = dueAtMillis,
+            useCalendar = form.useCalendar && dueAtMillis != null,
+            useAlarm = form.useAlarm && dueAtMillis != null,
+            repeatRule = if (dueAtMillis != null && form.useAlarm) form.repeatRule else RepeatRule.None,
+            updatedAtMillis = System.currentTimeMillis()
+        )
+        dao.update(updated)
+        return updated.toUiModel()
+    }
+
+    suspend fun deleteTask(taskId: Long) {
+        val existing = dao.findById(taskId) ?: return
+        dao.delete(existing)
     }
 
     suspend fun toggleCompleted(task: TaskUiModel, completed: Boolean) {
@@ -110,5 +129,12 @@ class TaskRepository(context: Context) {
             .atZone(ZoneId.systemDefault())
             .toLocalTime()
         return time.hour * 60 + time.minute
+    }
+
+    private fun dueAtMillis(form: TaskFormState): Long? {
+        return form.dueDateMillis?.let { dateMillis ->
+            val minutes = form.dueTimeMinutes
+            if (minutes != null) dateMillis + minutes * 60_000L else dateMillis
+        }
     }
 }
