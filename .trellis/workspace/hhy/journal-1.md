@@ -72,3 +72,37 @@ Added BackHandler for add/edit task panel and backup panel so back button closes
 ### Next Steps
 
 - None - task complete
+
+
+## Session 3: Fix predictive back gesture for overlay panels
+
+**Date**: 2026-06-15
+**Task**: Fix predictive back gesture for overlay panels
+**Branch**: `master`
+
+### Summary
+
+Fixed back button not closing overlay panels (BackHandler) and fixed predictive back swipe bypass (upgraded activity-compose 1.8.1→1.9.3).
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `14162b0` | (see git log) |
+| `7f15ec9` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
