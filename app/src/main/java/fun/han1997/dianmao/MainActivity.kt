@@ -437,6 +437,15 @@ private fun DianMaoApp() {
         }
     }
 
+    BackHandler(enabled = showAddSheet || taskForEdit != null) {
+        showAddSheet = false
+        taskForEdit = null
+    }
+
+    BackHandler(enabled = showBackupPanel) {
+        showBackupPanel = false
+    }
+
     Surface(color = MaterialTheme.colorScheme.background) {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
