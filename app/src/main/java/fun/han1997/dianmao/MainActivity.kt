@@ -26,6 +26,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -72,12 +74,10 @@ import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -761,20 +761,20 @@ private fun QuadrantDetailHeader(
 
     Surface(
         color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.62f))
+        shape = RoundedCornerShape(14.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.56f))
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Row(
-                verticalAlignment = Alignment.Top,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 IconButton(
                     onClick = onBack,
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier.size(36.dp)
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
@@ -783,21 +783,25 @@ private fun QuadrantDetailHeader(
                 }
                 Column(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         ColorDot(quadrant.color)
-                        Spacer(Modifier.width(8.dp))
+                        Spacer(Modifier.width(7.dp))
                         Text(
                             text = quadrant.title,
-                            style = MaterialTheme.typography.headlineLarge,
-                            color = MaterialTheme.colorScheme.onSurface
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                     Text(
                         text = quadrant.description,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
             }
@@ -822,8 +826,8 @@ private fun QuadrantDetailEmptyState(quadrant: TaskPriority) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+                .padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(
                 text = "这个象限还没有事项",
@@ -920,7 +924,7 @@ private fun QuadrantPane(
     modifier: Modifier = Modifier,
     onSelected: (TaskPriority) -> Unit
 ) {
-    val visibleTasks = tasks.take(1)
+    val visibleTasks = tasks.take(2)
     val openCount = tasks.count { !it.completed }
     val paneColor by animateColorAsState(
         targetValue = quadrant.color.copy(alpha = 0.055f),
@@ -1154,31 +1158,31 @@ private fun TaskRow(
             containerColor = if (task.completed) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.62f) else MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(14.dp),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.55f))
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(role = Role.Checkbox) { onToggleComplete(task) }
-                .padding(14.dp),
-            verticalAlignment = Alignment.Top
-        ) {
-            Checkbox(
-                checked = task.completed,
-                onCheckedChange = { onToggleComplete(task) },
-                modifier = Modifier.semantics {
+                .semantics {
                     contentDescription = if (task.completed) "标记为未完成" else "标记为完成"
                 }
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            CompletionMark(
+                completed = task.completed,
+                color = task.quadrant.color
             )
-            Spacer(Modifier.width(8.dp))
+            Spacer(Modifier.width(10.dp))
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(9.dp)
+                verticalArrangement = Arrangement.spacedBy(7.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     ColorDot(task.quadrant.color)
-                    Spacer(Modifier.width(8.dp))
+                    Spacer(Modifier.width(6.dp))
                     Text(
                         text = task.quadrant.title,
                         style = MaterialTheme.typography.labelLarge,
@@ -1194,22 +1198,22 @@ private fun TaskRow(
                 )
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                    verticalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
                     task.dueLabel?.let {
-                        InfoChip(icon = Icons.Rounded.Schedule, text = it)
+                        CompactMeta(icon = Icons.Rounded.Schedule, text = it)
                     }
                     if (task.useCalendar) {
-                        InfoChip(icon = Icons.Rounded.CalendarMonth, text = "系统日历")
+                        CompactMeta(icon = Icons.Rounded.CalendarMonth, text = "系统日历")
                     }
                     if (task.useAlarm) {
-                        InfoChip(icon = Icons.Rounded.Alarm, text = "响铃")
+                        CompactMeta(icon = Icons.Rounded.Alarm, text = "响铃")
                     }
                     if (task.repeatRule != RepeatRule.None) {
-                        InfoChip(icon = Icons.Rounded.Alarm, text = task.repeatRule.label)
+                        CompactMeta(icon = Icons.Rounded.Alarm, text = task.repeatRule.label)
                     }
                     if (task.completionNote != null) {
-                        InfoChip(icon = Icons.AutoMirrored.Rounded.Notes, text = "有心得")
+                        CompactMeta(icon = Icons.AutoMirrored.Rounded.Notes, text = "有心得")
                     }
                 }
                 AnimatedContent(
@@ -1220,13 +1224,18 @@ private fun TaskRow(
                         Text(
                             text = "完成备注：$note",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                IconButton(onClick = { onEditNote(task) }) {
+                IconButton(
+                    onClick = { onEditNote(task) },
+                    modifier = Modifier.size(38.dp)
+                ) {
                     Icon(
                         imageVector = if (task.completed) Icons.Rounded.EditNote else Icons.Rounded.DoneAll,
                         contentDescription = if (task.completed) "编辑完成备注" else "完成并写备注",
@@ -1234,7 +1243,10 @@ private fun TaskRow(
                     )
                 }
                 Box {
-                    IconButton(onClick = { actionsExpanded = true }) {
+                    IconButton(
+                        onClick = { actionsExpanded = true },
+                        modifier = Modifier.size(38.dp)
+                    ) {
                         Icon(
                             imageVector = Icons.Rounded.MoreVert,
                             contentDescription = "更多事项操作",
@@ -1280,24 +1292,6 @@ private fun TaskRow(
 }
 
 @Composable
-private fun InfoChip(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    text: String
-) {
-    AssistChip(
-        onClick = {},
-        label = { Text(text) },
-        leadingIcon = {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp)
-            )
-        }
-    )
-}
-
-@Composable
 private fun ColorDot(color: Color) {
     Box(
         modifier = Modifier
@@ -1326,6 +1320,7 @@ private fun AddTaskPanel(
     var repeatRule by rememberSaveable { mutableStateOf(RepeatRule.None) }
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
+    val formScrollState = rememberScrollState()
     val isEditing = editingTask != null
 
     LaunchedEffect(visible, editingTask?.id, initialPriority) {
@@ -1360,6 +1355,7 @@ private fun AddTaskPanel(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .fillMaxHeight(0.92f)
                     .clickable(
                         indication = null,
                         interactionSource = remember { MutableInteractionSource() },
@@ -1371,10 +1367,10 @@ private fun AddTaskPanel(
             ) {
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth()
+                        .fillMaxSize()
                         .windowInsetsPadding(WindowInsets.safeDrawing)
-                        .padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f)) {
@@ -1392,92 +1388,101 @@ private fun AddTaskPanel(
                             )
                         }
                     }
-                    OutlinedTextField(
-                        value = title,
-                        onValueChange = { title = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("事项内容") },
-                        placeholder = { Text("例如：确认明天下午会议材料") },
-                        singleLine = false,
-                        minLines = 2,
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                        keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surface,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .verticalScroll(formScrollState),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = title,
+                            onValueChange = { title = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("事项内容") },
+                            placeholder = { Text("例如：确认明天下午会议材料") },
+                            singleLine = false,
+                            minLines = 1,
+                            maxLines = 3,
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                            )
                         )
-                    )
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("放入象限", style = MaterialTheme.typography.titleMedium)
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            TaskPriority.entries.forEach { item ->
-                                FilterChip(
-                                    selected = item == priority,
-                                    onClick = { priority = item },
-                                    label = { Text(item.shortTitle) },
-                                    leadingIcon = { ColorDot(item.color) }
-                                )
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text("象限", style = MaterialTheme.typography.titleMedium)
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(7.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                TaskPriority.entries.forEach { item ->
+                                    FilterChip(
+                                        selected = item == priority,
+                                        onClick = { priority = item },
+                                        label = { Text(item.shortTitle) },
+                                        leadingIcon = { ColorDot(item.color) }
+                                    )
+                                }
                             }
                         }
+                        DateTimePickerRow(
+                            dueDateMillis = dueDateMillis,
+                            dueTimeMinutes = dueTimeMinutes,
+                            onPickDate = {
+                                showDatePicker(
+                                    context = context,
+                                    currentMillis = dueDateMillis,
+                                    onSelected = { selected ->
+                                        dueDateMillis = selected
+                                        if (dueTimeMinutes == null) dueTimeMinutes = 9 * 60
+                                    }
+                                )
+                            },
+                            onPickTime = {
+                                showTimePicker(
+                                    context = context,
+                                    currentMinutes = dueTimeMinutes,
+                                    onSelected = { dueTimeMinutes = it }
+                                )
+                            },
+                            onClear = {
+                                dueDateMillis = null
+                                dueTimeMinutes = null
+                                useCalendar = false
+                                useAlarm = false
+                                repeatRule = RepeatRule.None
+                            }
+                        )
+                        ToggleRow(
+                            icon = Icons.Rounded.CalendarMonth,
+                            title = "系统日历",
+                            subtitle = if (dueDateMillis == null) "选择时间后可同步" else "保存后写入系统日历",
+                            checked = useCalendar,
+                            enabled = dueDateMillis != null,
+                            onCheckedChange = {
+                                useCalendar = it
+                                if (it) onRequestCalendarPermission()
+                            }
+                        )
+                        ToggleRow(
+                            icon = Icons.Rounded.Alarm,
+                            title = "响铃提醒",
+                            subtitle = if (dueDateMillis == null) "选择时间后可提醒" else "保存后写入 AlarmManager",
+                            checked = useAlarm,
+                            enabled = dueDateMillis != null,
+                            onCheckedChange = {
+                                useAlarm = it
+                                if (!it) repeatRule = RepeatRule.None
+                            }
+                        )
+                        RepeatRulePicker(
+                            selected = repeatRule,
+                            enabled = dueDateMillis != null && useAlarm,
+                            onSelected = { repeatRule = it }
+                        )
                     }
-                    DateTimePickerRow(
-                        dueDateMillis = dueDateMillis,
-                        dueTimeMinutes = dueTimeMinutes,
-                        onPickDate = {
-                            showDatePicker(
-                                context = context,
-                                currentMillis = dueDateMillis,
-                                onSelected = { selected ->
-                                    dueDateMillis = selected
-                                    if (dueTimeMinutes == null) dueTimeMinutes = 9 * 60
-                                }
-                            )
-                        },
-                        onPickTime = {
-                            showTimePicker(
-                                context = context,
-                                currentMinutes = dueTimeMinutes,
-                                onSelected = { dueTimeMinutes = it }
-                            )
-                        },
-                        onClear = {
-                            dueDateMillis = null
-                            dueTimeMinutes = null
-                            useCalendar = false
-                            useAlarm = false
-                            repeatRule = RepeatRule.None
-                        }
-                    )
-                    ToggleRow(
-                        icon = Icons.Rounded.CalendarMonth,
-                        title = "同步到系统日历",
-                        subtitle = if (dueDateMillis == null) "先选择日期时间，再写入系统日历" else "保存后打开系统日历确认事件",
-                        checked = useCalendar,
-                        enabled = dueDateMillis != null,
-                        onCheckedChange = {
-                            useCalendar = it
-                            if (it) onRequestCalendarPermission()
-                        }
-                    )
-                    ToggleRow(
-                        icon = Icons.Rounded.Alarm,
-                        title = "设置响铃提醒",
-                        subtitle = if (dueDateMillis == null) "先选择日期时间，再设置本机提醒" else "保存后写入 AlarmManager",
-                        checked = useAlarm,
-                        enabled = dueDateMillis != null,
-                        onCheckedChange = {
-                            useAlarm = it
-                            if (!it) repeatRule = RepeatRule.None
-                        }
-                    )
-                    RepeatRulePicker(
-                        selected = repeatRule,
-                        enabled = dueDateMillis != null && useAlarm,
-                        onSelected = { repeatRule = it }
-                    )
                     Button(
                         onClick = {
                             val trimmed = title.trim()
@@ -1507,7 +1512,7 @@ private fun AddTaskPanel(
                         enabled = title.isNotBlank(),
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(14.dp),
-                        contentPadding = PaddingValues(vertical = 14.dp),
+                        contentPadding = PaddingValues(vertical = 13.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
                         Icon(Icons.Rounded.Check, contentDescription = null)
@@ -1723,15 +1728,15 @@ private fun RepeatRulePicker(
     enabled: Boolean,
     onSelected: (RepeatRule) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
             text = "重复提醒",
             style = MaterialTheme.typography.titleMedium,
             color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
         )
         FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(7.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             RepeatRule.entries.forEach { rule ->
                 FilterChip(
@@ -1769,18 +1774,30 @@ private fun DateTimePickerRow(
         listOfNotNull(date, time).joinToString(" ")
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text("时间", style = MaterialTheme.typography.titleMedium)
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = "时间",
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.titleMedium
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
         FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(7.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            OutlinedButton(onClick = onPickDate, shape = RoundedCornerShape(12.dp)) {
+            OutlinedButton(
+                onClick = onPickDate,
+                shape = RoundedCornerShape(12.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+            ) {
                 Icon(Icons.Rounded.CalendarMonth, contentDescription = null)
                 Spacer(Modifier.width(6.dp))
                 Text(if (dueDateMillis == null) "选择日期" else "更改日期")
@@ -1788,7 +1805,8 @@ private fun DateTimePickerRow(
             OutlinedButton(
                 onClick = onPickTime,
                 enabled = dueDateMillis != null,
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
             ) {
                 Icon(Icons.Rounded.Schedule, contentDescription = null)
                 Spacer(Modifier.width(6.dp))
@@ -1914,18 +1932,25 @@ private fun ToggleRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(enabled = enabled) { onCheckedChange(!checked) }
-            .padding(vertical = 4.dp),
+            .padding(vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         val contentColor = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
-        Icon(icon, contentDescription = null, tint = if (enabled) MaterialTheme.colorScheme.secondary else contentColor)
-        Spacer(Modifier.width(12.dp))
+        Icon(
+            icon,
+            contentDescription = null,
+            modifier = Modifier.size(20.dp),
+            tint = if (enabled) MaterialTheme.colorScheme.secondary else contentColor
+        )
+        Spacer(Modifier.width(10.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.titleMedium, color = contentColor)
+            Text(title, style = MaterialTheme.typography.bodyLarge, color = contentColor)
             Text(
                 subtitle,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
         Switch(
