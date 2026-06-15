@@ -1,10 +1,14 @@
 package `fun`.han1997.dianmao.alerts
 
+import android.Manifest
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import `fun`.han1997.dianmao.R
 import `fun`.han1997.dianmao.data.TaskRepository
 import kotlinx.coroutines.CoroutineScope
@@ -22,7 +26,11 @@ class TaskReminderReceiver : BroadcastReceiver() {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .build()
-        NotificationManagerCompat.from(context).notify(taskId.toInt(), notification)
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+        ) {
+            NotificationManagerCompat.from(context).notify(taskId.toInt(), notification)
+        }
 
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {

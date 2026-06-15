@@ -164,14 +164,20 @@ private fun hasCalendarPermission(context: android.content.Context): Boolean {
         ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALENDAR) == PackageManager.PERMISSION_GRANTED
 }
 
-private fun saveOrOpenCalendarEvent(context: android.content.Context, task: TaskUiModel) {
-    val saved = if (hasCalendarPermission(context)) {
-        CalendarWriter.saveEvent(context, task) != null
-    } else {
-        false
+private fun saveOrOpenCalendarEvent(context: android.content.Context, task: TaskUiModel): Long? {
+    if (hasCalendarPermission(context)) {
+        CalendarWriter.saveOrUpdateEvent(context, task)?.let { return it }
     }
-    if (!saved) {
+
+    if (task.useCalendar) {
         CalendarWriter.buildInsertIntent(task)?.let { context.startActivity(it) }
+    }
+    return null
+}
+
+private fun deleteCalendarEvent(context: android.content.Context, eventId: Long?) {
+    if (eventId != null && hasCalendarPermission(context)) {
+        CalendarWriter.deleteEvent(context, eventId)
     }
 }
 
@@ -435,16 +441,28 @@ private fun DianMaoApp() {
                                 scheduler.cancel(previousTask.id)
                                 repository.updateTask(previousTask.id, form)
                             }
-                            if (saved != null && saved.useAlarm) {
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                                    ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-                                ) {
-                                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            if (saved != null) {
+                                if (saved.useAlarm) {
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                                        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                                    ) {
+                                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                    }
+                                    scheduler.schedule(saved)
                                 }
-                                scheduler.schedule(saved)
-                            }
-                            if (saved != null && saved.useCalendar && (previousTask == null || !previousTask.useCalendar)) {
-                                saveOrOpenCalendarEvent(context, saved)
+
+                                if (saved.useCalendar) {
+                                    val eventId = saveOrOpenCalendarEvent(context, saved)
+                                    if (eventId != null && eventId != saved.calendarEventId) {
+                                        repository.updateCalendarEventId(saved.id, eventId)
+                                    }
+                                } else {
+                                    val eventId = previousTask?.calendarEventId ?: saved.calendarEventId
+                                    deleteCalendarEvent(context, eventId)
+                                    if (saved.calendarEventId != null) {
+                                        repository.updateCalendarEventId(saved.id, null)
+                                    }
+                                }
                             }
                         }
                         showAddSheet = false
@@ -476,6 +494,7 @@ private fun DianMaoApp() {
             onConfirm = {
                 scope.launch {
                     scheduler.cancel(task.id)
+                    deleteCalendarEvent(context, task.calendarEventId)
                     repository.deleteTask(task.id)
                 }
                 taskForDelete = null

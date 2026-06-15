@@ -62,6 +62,16 @@ class TaskRepository(context: Context) {
         dao.delete(existing)
     }
 
+    suspend fun updateCalendarEventId(taskId: Long, calendarEventId: Long?): TaskUiModel? {
+        val existing = dao.findById(taskId) ?: return null
+        val updated = existing.copy(
+            calendarEventId = calendarEventId,
+            updatedAtMillis = System.currentTimeMillis()
+        )
+        dao.update(updated)
+        return updated.toUiModel()
+    }
+
     suspend fun toggleCompleted(task: TaskUiModel, completed: Boolean) {
         val existing = dao.findById(task.id) ?: return
         dao.update(
