@@ -113,3 +113,78 @@ Not applicable. This app currently has no HTTP API layer.
 * Clearing or deleting local task state only after an external provider call
   succeeds.
 * Moving runtime permission checks into helpers that Android lint cannot follow.
+
+## Scenario: AlarmManager Reminder Restoration
+
+### 1. Scope / Trigger
+
+Trigger this contract when restoring, rescheduling, or compensating local
+reminders after boot, app launch, or delayed repeat delivery.
+
+### 2. Signatures
+
+* Active reminder query: `TaskDao.findActiveAlarmTasks(): List<TaskEntity>`
+* Restoration: `TaskRepository.restoreScheduledReminders(nowMillis: Long = System.currentTimeMillis()): List<TaskUiModel>`
+* Repeat catch-up: `RepeatReminderCalculator.nextFutureDueAfter(currentMillis, repeatRule, nowMillis, zoneId)`
+* Platform receiver: `ReminderRestoreReceiver : BroadcastReceiver`
+
+### 3. Contracts
+
+* Room is the durable source of truth. AlarmManager is rebuilt from active task
+  rows, not queried for state.
+* Restore only tasks where `completed = false`, `useAlarm = true`, and
+  `dueAtMillis IS NOT NULL`.
+* Future one-shot reminders are scheduled as-is.
+* Past one-shot reminders are skipped during restoration; do not show stale
+  notifications without an explicit product decision.
+* Past repeating reminders are advanced until their next due time is greater
+  than the restoration time, then persisted and scheduled.
+* Restoration may run from both boot receivers and app launch. It must be
+  idempotent because pending intents use task ids with `FLAG_UPDATE_CURRENT`.
+
+### 4. Validation & Error Matrix
+
+* Boot broadcast received -> run restoration asynchronously with `goAsync()`.
+* Repeating task overdue by multiple intervals -> advance across every missed
+  interval before scheduling.
+* One-shot task overdue -> return no task to schedule.
+* Task completed or alarm disabled -> do not restore.
+* Receiver coroutine exits normally or with an exception -> call
+  `pendingResult.finish()` in `finally`.
+
+### 5. Good/Base/Bad Cases
+
+* Good: App launch calls repository restoration, then schedules each returned
+  `TaskUiModel` with `ReminderScheduler`.
+* Base: Future one-shot task survives reboot and is scheduled once.
+* Bad: On boot, schedule all alarm tasks directly without compensating repeat
+  due times, causing stale repeat notifications or immediate loops.
+
+### 6. Tests Required
+
+* Unit-test repeat catch-up with multiple missed daily/weekly/monthly intervals.
+* Run `:app:lintDebug` to validate manifest receiver and permission behavior.
+* Run `:app:testDebugUnitTest` and `:app:assembleDebug` before commit.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```kotlin
+dao.findActiveAlarmTasks().forEach { task ->
+    scheduler.schedule(task.toUiModel())
+}
+```
+
+This restores stale one-shot alarms and leaves overdue repeats behind.
+
+#### Correct
+
+```kotlin
+repository.restoreScheduledReminders().forEach { task ->
+    scheduler.schedule(task)
+}
+```
+
+The repository filters one-shot reminders and persists repeat catch-up before
+the platform scheduler receives tasks.
