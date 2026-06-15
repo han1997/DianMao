@@ -26,8 +26,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -459,28 +457,32 @@ private fun DianMaoApp() {
                     .padding(padding)
                     .windowInsetsPadding(WindowInsets.safeDrawing)
             ) {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 18.dp, top = 6.dp, end = 18.dp, bottom = 112.dp),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    if (activePriority == null) {
-                        item {
-                            AppHeader(
-                                tasks = tasks,
-                                onOpenBackup = {
-                                    backupStatus = null
-                                    showBackupPanel = true
-                                }
-                            )
-                        }
-                        item {
-                            QuadrantBoard(
-                                tasks = tasks,
-                                onSelected = { priority -> activePriority = priority }
-                            )
-                        }
-                    } else {
+                if (activePriority == null) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(start = 18.dp, top = 6.dp, end = 18.dp, bottom = 96.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        AppHeader(
+                            tasks = tasks,
+                            onOpenBackup = {
+                                backupStatus = null
+                                showBackupPanel = true
+                            }
+                        )
+                        QuadrantBoard(
+                            tasks = tasks,
+                            modifier = Modifier.weight(1f),
+                            onSelected = { priority -> activePriority = priority }
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(start = 18.dp, top = 6.dp, end = 18.dp, bottom = 112.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
                         activePriority?.let { priority ->
                             item {
                                 QuadrantDetailHeader(
@@ -840,14 +842,18 @@ private fun QuadrantDetailEmptyState(quadrant: TaskPriority) {
 @Composable
 private fun QuadrantBoard(
     tasks: List<TaskUiModel>,
+    modifier: Modifier = Modifier,
     onSelected: (TaskPriority) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
         SectionHeader(title = "四象限", subtitle = "每个象限直接显示任务预览，点按象限查看完整列表")
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(700.dp),
+                .weight(1f),
             color = MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(16.dp),
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.70f))
@@ -914,7 +920,7 @@ private fun QuadrantPane(
     modifier: Modifier = Modifier,
     onSelected: (TaskPriority) -> Unit
 ) {
-    val visibleTasks = tasks.take(2)
+    val visibleTasks = tasks.take(1)
     val openCount = tasks.count { !it.completed }
     val paneColor by animateColorAsState(
         targetValue = quadrant.color.copy(alpha = 0.055f),
@@ -927,8 +933,8 @@ private fun QuadrantPane(
             .fillMaxSize()
             .background(paneColor)
             .clickable { onSelected(quadrant) }
-            .padding(11.dp),
-        verticalArrangement = Arrangement.spacedBy(9.dp)
+            .padding(9.dp),
+        verticalArrangement = Arrangement.spacedBy(7.dp)
     ) {
         Row(verticalAlignment = Alignment.Top) {
             Column(
@@ -948,7 +954,7 @@ private fun QuadrantPane(
                 }
                 Text(
                     text = quadrant.description,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -969,7 +975,7 @@ private fun QuadrantPane(
             if (tasks.size > visibleTasks.size) {
                 Text(
                     text = "还有 ${tasks.size - visibleTasks.size} 个，点按象限查看",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.labelMedium,
                     color = quadrant.color,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -985,12 +991,12 @@ private fun EmptyQuadrantHint(quadrant: TaskPriority) {
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.66f), RoundedCornerShape(11.dp))
-            .padding(11.dp),
+            .padding(horizontal = 10.dp, vertical = 8.dp),
         contentAlignment = Alignment.CenterStart
     ) {
         Text(
             text = "暂无${quadrant.shortTitle}事项",
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
@@ -1012,8 +1018,8 @@ private fun CompactQuadrantTask(
                 },
                 RoundedCornerShape(10.dp)
             )
-            .padding(9.dp),
-        verticalArrangement = Arrangement.spacedBy(7.dp)
+            .padding(8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Row(
             verticalAlignment = Alignment.Top,
@@ -1028,7 +1034,7 @@ private fun CompactQuadrantTask(
                 modifier = Modifier.weight(1f),
                 style = MaterialTheme.typography.titleMedium,
                 color = if (task.completed) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
-                maxLines = 4,
+                maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
         }
@@ -1529,7 +1535,6 @@ private fun BackupPanel(
     var url by rememberSaveable { mutableStateOf(initialSettings.url) }
     var username by rememberSaveable { mutableStateOf(initialSettings.username) }
     var password by rememberSaveable { mutableStateOf(initialSettings.password) }
-    val scrollState = rememberScrollState()
     val webDavSettings = WebDavSettings(url = url, username = username, password = password)
     val webDavReady = url.isNotBlank()
 
@@ -1561,7 +1566,7 @@ private fun BackupPanel(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .fillMaxHeight(0.92f)
+                    .fillMaxHeight(0.88f)
                     .clickable(
                         indication = null,
                         interactionSource = remember { MutableInteractionSource() },
@@ -1573,113 +1578,120 @@ private fun BackupPanel(
             ) {
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth()
+                        .fillMaxSize()
                         .windowInsetsPadding(WindowInsets.safeDrawing)
-                        .verticalScroll(scrollState)
-                        .padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(18.dp)
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text("备份与恢复", style = MaterialTheme.typography.titleLarge)
-                            Text(
-                                "导出本地文件，或手动同步到 WebDAV",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
                         }
                         IconButton(onClick = onDismiss) {
                             Icon(Icons.Rounded.Close, contentDescription = "关闭备份面板")
                         }
                     }
 
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text("本地备份", style = MaterialTheme.typography.titleMedium)
-                        Button(
-                            onClick = onLocalExport,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(14.dp)
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            Icon(Icons.Rounded.FileUpload, contentDescription = null)
-                            Spacer(Modifier.width(8.dp))
-                            Text("导出到本地文件")
-                        }
-                        OutlinedButton(
-                            onClick = onLocalImport,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(14.dp)
-                        ) {
-                            Icon(Icons.Rounded.FileDownload, contentDescription = null)
-                            Spacer(Modifier.width(8.dp))
-                            Text("从本地文件恢复")
+                            Button(
+                                onClick = onLocalExport,
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(14.dp),
+                                contentPadding = PaddingValues(vertical = 11.dp)
+                            ) {
+                                Icon(Icons.Rounded.FileUpload, contentDescription = null)
+                                Spacer(Modifier.width(6.dp))
+                                Text("导出本地")
+                            }
+                            OutlinedButton(
+                                onClick = onLocalImport,
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(14.dp),
+                                contentPadding = PaddingValues(vertical = 11.dp)
+                            ) {
+                                Icon(Icons.Rounded.FileDownload, contentDescription = null)
+                                Spacer(Modifier.width(6.dp))
+                                Text("本地恢复")
+                            }
                         }
                     }
 
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Text("WebDAV 备份", style = MaterialTheme.typography.titleMedium)
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Text("WebDAV", style = MaterialTheme.typography.titleMedium)
                         OutlinedTextField(
                             value = url,
                             onValueChange = { url = it },
                             modifier = Modifier.fillMaxWidth(),
                             label = { Text("备份文件 URL") },
-                            placeholder = { Text("https://example.com/dianmao/backup.json") },
+                            placeholder = { Text("https:// 或局域网 http://192.168.x.x/backup.json") },
                             singleLine = true,
                             colors = TextFieldDefaults.colors(
                                 focusedContainerColor = MaterialTheme.colorScheme.surface,
                                 unfocusedContainerColor = MaterialTheme.colorScheme.surface
                             )
                         )
-                        OutlinedTextField(
-                            value = username,
-                            onValueChange = { username = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text("用户名") },
-                            singleLine = true,
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                                unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            OutlinedTextField(
+                                value = username,
+                                onValueChange = { username = it },
+                                modifier = Modifier.weight(1f),
+                                label = { Text("用户名") },
+                                singleLine = true,
+                                colors = TextFieldDefaults.colors(
+                                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                                )
                             )
-                        )
-                        OutlinedTextField(
-                            value = password,
-                            onValueChange = { password = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text("密码") },
-                            singleLine = true,
-                            visualTransformation = PasswordVisualTransformation(),
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                                unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                            OutlinedTextField(
+                                value = password,
+                                onValueChange = { password = it },
+                                modifier = Modifier.weight(1f),
+                                label = { Text("密码") },
+                                singleLine = true,
+                                visualTransformation = PasswordVisualTransformation(),
+                                colors = TextFieldDefaults.colors(
+                                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                                )
                             )
-                        )
-                        OutlinedButton(
-                            onClick = { onSaveWebDav(webDavSettings) },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(14.dp)
-                        ) {
-                            Icon(Icons.Rounded.Save, contentDescription = null)
-                            Spacer(Modifier.width(8.dp))
-                            Text("保存 WebDAV 设置")
                         }
-                        Button(
-                            onClick = { onUploadWebDav(webDavSettings) },
-                            enabled = webDavReady,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(14.dp)
-                        ) {
-                            Icon(Icons.Rounded.CloudUpload, contentDescription = null)
-                            Spacer(Modifier.width(8.dp))
-                            Text("上传当前备份")
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            OutlinedButton(
+                                onClick = { onSaveWebDav(webDavSettings) },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(14.dp),
+                                contentPadding = PaddingValues(vertical = 11.dp)
+                            ) {
+                                Icon(Icons.Rounded.Save, contentDescription = null)
+                                Spacer(Modifier.width(6.dp))
+                                Text("保存设置")
+                            }
+                            Button(
+                                onClick = { onUploadWebDav(webDavSettings) },
+                                enabled = webDavReady,
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(14.dp),
+                                contentPadding = PaddingValues(vertical = 11.dp)
+                            ) {
+                                Icon(Icons.Rounded.CloudUpload, contentDescription = null)
+                                Spacer(Modifier.width(6.dp))
+                                Text("上传备份")
+                            }
                         }
                         OutlinedButton(
                             onClick = { onRestoreWebDav(webDavSettings) },
                             enabled = webDavReady,
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(14.dp)
+                            shape = RoundedCornerShape(14.dp),
+                            contentPadding = PaddingValues(vertical = 11.dp)
                         ) {
                             Icon(Icons.Rounded.CloudDownload, contentDescription = null)
-                            Spacer(Modifier.width(8.dp))
-                            Text("下载并恢复")
+                            Spacer(Modifier.width(6.dp))
+                            Text("下载恢复")
                         }
                     }
 
@@ -1691,8 +1703,10 @@ private fun BackupPanel(
                         ) {
                             Text(
                                 text = status,
-                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp),
-                                style = MaterialTheme.typography.bodyMedium
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+                                style = MaterialTheme.typography.bodyMedium,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }

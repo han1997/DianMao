@@ -209,6 +209,11 @@ WebDAV or another user-configured HTTP endpoint.
 * WebDAV backup uses manual `PUT` to the configured file URL.
 * WebDAV restore uses manual `GET` from the configured file URL.
 * Optional Basic auth is sent only when username or password is present.
+* Local WebDAV servers may use `http://` LAN URLs; public or remote backup
+  endpoints should prefer `https://`.
+* The Android manifest must permit cleartext traffic when LAN HTTP WebDAV is
+  supported, otherwise Android 9+ blocks uploads before the client receives an
+  HTTP response.
 * All network work runs on `Dispatchers.IO`.
 * Failed upload/download must surface status text and leave Room data unchanged.
 * Downloaded backup JSON is decoded before local rows are deleted.
@@ -216,6 +221,9 @@ WebDAV or another user-configured HTTP endpoint.
 ### 4. Validation & Error Matrix
 
 * Blank URL -> block upload/restore in UI and reject in client.
+* LAN `http://` URL blocked by platform cleartext policy -> upload/download
+  fails before reaching WebDAV; allow cleartext traffic in the manifest for
+  this personal LAN backup use case.
 * Non-2xx HTTP status -> throw an `IOException` that includes status code.
 * Connection/read timeout -> surface the exception message in the backup panel.
 * Invalid downloaded JSON -> restore fails before deleting local rows.
