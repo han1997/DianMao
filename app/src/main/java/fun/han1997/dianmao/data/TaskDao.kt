@@ -19,6 +19,9 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE id = :id LIMIT 1")
     suspend fun findById(id: Long): TaskEntity?
 
+    @Query("SELECT * FROM tasks WHERE completed = 0 AND useAlarm = 1 AND dueAtMillis IS NOT NULL")
+    suspend fun findActiveAlarmTasks(): List<TaskEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(task: TaskEntity): Long
 

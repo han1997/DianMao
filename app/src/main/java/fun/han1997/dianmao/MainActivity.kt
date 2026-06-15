@@ -332,8 +332,11 @@ private fun DianMaoApp() {
         ActivityResultContracts.RequestMultiplePermissions()
     ) { }
 
-    LaunchedEffect(repository) {
+    LaunchedEffect(repository, scheduler) {
         repository.seedIfEmpty(seedTaskEntities())
+        repository.restoreScheduledReminders().forEach { task ->
+            scheduler.schedule(task)
+        }
     }
 
     val activeTasks = remember(tasks, activePriority) {
