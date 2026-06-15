@@ -39,3 +39,36 @@ Compressed quadrant/task/home layouts, added scrollable task form with fixed sav
 ### Next Steps
 
 - None - task complete
+
+
+## Session 2: Fix overlay back navigation
+
+**Date**: 2026-06-15
+**Task**: Fix overlay back navigation
+**Branch**: `master`
+
+### Summary
+
+Added BackHandler for add/edit task panel and backup panel so back button closes the topmost overlay instead of navigating away from the current screen.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `14162b0` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

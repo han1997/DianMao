@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 1
+- **Total Sessions**: 2
 - **Last Active**: 2026-06-15
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~41 | Active |
+| `journal-1.md` | ~74 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 2 | 2026-06-15 | Fix overlay back navigation | `14162b0` | `master` |
 | 1 | 2026-06-15 | Local/WebDAV backups: UI density + spec update | `b0de4c3`, `d7324c9` | `master` |
 <!-- @@@/auto:session-history -->
 
