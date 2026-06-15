@@ -188,3 +188,69 @@ repository.restoreScheduledReminders().forEach { task ->
 
 The repository filters one-shot reminders and persists repeat catch-up before
 the platform scheduler receives tasks.
+
+## Scenario: WebDAV Backup Transport
+
+### 1. Scope / Trigger
+
+Trigger this contract when uploading or downloading backup payloads through
+WebDAV or another user-configured HTTP endpoint.
+
+### 2. Signatures
+
+* Settings: `WebDavSettings(url: String, username: String, password: String)`
+* Store: `BackupSettingsStore.loadWebDavSettings(): WebDavSettings`
+* Store: `BackupSettingsStore.saveWebDavSettings(settings)`
+* Upload: `WebDavBackupClient.upload(settings, payload)`
+* Download: `WebDavBackupClient.download(settings): String`
+
+### 3. Contracts
+
+* WebDAV backup uses manual `PUT` to the configured file URL.
+* WebDAV restore uses manual `GET` from the configured file URL.
+* Optional Basic auth is sent only when username or password is present.
+* All network work runs on `Dispatchers.IO`.
+* Failed upload/download must surface status text and leave Room data unchanged.
+* Downloaded backup JSON is decoded before local rows are deleted.
+
+### 4. Validation & Error Matrix
+
+* Blank URL -> block upload/restore in UI and reject in client.
+* Non-2xx HTTP status -> throw an `IOException` that includes status code.
+* Connection/read timeout -> surface the exception message in the backup panel.
+* Invalid downloaded JSON -> restore fails before deleting local rows.
+
+### 5. Good/Base/Bad Cases
+
+* Good: Save settings, upload current JSON, then show a compact success message.
+* Base: Anonymous WebDAV URL with no username/password.
+* Bad: Perform network calls on the Compose main thread.
+
+### 6. Tests Required
+
+* Run `:app:lintDebug` for network permission and UI call-path checks.
+* Run `:app:assembleDebug` after changing the backup panel or WebDAV client.
+* Manual verification should include a known WebDAV endpoint before relying on
+  the feature for real backups.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```kotlin
+val json = URL(url).readText()
+repository.importBackupJson(json)
+```
+
+This performs network I/O on the caller thread and has poor HTTP error
+reporting.
+
+#### Correct
+
+```kotlin
+val json = webDavClient.download(settings)
+val count = repository.importBackupJson(json)
+```
+
+The client owns IO dispatch and HTTP status handling; the repository validates
+JSON before replacing local rows.
