@@ -121,6 +121,10 @@ name, for example `calendarEventId`.
 * Bumping the Room database version without adding the adjacent migration.
 * Forgetting to commit `app/schemas/**/<version>.json` after schema changes.
 * Managing external records without persisting their stable external id.
+* Writing local JVM unit tests that use `org.json` — Android's `org.json` is a
+  SDK stub that throws `RuntimeException("Stub!")` in local (JVM) tests. Either
+  use Robolectric, instrumentation tests, or compile-check via
+  `:app:compileDebugKotlin` / `:app:assembleDebug` instead.
 
 ## Scenario: Task Backup JSON
 
