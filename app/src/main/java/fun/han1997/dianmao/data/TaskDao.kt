@@ -22,6 +22,12 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE completed = 0 AND useAlarm = 1 AND dueAtMillis IS NOT NULL")
     suspend fun findActiveAlarmTasks(): List<TaskEntity>
 
+    @Query("SELECT * FROM tasks ORDER BY createdAtMillis DESC")
+    suspend fun findAllTasks(): List<TaskEntity>
+
+    @Query("DELETE FROM tasks")
+    suspend fun deleteAll()
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(task: TaskEntity): Long
 

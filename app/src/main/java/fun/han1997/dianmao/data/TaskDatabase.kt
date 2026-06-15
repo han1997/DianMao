@@ -8,10 +8,12 @@ import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
+const val TASK_DATABASE_VERSION = 3
+
 @Database(
     entities = [TaskEntity::class],
-    version = 3,
-    exportSchema = false
+    version = TASK_DATABASE_VERSION,
+    exportSchema = true
 )
 @TypeConverters(TaskConverters::class)
 abstract class TaskDatabase : RoomDatabase() {

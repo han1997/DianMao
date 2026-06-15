@@ -1,6 +1,7 @@
 package `fun`.han1997.dianmao.data
 
 import android.content.Context
+import androidx.room.withTransaction
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.time.Instant
@@ -92,6 +93,19 @@ class TaskRepository(context: Context) {
                 updatedAtMillis = System.currentTimeMillis()
             )
         )
+    }
+
+    suspend fun exportBackupJson(): String {
+        return TaskBackupCodec.encode(dao.findAllTasks())
+    }
+
+    suspend fun importBackupJson(json: String): Int {
+        val tasks = TaskBackupCodec.decodeForImport(json)
+        db.withTransaction {
+            dao.deleteAll()
+            dao.insertAll(tasks)
+        }
+        return tasks.size
     }
 
     suspend fun restoreScheduledReminders(nowMillis: Long = System.currentTimeMillis()): List<TaskUiModel> {

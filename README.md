@@ -17,6 +17,7 @@ DianMao 是一款自用 Android 工作任务软件，目标是用一套统一的
 - Material 3
 - Room
 - Calendar Provider / AlarmManager
+- WebDAV
 - minSdk 31
 
 ## 当前状态
@@ -31,13 +32,12 @@ DianMao 是一款自用 Android 工作任务软件，目标是用一套统一的
 - AlarmManager 本机提醒与 Android 13+ 通知权限请求
 - 每天、每周、每月重复提醒
 - 设备重启或重新打开应用后恢复未来提醒，重复提醒会批量补偿到下一次未来时间
+- Room schema 导出与显式迁移链
+- JSON 本地备份导出/恢复
+- WebDAV 手动上传备份与下载恢复
 - 已添加事项的编辑与删除
 - 完成事项与完成备注
 - 移动端安全区适配
-
-尚未接入或仍需完善：
-
-- Room migration 与正式数据备份策略
 
 ## 开发约定
 

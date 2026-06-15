@@ -3,6 +3,7 @@ package `fun`.han1997.dianmao
 import android.Manifest
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import android.net.Uri
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -25,6 +26,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -58,12 +61,18 @@ import androidx.compose.material.icons.rounded.Alarm
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.CloudDownload
+import androidx.compose.material.icons.rounded.CloudUpload
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.EditNote
+import androidx.compose.material.icons.rounded.FileDownload
+import androidx.compose.material.icons.rounded.FileUpload
 import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
@@ -108,6 +117,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -115,6 +125,9 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import `fun`.han1997.dianmao.alerts.ReminderScheduler
 import `fun`.han1997.dianmao.alerts.TaskNotificationChannels
+import `fun`.han1997.dianmao.backup.BackupSettingsStore
+import `fun`.han1997.dianmao.backup.WebDavBackupClient
+import `fun`.han1997.dianmao.backup.WebDavSettings
 import `fun`.han1997.dianmao.calendar.CalendarWriter
 import `fun`.han1997.dianmao.data.QuadrantType
 import `fun`.han1997.dianmao.data.RepeatRule
@@ -123,9 +136,12 @@ import `fun`.han1997.dianmao.data.TaskFormState
 import `fun`.han1997.dianmao.data.TaskPriority
 import `fun`.han1997.dianmao.data.TaskRepository
 import `fun`.han1997.dianmao.data.TaskUiModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
@@ -178,6 +194,33 @@ private fun saveOrOpenCalendarEvent(context: android.content.Context, task: Task
 private fun deleteCalendarEvent(context: android.content.Context, eventId: Long?) {
     if (eventId != null && hasCalendarPermission(context)) {
         CalendarWriter.deleteEvent(context, eventId)
+    }
+}
+
+private fun defaultBackupFileName(): String {
+    val stamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmm"))
+    return "dianmao-backup-$stamp.json"
+}
+
+private suspend fun writeTextToUri(context: android.content.Context, uri: Uri, text: String) {
+    withContext(Dispatchers.IO) {
+        context.contentResolver.openOutputStream(uri)?.bufferedWriter(Charsets.UTF_8)?.use { writer ->
+            writer.write(text)
+        } ?: error("无法打开备份文件")
+    }
+}
+
+private suspend fun readTextFromUri(context: android.content.Context, uri: Uri): String {
+    return withContext(Dispatchers.IO) {
+        context.contentResolver.openInputStream(uri)?.bufferedReader(Charsets.UTF_8)?.use { reader ->
+            reader.readText()
+        } ?: error("无法读取备份文件")
+    }
+}
+
+private suspend fun restoreReminderSchedules(repository: TaskRepository, scheduler: ReminderScheduler) {
+    repository.restoreScheduledReminders().forEach { task ->
+        scheduler.schedule(task)
     }
 }
 
@@ -318,25 +361,62 @@ private fun DianMaoApp() {
     val context = LocalContext.current
     val repository = remember(context) { TaskRepository(context.applicationContext) }
     val scheduler = remember(context) { ReminderScheduler(context.applicationContext) }
+    val backupSettingsStore = remember(context) { BackupSettingsStore(context.applicationContext) }
+    val webDavClient = remember { WebDavBackupClient() }
     val scope = rememberCoroutineScope()
     val tasks by repository.tasks.collectAsState(initial = emptyList())
     var activePriority by rememberSaveable { mutableStateOf<TaskPriority?>(null) }
     var showAddSheet by rememberSaveable { mutableStateOf(false) }
+    var showBackupPanel by rememberSaveable { mutableStateOf(false) }
     var taskForNote by remember { mutableStateOf<TaskUiModel?>(null) }
     var taskForEdit by remember { mutableStateOf<TaskUiModel?>(null) }
     var taskForDelete by remember { mutableStateOf<TaskUiModel?>(null) }
+    var backupStatus by rememberSaveable { mutableStateOf<String?>(null) }
+    var webDavSettings by remember { mutableStateOf(backupSettingsStore.loadWebDavSettings()) }
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { }
     val calendarPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { }
+    val localBackupExportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri != null) {
+            scope.launch {
+                backupStatus = "正在导出本地备份"
+                runCatching {
+                    writeTextToUri(context, uri, repository.exportBackupJson())
+                }.onSuccess {
+                    backupStatus = "本地备份已导出"
+                }.onFailure { error ->
+                    backupStatus = "导出失败：${error.message.orEmpty()}"
+                }
+            }
+        }
+    }
+    val localBackupImportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            scope.launch {
+                backupStatus = "正在恢复本地备份"
+                runCatching {
+                    val count = repository.importBackupJson(readTextFromUri(context, uri))
+                    restoreReminderSchedules(repository, scheduler)
+                    count
+                }.onSuccess { count ->
+                    backupStatus = "已从本地备份恢复 $count 个事项"
+                }.onFailure { error ->
+                    backupStatus = "恢复失败：${error.message.orEmpty()}"
+                }
+            }
+        }
+    }
 
     LaunchedEffect(repository, scheduler) {
         repository.seedIfEmpty(seedTaskEntities())
-        repository.restoreScheduledReminders().forEach { task ->
-            scheduler.schedule(task)
-        }
+        restoreReminderSchedules(repository, scheduler)
     }
 
     val activeTasks = remember(tasks, activePriority) {
@@ -381,12 +461,18 @@ private fun DianMaoApp() {
             ) {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 20.dp, top = 18.dp, end = 20.dp, bottom = 112.dp),
-                    verticalArrangement = Arrangement.spacedBy(18.dp)
+                    contentPadding = PaddingValues(start = 18.dp, top = 6.dp, end = 18.dp, bottom = 112.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp)
                 ) {
                     if (activePriority == null) {
                         item {
-                            AppHeader(tasks = tasks)
+                            AppHeader(
+                                tasks = tasks,
+                                onOpenBackup = {
+                                    backupStatus = null
+                                    showBackupPanel = true
+                                }
+                            )
                         }
                         item {
                             QuadrantBoard(
@@ -472,6 +558,53 @@ private fun DianMaoApp() {
                         taskForEdit = null
                     }
                 )
+                BackupPanel(
+                    visible = showBackupPanel,
+                    initialSettings = webDavSettings,
+                    status = backupStatus,
+                    onDismiss = { showBackupPanel = false },
+                    onLocalExport = {
+                        localBackupExportLauncher.launch(defaultBackupFileName())
+                    },
+                    onLocalImport = {
+                        localBackupImportLauncher.launch(arrayOf("application/json", "text/*", "*/*"))
+                    },
+                    onSaveWebDav = { settings ->
+                        webDavSettings = settings
+                        backupSettingsStore.saveWebDavSettings(settings)
+                        backupStatus = "WebDAV 设置已保存"
+                    },
+                    onUploadWebDav = { settings ->
+                        scope.launch {
+                            backupStatus = "正在上传 WebDAV 备份"
+                            runCatching {
+                                backupSettingsStore.saveWebDavSettings(settings)
+                                webDavSettings = settings
+                                webDavClient.upload(settings, repository.exportBackupJson())
+                            }.onSuccess {
+                                backupStatus = "WebDAV 备份已上传"
+                            }.onFailure { error ->
+                                backupStatus = "上传失败：${error.message.orEmpty()}"
+                            }
+                        }
+                    },
+                    onRestoreWebDav = { settings ->
+                        scope.launch {
+                            backupStatus = "正在从 WebDAV 恢复"
+                            runCatching {
+                                backupSettingsStore.saveWebDavSettings(settings)
+                                webDavSettings = settings
+                                val count = repository.importBackupJson(webDavClient.download(settings))
+                                restoreReminderSchedules(repository, scheduler)
+                                count
+                            }.onSuccess { count ->
+                                backupStatus = "已从 WebDAV 恢复 $count 个事项"
+                            }.onFailure { error ->
+                                backupStatus = "恢复失败：${error.message.orEmpty()}"
+                            }
+                        }
+                    }
+                )
             }
         }
     }
@@ -508,50 +641,75 @@ private fun DianMaoApp() {
 
 @Composable
 @OptIn(ExperimentalLayoutApi::class)
-private fun AppHeader(tasks: List<TaskUiModel>) {
+private fun AppHeader(
+    tasks: List<TaskUiModel>,
+    onOpenBackup: () -> Unit
+) {
     val openTasks = tasks.count { !it.completed }
     val timedTasks = tasks.count { !it.completed && (it.useAlarm || it.useCalendar) }
     val completedTasks = tasks.count { it.completed }
     val today = LocalDate.now().format(DateTimeFormatter.ofPattern("M月d日"))
 
-    Surface(
-        color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.62f))
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Row(verticalAlignment = Alignment.Top) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(5.dp)
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(3.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
                         text = "DianMao",
-                        style = MaterialTheme.typography.headlineLarge,
+                        style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onBackground
                     )
-                    Text(
-                        text = "$today · 先写下来，再决定象限、时间和提醒",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Surface(
+                        color = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        shape = RoundedCornerShape(9.dp)
+                    ) {
+                        Text(
+                            text = "今日",
+                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
                 }
-                Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    shape = RoundedCornerShape(10.dp)
-                ) {
-                    Text(
-                        text = "今日",
-                        modifier = Modifier.padding(horizontal = 11.dp, vertical = 7.dp),
-                        style = MaterialTheme.typography.labelLarge
-                    )
-                }
+                Text(
+                    text = "$today · 快速记录，稍后整理",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
+            IconButton(
+                onClick = onOpenBackup,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Settings,
+                    contentDescription = "备份与恢复"
+                )
+            }
+        }
+        Surface(
+            color = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(14.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.58f))
+        ) {
             FlowRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -571,7 +729,7 @@ private fun SummaryPill(value: String, label: String, color: Color) {
         shape = RoundedCornerShape(12.dp)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
@@ -1349,6 +1507,194 @@ private fun AddTaskPanel(
                         Icon(Icons.Rounded.Check, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
                         Text(if (isEditing) "保存修改" else "保存事项")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BackupPanel(
+    visible: Boolean,
+    initialSettings: WebDavSettings,
+    status: String?,
+    onDismiss: () -> Unit,
+    onLocalExport: () -> Unit,
+    onLocalImport: () -> Unit,
+    onSaveWebDav: (WebDavSettings) -> Unit,
+    onUploadWebDav: (WebDavSettings) -> Unit,
+    onRestoreWebDav: (WebDavSettings) -> Unit
+) {
+    var url by rememberSaveable { mutableStateOf(initialSettings.url) }
+    var username by rememberSaveable { mutableStateOf(initialSettings.username) }
+    var password by rememberSaveable { mutableStateOf(initialSettings.password) }
+    val scrollState = rememberScrollState()
+    val webDavSettings = WebDavSettings(url = url, username = username, password = password)
+    val webDavReady = url.isNotBlank()
+
+    LaunchedEffect(visible, initialSettings) {
+        if (visible) {
+            url = initialSettings.url
+            username = initialSettings.username
+            password = initialSettings.password
+        }
+    }
+
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(tween(150)) + slideInVertically(tween(220)) { it / 4 },
+        exit = fadeOut(tween(120)) + slideOutVertically(tween(180)) { it / 4 }
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.18f))
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() },
+                    onClick = onDismiss
+                )
+                .imePadding(),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxHeight(0.92f)
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() },
+                        onClick = {}
+                    ),
+                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .windowInsetsPadding(WindowInsets.safeDrawing)
+                        .verticalScroll(scrollState)
+                        .padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(18.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("备份与恢复", style = MaterialTheme.typography.titleLarge)
+                            Text(
+                                "导出本地文件，或手动同步到 WebDAV",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        IconButton(onClick = onDismiss) {
+                            Icon(Icons.Rounded.Close, contentDescription = "关闭备份面板")
+                        }
+                    }
+
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text("本地备份", style = MaterialTheme.typography.titleMedium)
+                        Button(
+                            onClick = onLocalExport,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Icon(Icons.Rounded.FileUpload, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("导出到本地文件")
+                        }
+                        OutlinedButton(
+                            onClick = onLocalImport,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Icon(Icons.Rounded.FileDownload, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("从本地文件恢复")
+                        }
+                    }
+
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text("WebDAV 备份", style = MaterialTheme.typography.titleMedium)
+                        OutlinedTextField(
+                            value = url,
+                            onValueChange = { url = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("备份文件 URL") },
+                            placeholder = { Text("https://example.com/dianmao/backup.json") },
+                            singleLine = true,
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                            )
+                        )
+                        OutlinedTextField(
+                            value = username,
+                            onValueChange = { username = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("用户名") },
+                            singleLine = true,
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                            )
+                        )
+                        OutlinedTextField(
+                            value = password,
+                            onValueChange = { password = it },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("密码") },
+                            singleLine = true,
+                            visualTransformation = PasswordVisualTransformation(),
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                            )
+                        )
+                        OutlinedButton(
+                            onClick = { onSaveWebDav(webDavSettings) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Icon(Icons.Rounded.Save, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("保存 WebDAV 设置")
+                        }
+                        Button(
+                            onClick = { onUploadWebDav(webDavSettings) },
+                            enabled = webDavReady,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Icon(Icons.Rounded.CloudUpload, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("上传当前备份")
+                        }
+                        OutlinedButton(
+                            onClick = { onRestoreWebDav(webDavSettings) },
+                            enabled = webDavReady,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Icon(Icons.Rounded.CloudDownload, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("下载并恢复")
+                        }
+                    }
+
+                    if (!status.isNullOrBlank()) {
+                        Surface(
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(
+                                text = status,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
                     }
                 }
             }
