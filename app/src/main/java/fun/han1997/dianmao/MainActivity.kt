@@ -70,6 +70,7 @@ import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.EditNote
 import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.FileUpload
+import androidx.compose.material.icons.rounded.Inventory2
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Unarchive
 import androidx.compose.material.icons.rounded.Save
@@ -535,6 +536,9 @@ private fun DianMaoApp() {
                             onOpenBackup = {
                                 backupStatus = null
                                 showBackupPanel = true
+                            },
+                            onOpenArchived = {
+                                showArchivedPanel = true
                             }
                         )
                         QuadrantBoard(
@@ -669,6 +673,16 @@ private fun DianMaoApp() {
                         }
                     }
                 )
+                ArchivedPanel(
+                    visible = showArchivedPanel,
+                    tasks = archivedTasks,
+                    onDismiss = { showArchivedPanel = false },
+                    onUnarchive = { task ->
+                        scope.launch {
+                            repository.unarchiveTask(task.id)
+                        }
+                    }
+                )
             }
         }
     }
@@ -707,7 +721,8 @@ private fun DianMaoApp() {
 @OptIn(ExperimentalLayoutApi::class)
 private fun AppHeader(
     tasks: List<TaskUiModel>,
-    onOpenBackup: () -> Unit
+    onOpenBackup: () -> Unit,
+    onOpenArchived: () -> Unit
 ) {
     val openTasks = tasks.count { !it.completed }
     val timedTasks = tasks.count { !it.completed && (it.useAlarm || it.useCalendar) }
@@ -762,6 +777,22 @@ private fun AppHeader(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+            }
+            Surface(
+                onClick = onOpenArchived,
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surface,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.38f)),
+                modifier = Modifier.size(44.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Rounded.Archive,
+                        contentDescription = "归档事项",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
             Surface(
                 onClick = onOpenBackup,
@@ -1829,6 +1860,156 @@ private fun BackupPanel(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ArchivedPanel(
+    visible: Boolean,
+    tasks: List<TaskUiModel>,
+    onDismiss: () -> Unit,
+    onUnarchive: (TaskUiModel) -> Unit
+) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(tween(150)) + slideInVertically(tween(220)) { it / 4 },
+        exit = fadeOut(tween(120)) + slideOutVertically(tween(180)) { it / 4 }
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.18f))
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() },
+                    onClick = onDismiss
+                )
+                .imePadding(),
+            contentAlignment = Alignment.Center
+        ) {
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth(0.92f)
+                    .fillMaxHeight(0.75f)
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() },
+                        onClick = {}
+                    ),
+                color = MaterialTheme.colorScheme.surface,
+                tonalElevation = 4.dp,
+                shape = RoundedCornerShape(20.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 22.dp, vertical = 20.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "归档事项",
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.weight(1f)
+                        )
+                        IconButton(onClick = onDismiss) {
+                            Icon(
+                                Icons.Rounded.Close,
+                                contentDescription = "关闭",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(16.dp))
+
+                    if (tasks.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .weight(1f),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Icon(
+                                    Icons.Rounded.Inventory2,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(56.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                                )
+                                Text(
+                                    text = "暂无归档事项",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                )
+                            }
+                        }
+                    } else {
+                        LazyColumn(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            items(tasks, key = { it.id }) { task ->
+                                ArchivedTaskItem(
+                                    task = task,
+                                    onUnarchive = { onUnarchive(task) }
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ArchivedTaskItem(
+    task: TaskUiModel,
+    onUnarchive: () -> Unit
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = task.title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                )
+                if (task.completionNote != null) {
+                    Text(
+                        text = task.completionNote,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+            IconButton(onClick = onUnarchive) {
+                Icon(
+                    Icons.Rounded.Unarchive,
+                    contentDescription = "取消归档",
+                    tint = MaterialTheme.colorScheme.primary
+                )
             }
         }
     }
