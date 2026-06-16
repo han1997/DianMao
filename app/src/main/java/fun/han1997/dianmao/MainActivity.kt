@@ -15,8 +15,11 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -521,7 +524,10 @@ private fun DianMaoApp() {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(start = 18.dp, top = 8.dp, end = 18.dp, bottom = 16.dp),
+                            .padding(start = 18.dp, top = 8.dp, end = 18.dp, bottom = 16.dp)
+                            .animateContentSize(
+                                animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing)
+                            ),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         AppHeader(
@@ -709,7 +715,11 @@ private fun AppHeader(
     val today = LocalDate.now().format(DateTimeFormatter.ofPattern("M月d日"))
 
     Column(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .animateContentSize(
+                animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing)
+            ),
         verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         Row(
@@ -797,10 +807,23 @@ private fun AppHeader(
 
 @Composable
 private fun SummaryPill(value: String, label: String, color: Color) {
+    val numericValue = value.toIntOrNull() ?: 0
+    val animatedValue = remember { androidx.compose.animation.core.Animatable(numericValue.toFloat()) }
+
+    LaunchedEffect(numericValue) {
+        animatedValue.animateTo(
+            targetValue = numericValue.toFloat(),
+            animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing)
+        )
+    }
+
     Surface(
         color = color.copy(alpha = 0.08f),
         contentColor = color,
-        shape = RoundedCornerShape(10.dp)
+        shape = RoundedCornerShape(10.dp),
+        modifier = Modifier.animateContentSize(
+            animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing)
+        )
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
@@ -808,7 +831,7 @@ private fun SummaryPill(value: String, label: String, color: Color) {
             horizontalArrangement = Arrangement.spacedBy(7.dp)
         ) {
             Text(
-                text = value,
+                text = animatedValue.value.toInt().toString(),
                 style = MaterialTheme.typography.titleMedium.copy(
                     fontWeight = FontWeight.SemiBold,
                     letterSpacing = (-0.1).sp
@@ -1003,12 +1026,23 @@ private fun QuadrantPane(
         animationSpec = tween(durationMillis = 200),
         label = "quadrantPaneColor"
     )
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val pressScale by animateFloatAsState(
+        targetValue = if (isPressed) 0.97f else 1f,
+        animationSpec = tween(durationMillis = 100, easing = FastOutSlowInEasing),
+        label = "quadrantPressScale"
+    )
 
     Column(
         modifier = modifier
             .fillMaxSize()
+            .scale(pressScale)
             .background(paneColor)
-            .clickable { onSelected(quadrant) }
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null
+            ) { onSelected(quadrant) }
             .padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(9.dp)
     ) {
