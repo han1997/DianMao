@@ -521,7 +521,7 @@ private fun DianMaoApp() {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(start = 18.dp, top = 8.dp, end = 18.dp, bottom = 72.dp),
+                            .padding(start = 18.dp, top = 8.dp, end = 18.dp, bottom = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         AppHeader(
