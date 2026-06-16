@@ -46,6 +46,7 @@ object TaskBackupCodec {
             .put("repeatRule", task.repeatRule.name)
             .put("completed", task.completed)
             .putNullable("completionNote", task.completionNote)
+            .put("archived", task.archived)
             .put("createdAtMillis", task.createdAtMillis)
             .put("updatedAtMillis", task.updatedAtMillis)
     }
@@ -63,6 +64,7 @@ object TaskBackupCodec {
             repeatRule = RepeatRule.valueOf(json.getString("repeatRule")),
             completed = json.getBoolean("completed"),
             completionNote = json.nullableString("completionNote"),
+            archived = json.optBoolean("archived", false),
             createdAtMillis = json.getLong("createdAtMillis"),
             updatedAtMillis = json.getLong("updatedAtMillis")
         )
