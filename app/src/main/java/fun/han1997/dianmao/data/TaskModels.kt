@@ -39,6 +39,7 @@ data class TaskEntity(
     val repeatRule: RepeatRule = RepeatRule.None,
     val completed: Boolean,
     val completionNote: String?,
+    val archived: Boolean = false,
     val createdAtMillis: Long,
     val updatedAtMillis: Long
 )
@@ -64,7 +65,8 @@ data class TaskUiModel(
     val useAlarm: Boolean,
     val repeatRule: RepeatRule,
     val completed: Boolean,
-    val completionNote: String?
+    val completionNote: String?,
+    val archived: Boolean = false
 )
 
 fun TaskEntity.toUiModel(): TaskUiModel {
@@ -79,6 +81,7 @@ fun TaskEntity.toUiModel(): TaskUiModel {
         useAlarm = useAlarm,
         repeatRule = repeatRule,
         completed = completed,
-        completionNote = completionNote
+        completionNote = completionNote,
+        archived = archived
     )
 }

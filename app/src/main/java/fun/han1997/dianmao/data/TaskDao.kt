@@ -13,6 +13,12 @@ interface TaskDao {
     @Query("SELECT * FROM tasks ORDER BY createdAtMillis DESC")
     fun observeTasks(): Flow<List<TaskEntity>>
 
+    @Query("SELECT * FROM tasks WHERE archived = 0 ORDER BY createdAtMillis DESC")
+    fun observeActiveTasks(): Flow<List<TaskEntity>>
+
+    @Query("SELECT * FROM tasks WHERE archived = 1 ORDER BY updatedAtMillis DESC")
+    fun observeArchivedTasks(): Flow<List<TaskEntity>>
+
     @Query("SELECT COUNT(*) FROM tasks")
     suspend fun countTasks(): Long
 

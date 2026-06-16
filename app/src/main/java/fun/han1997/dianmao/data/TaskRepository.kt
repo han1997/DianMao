@@ -15,6 +15,14 @@ class TaskRepository(context: Context) {
         list.map { it.toUiModel() }
     }
 
+    val activeTasks: Flow<List<TaskUiModel>> = dao.observeActiveTasks().map { list ->
+        list.map { it.toUiModel() }
+    }
+
+    val archivedTasks: Flow<List<TaskUiModel>> = dao.observeArchivedTasks().map { list ->
+        list.map { it.toUiModel() }
+    }
+
     suspend fun seedIfEmpty(items: List<TaskEntity>) {
         if (dao.countTasks() == 0L) {
             dao.insertAll(items)
@@ -90,6 +98,26 @@ class TaskRepository(context: Context) {
             existing.copy(
                 completed = true,
                 completionNote = note.trim().ifBlank { null },
+                updatedAtMillis = System.currentTimeMillis()
+            )
+        )
+    }
+
+    suspend fun archiveTask(taskId: Long) {
+        val existing = dao.findById(taskId) ?: return
+        dao.update(
+            existing.copy(
+                archived = true,
+                updatedAtMillis = System.currentTimeMillis()
+            )
+        )
+    }
+
+    suspend fun unarchiveTask(taskId: Long) {
+        val existing = dao.findById(taskId) ?: return
+        dao.update(
+            existing.copy(
+                archived = false,
                 updatedAtMillis = System.currentTimeMillis()
             )
         )
