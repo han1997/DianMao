@@ -1560,7 +1560,6 @@ private fun AddTaskPanel(
                                 dueTimeMinutes = null
                                 useCalendar = false
                                 useAlarm = false
-                                repeatRule = RepeatRule.None
                             }
                         )
                         ToggleRow(
@@ -1587,7 +1586,7 @@ private fun AddTaskPanel(
                         )
                         RepeatRulePicker(
                             selected = repeatRule,
-                            enabled = dueDateMillis != null && useAlarm,
+                            enabled = true,
                             onSelected = { repeatRule = it }
                         )
                     }
@@ -1838,7 +1837,7 @@ private fun RepeatRulePicker(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(
-            text = "重复提醒",
+            text = "重复规则",
             style = MaterialTheme.typography.titleMedium,
             color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -1850,7 +1849,7 @@ private fun RepeatRulePicker(
                 FilterChip(
                     selected = selected == rule,
                     onClick = { if (enabled) onSelected(rule) },
-                    enabled = enabled || rule == RepeatRule.None,
+                    enabled = enabled,
                     label = { Text(rule.label) }
                 )
             }
