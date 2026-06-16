@@ -413,6 +413,7 @@ private fun DianMaoApp() {
     var taskForNote by remember { mutableStateOf<TaskUiModel?>(null) }
     var taskForEdit by remember { mutableStateOf<TaskUiModel?>(null) }
     var taskForDelete by remember { mutableStateOf<TaskUiModel?>(null) }
+    var taskForUncompletion by remember { mutableStateOf<TaskUiModel?>(null) }
     var backupStatus by rememberSaveable { mutableStateOf<String?>(null) }
     var webDavSettings by remember { mutableStateOf(backupSettingsStore.loadWebDavSettings()) }
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
@@ -466,9 +467,12 @@ private fun DianMaoApp() {
     }
     val toggleComplete: (TaskUiModel) -> Unit = { target ->
         if (target.completed) {
-            scope.launch {
-                repository.toggleCompleted(target, false)
-                scheduler.cancel(target.id)
+            if (target.repeatRule != RepeatRule.None) {
+                taskForUncompletion = target
+            } else {
+                scope.launch {
+                    repository.toggleCompleted(target, false)
+                }
             }
         } else {
             taskForNote = target
@@ -713,6 +717,19 @@ private fun DianMaoApp() {
                     repository.deleteTask(task.id)
                 }
                 taskForDelete = null
+            }
+        )
+    }
+
+    taskForUncompletion?.let { task ->
+        UncompleteRecurringTaskDialog(
+            task = task,
+            onDismiss = { taskForUncompletion = null },
+            onConfirm = {
+                scope.launch {
+                    repository.toggleCompleted(task, false)
+                }
+                taskForUncompletion = null
             }
         )
     }
@@ -2204,6 +2221,41 @@ private fun DeleteTaskDialog(
         confirmButton = {
             TextButton(onClick = onConfirm) {
                 Text("删除", color = MaterialTheme.colorScheme.error)
+            }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    )
+}
+
+@Composable
+private fun UncompleteRecurringTaskDialog(
+    task: TaskUiModel,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                imageVector = Icons.Rounded.Alarm,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary
+            )
+        },
+        title = { Text("取消完成重复事项？") },
+        text = {
+            Text(
+                text = "这是一个重复事项，取消完成后将重新进入待办状态。是否继续？",
+                style = MaterialTheme.typography.bodyLarge
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm) {
+                Text("确认取消完成")
             }
         },
         dismissButton = {

@@ -122,10 +122,10 @@ class TaskRepository(context: Context) {
                 updatedAtMillis = now
             )
         } else {
-            // Uncompleting: normal toggle
+            // Uncompleting: preserve note
             existing.copy(
                 completed = completed,
-                completionNote = if (completed) existing.completionNote else null,
+                completionNote = existing.completionNote,
                 updatedAtMillis = now
             )
         }
