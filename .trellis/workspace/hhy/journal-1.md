@@ -106,3 +106,39 @@ Fixed back button not closing overlay panels (BackHandler) and fixed predictive 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 4: Fix edit item back navigation bug
+
+**Date**: 2026-06-16
+**Task**: Fix edit item back navigation bug
+**Branch**: `master`
+
+### Summary
+
+Fixed BackHandler to use pre-computed backTarget instead of re-evaluating state inside callback, preventing layer skipping when dismissing edit panel from secondary pages. Added archived panel support with database migration. Created comprehensive Compose state capture patterns spec and overlay navigation thinking guide.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e7f5f5a` | (see git log) |
+| `ee760d1` | (see git log) |
+| `cee8742` | (see git log) |
+| `47c3099` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

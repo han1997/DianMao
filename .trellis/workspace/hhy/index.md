@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 3
-- **Last Active**: 2026-06-15
+- **Total Sessions**: 4
+- **Last Active**: 2026-06-16
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~108 | Active |
+| `journal-1.md` | ~144 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 4 | 2026-06-16 | Fix edit item back navigation bug | `e7f5f5a`, `ee760d1`, `cee8742`, `47c3099` | `master` |
 | 3 | 2026-06-15 | Fix predictive back gesture for overlay panels | `14162b0`, `7f15ec9` | `master` |
 | 2 | 2026-06-15 | Fix overlay back navigation | `14162b0` | `master` |
 | 1 | 2026-06-15 | Local/WebDAV backups: UI density + spec update | `b0de4c3`, `d7324c9` | `master` |
