@@ -572,7 +572,8 @@ private fun DianMaoApp() {
                                         onToggleComplete = toggleComplete,
                                         onEditTask = { taskForEdit = it },
                                         onDeleteTask = { taskForDelete = it },
-                                        onEditNote = { taskForNote = it }
+                                        onEditNote = { taskForNote = it },
+                                        onArchiveTask = archiveTask
                                     )
                                 }
                             }
