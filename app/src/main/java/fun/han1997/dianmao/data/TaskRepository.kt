@@ -86,7 +86,7 @@ class TaskRepository(context: Context) {
         val now = System.currentTimeMillis()
 
         val updated = if (completed && existing.repeatRule.isCountBased()) {
-            // Count-based: increment count
+            // Count-based: increment count, no alarm rescheduling
             existing.copy(
                 completed = true,
                 completionCount = existing.completionCount + 1,
@@ -94,8 +94,19 @@ class TaskRepository(context: Context) {
                 completionNote = existing.completionNote,
                 updatedAtMillis = now
             )
+        } else if (completed && existing.repeatRule.isCycleBased() && existing.useAlarm && existing.dueAtMillis != null) {
+            // Cycle-based with alarm: advance to next cycle
+            val nextDue = RepeatReminderCalculator.nextDueAt(existing.dueAtMillis, existing.repeatRule)
+            existing.copy(
+                completed = false,
+                lastCompletedAtMillis = now,
+                dueLabel = DateTimeFormatters.labelFor(midnightMillis(nextDue), minutesOfDay(nextDue)),
+                dueAtMillis = nextDue,
+                completionNote = existing.completionNote,
+                updatedAtMillis = now
+            )
         } else if (completed && existing.repeatRule.isCycleBased()) {
-            // Cycle-based: record completion timestamp
+            // Cycle-based without alarm: record completion timestamp
             existing.copy(
                 completed = true,
                 lastCompletedAtMillis = now,
@@ -120,7 +131,7 @@ class TaskRepository(context: Context) {
         val trimmedNote = note.trim().ifBlank { null }
 
         val updated = if (existing.repeatRule.isCountBased()) {
-            // Count-based: increment count
+            // Count-based: increment count, no alarm rescheduling
             existing.copy(
                 completed = true,
                 completionCount = existing.completionCount + 1,
@@ -128,8 +139,19 @@ class TaskRepository(context: Context) {
                 completionNote = trimmedNote,
                 updatedAtMillis = now
             )
+        } else if (existing.repeatRule.isCycleBased() && existing.useAlarm && existing.dueAtMillis != null) {
+            // Cycle-based with alarm: advance to next cycle
+            val nextDue = RepeatReminderCalculator.nextDueAt(existing.dueAtMillis, existing.repeatRule)
+            existing.copy(
+                completed = false,
+                lastCompletedAtMillis = now,
+                dueLabel = DateTimeFormatters.labelFor(midnightMillis(nextDue), minutesOfDay(nextDue)),
+                dueAtMillis = nextDue,
+                completionNote = trimmedNote,
+                updatedAtMillis = now
+            )
         } else if (existing.repeatRule.isCycleBased()) {
-            // Cycle-based: record completion timestamp
+            // Cycle-based without alarm: record completion timestamp
             existing.copy(
                 completed = true,
                 lastCompletedAtMillis = now,

@@ -13,10 +13,10 @@ object RepeatReminderCalculator {
             .atZone(zoneId)
             .toLocalDateTime()
         val next = when (repeatRule) {
-            RepeatRule.None -> dateTime
-            RepeatRule.Daily, RepeatRule.DailyCount -> dateTime.plusDays(1)
-            RepeatRule.Weekly, RepeatRule.WeeklyCount -> dateTime.plusWeeks(1)
-            RepeatRule.Monthly, RepeatRule.MonthlyCount -> dateTime.plusMonths(1)
+            RepeatRule.None, RepeatRule.Count -> dateTime
+            RepeatRule.Daily -> dateTime.plusDays(1)
+            RepeatRule.Weekly -> dateTime.plusWeeks(1)
+            RepeatRule.Monthly -> dateTime.plusMonths(1)
         }
         return next.atZone(zoneId).toInstant().toEpochMilli()
     }

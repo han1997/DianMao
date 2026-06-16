@@ -8,12 +8,10 @@ enum class RepeatRule(val label: String) {
     Daily("每天"),
     Weekly("每周"),
     Monthly("每月"),
-    DailyCount("记数·每天"),
-    WeeklyCount("记数·每周"),
-    MonthlyCount("记数·每月");
+    Count("计数");
 
     fun isCycleBased(): Boolean = this in listOf(Daily, Weekly, Monthly)
-    fun isCountBased(): Boolean = this in listOf(DailyCount, WeeklyCount, MonthlyCount)
+    fun isCountBased(): Boolean = this == Count
 }
 
 enum class QuadrantType {
