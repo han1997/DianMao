@@ -1,0 +1,3 @@
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Database migration to simplify RepeatRule enum"}
+{"file": ".trellis/spec/backend/compose-patterns.md", "reason": "UI updates for RepeatRulePicker"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Code quality for alarm rescheduling logic"}

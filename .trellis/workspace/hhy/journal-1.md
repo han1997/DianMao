@@ -175,3 +175,39 @@ Fixed BackHandler to use pre-computed backTarget instead of re-evaluating state 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 6: Archive view, recurring task confirmation, UI polish
+
+**Date**: 2026-06-17
+**Task**: Archive view, recurring task confirmation, UI polish
+**Branch**: `master`
+
+### Summary
+
+Added dedicated archived tasks view with modal UI and unarchive action. Fixed archive button wiring. Added confirmation dialog for uncompleting recurring tasks and preserved completion notes. Enhanced UI visual hierarchy with bolder typography, improved spacing, and refined color treatment for better readability.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `bc530bf` | (see git log) |
+| `8a5a6d8` | (see git log) |
+| `d7d324c` | (see git log) |
+| `c96afa3` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

@@ -1,0 +1,3 @@
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Verify migration correctness, schema integrity"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Quality checks for completion logic, cycle-reset behavior"}
+{"file": ".trellis/spec/backend/compose-patterns.md", "reason": "UI state verification, Compose patterns compliance"}

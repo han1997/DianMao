@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Verify migration correctness"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Quality checks for alarm rescheduling logic"}

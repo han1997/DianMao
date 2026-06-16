@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Database schema changes (TaskEntity fields), migration patterns"}
+{"file": ".trellis/spec/backend/compose-patterns.md", "reason": "UI state management, Compose best practices for RepeatRulePicker redesign"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Code quality standards, testing expectations"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Avoid duplication in repeat logic implementation"}
