@@ -10,10 +10,10 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TaskDao {
-    @Query("SELECT * FROM tasks ORDER BY createdAtMillis DESC")
+    @Query("SELECT * FROM tasks ORDER BY displayOrder ASC, createdAtMillis DESC")
     fun observeTasks(): Flow<List<TaskEntity>>
 
-    @Query("SELECT * FROM tasks WHERE archived = 0 ORDER BY createdAtMillis DESC")
+    @Query("SELECT * FROM tasks WHERE archived = 0 ORDER BY displayOrder ASC, createdAtMillis DESC")
     fun observeActiveTasks(): Flow<List<TaskEntity>>
 
     @Query("SELECT * FROM tasks WHERE archived = 1 ORDER BY updatedAtMillis DESC")
@@ -28,11 +28,14 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE completed = 0 AND useAlarm = 1 AND dueAtMillis IS NOT NULL")
     suspend fun findActiveAlarmTasks(): List<TaskEntity>
 
-    @Query("SELECT * FROM tasks ORDER BY createdAtMillis DESC")
+    @Query("SELECT * FROM tasks ORDER BY displayOrder ASC, createdAtMillis DESC")
     suspend fun findAllTasks(): List<TaskEntity>
 
     @Query("DELETE FROM tasks")
     suspend fun deleteAll()
+
+    @Query("UPDATE tasks SET displayOrder = :newOrder WHERE id = :taskId")
+    suspend fun updateDisplayOrder(taskId: Long, newOrder: Int)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(task: TaskEntity): Long

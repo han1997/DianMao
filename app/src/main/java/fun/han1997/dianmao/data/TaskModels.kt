@@ -46,6 +46,7 @@ data class TaskEntity(
     val completed: Boolean,
     val completionNote: String?,
     val archived: Boolean = false,
+    val displayOrder: Int = 0,
     val createdAtMillis: Long,
     val updatedAtMillis: Long
 )

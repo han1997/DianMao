@@ -8,7 +8,7 @@ import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-const val TASK_DATABASE_VERSION = 6
+const val TASK_DATABASE_VERSION = 7
 
 @Database(
     entities = [TaskEntity::class],
@@ -30,7 +30,7 @@ abstract class TaskDatabase : RoomDatabase() {
                     TaskDatabase::class.java,
                     "dianmao.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                     .build()
                     .also { INSTANCE = it }
             }
@@ -68,6 +68,13 @@ abstract class TaskDatabase : RoomDatabase() {
                     SET repeatRule = 'Count'
                     WHERE repeatRule IN ('DailyCount', 'WeeklyCount', 'MonthlyCount')
                 """)
+            }
+        }
+
+        private val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE tasks ADD COLUMN displayOrder INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("UPDATE tasks SET displayOrder = id")
             }
         }
     }
