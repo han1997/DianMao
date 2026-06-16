@@ -57,6 +57,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Notes
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Archive
 import androidx.compose.material.icons.rounded.Alarm
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Check
@@ -70,6 +71,7 @@ import androidx.compose.material.icons.rounded.EditNote
 import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.FileUpload
 import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.Unarchive
 import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Settings
@@ -81,7 +83,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -155,6 +157,28 @@ class MainActivity : ComponentActivity() {
                 DianMaoApp()
             }
         }
+    }
+}
+
+internal enum class InAppBackTarget {
+    BackupPanel,
+    ArchivedPanel,
+    TaskPanel,
+    QuadrantDetail
+}
+
+internal fun resolveInAppBackTarget(
+    showBackupPanel: Boolean,
+    showArchivedPanel: Boolean,
+    isTaskPanelVisible: Boolean,
+    hasActivePriority: Boolean
+): InAppBackTarget? {
+    return when {
+        showBackupPanel -> InAppBackTarget.BackupPanel
+        showArchivedPanel -> InAppBackTarget.ArchivedPanel
+        isTaskPanelVisible -> InAppBackTarget.TaskPanel
+        hasActivePriority -> InAppBackTarget.QuadrantDetail
+        else -> null
     }
 }
 
@@ -246,6 +270,7 @@ private fun seedTaskEntities(): List<TaskEntity> {
             repeatRule = RepeatRule.None,
             completed = false,
             completionNote = null,
+            archived = false,
             createdAtMillis = now - 3_000,
             updatedAtMillis = now - 3_000
         ),
@@ -259,6 +284,7 @@ private fun seedTaskEntities(): List<TaskEntity> {
             repeatRule = RepeatRule.None,
             completed = false,
             completionNote = null,
+            archived = false,
             createdAtMillis = now - 2_000,
             updatedAtMillis = now - 2_000
         ),
@@ -272,6 +298,7 @@ private fun seedTaskEntities(): List<TaskEntity> {
             repeatRule = RepeatRule.None,
             completed = false,
             completionNote = null,
+            archived = false,
             createdAtMillis = now - 1_000,
             updatedAtMillis = now - 1_000
         ),
@@ -285,6 +312,7 @@ private fun seedTaskEntities(): List<TaskEntity> {
             repeatRule = RepeatRule.None,
             completed = true,
             completionNote = "完成后记录判断依据，方便以后复盘同类任务。",
+            archived = false,
             createdAtMillis = now,
             updatedAtMillis = now
         )
@@ -362,10 +390,12 @@ private fun DianMaoApp() {
     val backupSettingsStore = remember(context) { BackupSettingsStore(context.applicationContext) }
     val webDavClient = remember { WebDavBackupClient() }
     val scope = rememberCoroutineScope()
-    val tasks by repository.tasks.collectAsState(initial = emptyList())
+    val activeTasks by repository.activeTasks.collectAsState(initial = emptyList())
+    val archivedTasks by repository.archivedTasks.collectAsState(initial = emptyList())
     var activePriority by rememberSaveable { mutableStateOf<TaskPriority?>(null) }
     var showAddSheet by rememberSaveable { mutableStateOf(false) }
     var showBackupPanel by rememberSaveable { mutableStateOf(false) }
+    var showArchivedPanel by rememberSaveable { mutableStateOf(false) }
     var taskForNote by remember { mutableStateOf<TaskUiModel?>(null) }
     var taskForEdit by remember { mutableStateOf<TaskUiModel?>(null) }
     var taskForDelete by remember { mutableStateOf<TaskUiModel?>(null) }
@@ -417,8 +447,8 @@ private fun DianMaoApp() {
         restoreReminderSchedules(repository, scheduler)
     }
 
-    val activeTasks = remember(tasks, activePriority) {
-        activePriority?.let { priority -> tasks.filter { it.quadrant == priority } }.orEmpty()
+    val quadrantDetailTasks = remember(activeTasks, activePriority) {
+        activePriority?.let { priority -> activeTasks.filter { it.quadrant == priority } }.orEmpty()
     }
     val toggleComplete: (TaskUiModel) -> Unit = { target ->
         if (target.completed) {
@@ -431,33 +461,47 @@ private fun DianMaoApp() {
         }
     }
 
-    if (activePriority != null) {
-        BackHandler {
-            activePriority = null
-        }
+    val archiveTask: (TaskUiModel) -> Unit = { target ->
+        scope.launch { repository.archiveTask(target.id) }
     }
 
-    BackHandler(enabled = showAddSheet || taskForEdit != null) {
+    val unarchiveTask: (TaskUiModel) -> Unit = { target ->
+        scope.launch { repository.unarchiveTask(target.id) }
+    }
+
+    val isTaskPanelVisible = showAddSheet || taskForEdit != null
+    val dismissTaskPanel = {
         showAddSheet = false
         taskForEdit = null
     }
+    val backTarget = resolveInAppBackTarget(
+        showBackupPanel = showBackupPanel,
+        showArchivedPanel = showArchivedPanel,
+        isTaskPanelVisible = isTaskPanelVisible,
+        hasActivePriority = activePriority != null
+    )
 
-    BackHandler(enabled = showBackupPanel) {
-        showBackupPanel = false
+    BackHandler(enabled = backTarget != null) {
+        when (backTarget) {
+            InAppBackTarget.BackupPanel -> showBackupPanel = false
+            InAppBackTarget.ArchivedPanel -> showArchivedPanel = false
+            InAppBackTarget.TaskPanel -> dismissTaskPanel()
+            InAppBackTarget.QuadrantDetail -> activePriority = null
+            null -> Unit
+        }
     }
 
     Surface(color = MaterialTheme.colorScheme.background) {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
             floatingActionButton = {
-                ExtendedFloatingActionButton(
+                FloatingActionButton(
                     onClick = { showAddSheet = true },
-                    icon = { Icon(Icons.Rounded.Add, contentDescription = null) },
-                    text = { Text("新增事项") },
                     containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                    shape = RoundedCornerShape(18.dp)
-                )
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ) {
+                    Icon(Icons.Rounded.Add, contentDescription = "新增事项")
+                }
             }
         ) { padding ->
             Box(
@@ -470,18 +514,18 @@ private fun DianMaoApp() {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(start = 18.dp, top = 6.dp, end = 18.dp, bottom = 96.dp),
+                            .padding(start = 18.dp, top = 6.dp, end = 18.dp, bottom = 72.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         AppHeader(
-                            tasks = tasks,
+                            tasks = activeTasks,
                             onOpenBackup = {
                                 backupStatus = null
                                 showBackupPanel = true
                             }
                         )
                         QuadrantBoard(
-                            tasks = tasks,
+                            tasks = activeTasks,
                             modifier = Modifier.weight(1f),
                             onSelected = { priority -> activePriority = priority }
                         )
@@ -496,16 +540,16 @@ private fun DianMaoApp() {
                             item {
                                 QuadrantDetailHeader(
                                     quadrant = priority,
-                                    tasks = activeTasks,
+                                    tasks = quadrantDetailTasks,
                                     onBack = { activePriority = null }
                                 )
                             }
-                            if (activeTasks.isEmpty()) {
+                            if (quadrantDetailTasks.isEmpty()) {
                                 item {
                                     QuadrantDetailEmptyState(priority)
                                 }
                             } else {
-                                items(activeTasks, key = { it.id }) { task ->
+                                items(quadrantDetailTasks, key = { it.id }) { task ->
                                     TaskRow(
                                         task = task,
                                         onToggleComplete = toggleComplete,
@@ -523,18 +567,15 @@ private fun DianMaoApp() {
                     visible = showAddSheet || taskForEdit != null,
                     editingTask = taskForEdit,
                     initialPriority = activePriority ?: TaskPriority.ImportantUrgent,
-                    onDismiss = {
-                        showAddSheet = false
-                        taskForEdit = null
-                    },
+                    onDismiss = dismissTaskPanel,
                     onRequestCalendarPermission = {
                         calendarPermissionLauncher.launch(
                             arrayOf(Manifest.permission.READ_CALENDAR, Manifest.permission.WRITE_CALENDAR)
                         )
                     },
                     onSave = { form ->
+                        val previousTask = taskForEdit
                         scope.launch {
-                            val previousTask = taskForEdit
                             val saved = if (previousTask == null) {
                                 repository.addTask(form)
                             } else {
@@ -565,8 +606,7 @@ private fun DianMaoApp() {
                                 }
                             }
                         }
-                        showAddSheet = false
-                        taskForEdit = null
+                        dismissTaskPanel()
                     }
                 )
                 BackupPanel(
@@ -858,51 +898,44 @@ private fun QuadrantBoard(
     modifier: Modifier = Modifier,
     onSelected: (TaskPriority) -> Unit
 ) {
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+    Surface(
+        modifier = modifier
+            .fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.70f))
     ) {
-        SectionHeader(title = "四象限", subtitle = "每个象限直接显示任务预览，点按象限查看完整列表")
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
-            color = MaterialTheme.colorScheme.surface,
-            shape = RoundedCornerShape(16.dp),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.70f))
-        ) {
-            Column {
-                Row(modifier = Modifier.weight(1f)) {
-                    QuadrantPane(
-                        quadrant = TaskPriority.ImportantUrgent,
-                        tasks = tasks.filter { it.quadrant == TaskPriority.ImportantUrgent },
-                        modifier = Modifier.weight(1f),
-                        onSelected = onSelected
-                    )
-                    BoardDivider(vertical = true)
-                    QuadrantPane(
-                        quadrant = TaskPriority.ImportantNotUrgent,
-                        tasks = tasks.filter { it.quadrant == TaskPriority.ImportantNotUrgent },
-                        modifier = Modifier.weight(1f),
-                        onSelected = onSelected
-                    )
-                }
-                BoardDivider(vertical = false)
-                Row(modifier = Modifier.weight(1f)) {
-                    QuadrantPane(
-                        quadrant = TaskPriority.NotImportantUrgent,
-                        tasks = tasks.filter { it.quadrant == TaskPriority.NotImportantUrgent },
-                        modifier = Modifier.weight(1f),
-                        onSelected = onSelected
-                    )
-                    BoardDivider(vertical = true)
-                    QuadrantPane(
-                        quadrant = TaskPriority.NotImportantNotUrgent,
-                        tasks = tasks.filter { it.quadrant == TaskPriority.NotImportantNotUrgent },
-                        modifier = Modifier.weight(1f),
-                        onSelected = onSelected
-                    )
-                }
+        Column {
+            Row(modifier = Modifier.weight(1f)) {
+                QuadrantPane(
+                    quadrant = TaskPriority.ImportantUrgent,
+                    tasks = tasks.filter { it.quadrant == TaskPriority.ImportantUrgent },
+                    modifier = Modifier.weight(1f),
+                    onSelected = onSelected
+                )
+                BoardDivider(vertical = true)
+                QuadrantPane(
+                    quadrant = TaskPriority.ImportantNotUrgent,
+                    tasks = tasks.filter { it.quadrant == TaskPriority.ImportantNotUrgent },
+                    modifier = Modifier.weight(1f),
+                    onSelected = onSelected
+                )
+            }
+            BoardDivider(vertical = false)
+            Row(modifier = Modifier.weight(1f)) {
+                QuadrantPane(
+                    quadrant = TaskPriority.NotImportantUrgent,
+                    tasks = tasks.filter { it.quadrant == TaskPriority.NotImportantUrgent },
+                    modifier = Modifier.weight(1f),
+                    onSelected = onSelected
+                )
+                BoardDivider(vertical = true)
+                QuadrantPane(
+                    quadrant = TaskPriority.NotImportantNotUrgent,
+                    tasks = tasks.filter { it.quadrant == TaskPriority.NotImportantNotUrgent },
+                    modifier = Modifier.weight(1f),
+                    onSelected = onSelected
+                )
             }
         }
     }
@@ -1150,7 +1183,8 @@ private fun TaskRow(
     onToggleComplete: (TaskUiModel) -> Unit,
     onEditTask: (TaskUiModel) -> Unit,
     onDeleteTask: (TaskUiModel) -> Unit,
-    onEditNote: (TaskUiModel) -> Unit
+    onEditNote: (TaskUiModel) -> Unit,
+    onArchiveTask: (TaskUiModel) -> Unit = {}
 ) {
     var actionsExpanded by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
@@ -1279,6 +1313,21 @@ private fun TaskRow(
                                 onEditTask(task)
                             }
                         )
+                        if (task.completed) {
+                            DropdownMenuItem(
+                                text = { Text("归档") },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Archive,
+                                        contentDescription = null
+                                    )
+                                },
+                                onClick = {
+                                    actionsExpanded = false
+                                    onArchiveTask(task)
+                                }
+                            )
+                        }
                         DropdownMenuItem(
                             text = { Text("删除事项", color = MaterialTheme.colorScheme.error) },
                             leadingIcon = {
