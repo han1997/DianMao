@@ -331,7 +331,7 @@ private fun DianMaoTheme(content: @Composable () -> Unit) {
         onSecondaryContainer = Color(0xFF071E34),
         background = Color(0xFFF7F8F6),
         onBackground = Color(0xFF1D211F),
-        surface = Color(0xFFFFFFFF),
+        surface = Color(0xFFFDFDFC),
         onSurface = Color(0xFF1D211F),
         surfaceVariant = Color(0xFFECEFED),
         onSurfaceVariant = Color(0xFF58615D),
@@ -344,37 +344,44 @@ private fun DianMaoTheme(content: @Composable () -> Unit) {
             headlineLarge = androidx.compose.ui.text.TextStyle(
                 fontSize = 27.sp,
                 lineHeight = 33.sp,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = (-0.3).sp
             ),
             titleLarge = androidx.compose.ui.text.TextStyle(
                 fontSize = 20.sp,
                 lineHeight = 26.sp,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = (-0.2).sp
             ),
             titleMedium = androidx.compose.ui.text.TextStyle(
                 fontSize = 16.sp,
                 lineHeight = 22.sp,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = (-0.1).sp
             ),
             bodyLarge = androidx.compose.ui.text.TextStyle(
                 fontSize = 16.sp,
                 lineHeight = 24.sp,
-                fontWeight = FontWeight.Normal
+                fontWeight = FontWeight.Normal,
+                letterSpacing = 0.1.sp
             ),
             bodyMedium = androidx.compose.ui.text.TextStyle(
                 fontSize = 14.sp,
                 lineHeight = 20.sp,
-                fontWeight = FontWeight.Normal
+                fontWeight = FontWeight.Normal,
+                letterSpacing = 0.1.sp
             ),
             labelMedium = androidx.compose.ui.text.TextStyle(
                 fontSize = 12.sp,
                 lineHeight = 16.sp,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
+                letterSpacing = 0.05.sp
             ),
             labelLarge = androidx.compose.ui.text.TextStyle(
                 fontSize = 14.sp,
                 lineHeight = 18.sp,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
+                letterSpacing = 0.1.sp
             )
         ),
         content = content
@@ -514,8 +521,8 @@ private fun DianMaoApp() {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(start = 18.dp, top = 6.dp, end = 18.dp, bottom = 72.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                            .padding(start = 18.dp, top = 8.dp, end = 18.dp, bottom = 72.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         AppHeader(
                             tasks = activeTasks,
@@ -703,66 +710,82 @@ private fun AppHeader(
 
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(3.dp)
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Text(
                         text = "DianMao",
-                        style = MaterialTheme.typography.titleLarge,
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = (-0.2).sp
+                        ),
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     Surface(
-                        color = MaterialTheme.colorScheme.primaryContainer,
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f),
                         contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        shape = RoundedCornerShape(9.dp)
+                        shape = RoundedCornerShape(7.dp)
                     ) {
                         Text(
                             text = "今日",
-                            modifier = Modifier.padding(horizontal = 9.dp, vertical = 5.dp),
-                            style = MaterialTheme.typography.labelMedium
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                fontWeight = FontWeight.Medium,
+                                letterSpacing = 0.2.sp
+                            )
                         )
                     }
                 }
                 Text(
                     text = "$today · 快速记录，稍后整理",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        letterSpacing = 0.1.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.88f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            IconButton(
+            Surface(
                 onClick = onOpenBackup,
-                modifier = Modifier.size(40.dp)
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surface,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.38f)),
+                modifier = Modifier.size(44.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.Settings,
-                    contentDescription = "备份与恢复"
-                )
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Rounded.Settings,
+                        contentDescription = "备份与恢复",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
         }
         Surface(
             color = MaterialTheme.colorScheme.surface,
-            shape = RoundedCornerShape(14.dp),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.58f))
+            shape = RoundedCornerShape(16.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.32f)),
+            shadowElevation = 0.5.dp
         ) {
             FlowRow(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 SummaryPill(value = openTasks.toString(), label = "未完成", color = MaterialTheme.colorScheme.primary)
                 SummaryPill(value = timedTasks.toString(), label = "有提醒", color = MaterialTheme.colorScheme.secondary)
@@ -775,23 +798,29 @@ private fun AppHeader(
 @Composable
 private fun SummaryPill(value: String, label: String, color: Color) {
     Surface(
-        color = color.copy(alpha = 0.09f),
+        color = color.copy(alpha = 0.08f),
         contentColor = color,
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(10.dp)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
+            horizontalArrangement = Arrangement.spacedBy(7.dp)
         ) {
             Text(
                 text = value,
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = (-0.1).sp
+                ),
+                color = color
             )
             Text(
                 text = label,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    letterSpacing = 0.1.sp
+                ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.82f)
             )
         }
     }
@@ -902,8 +931,9 @@ private fun QuadrantBoard(
         modifier = modifier
             .fillMaxWidth(),
         color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.70f))
+        shape = RoundedCornerShape(18.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.28f)),
+        shadowElevation = 0.5.dp
     ) {
         Column {
             Row(modifier = Modifier.weight(1f)) {
@@ -948,12 +978,12 @@ private fun BoardDivider(vertical: Boolean) {
             Modifier
                 .width(1.dp)
                 .fillMaxHeight()
-                .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.58f))
+                .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.24f))
         } else {
             Modifier
                 .height(1.dp)
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.58f))
+                .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.24f))
         }
     )
 }
@@ -969,8 +999,8 @@ private fun QuadrantPane(
     val visibleTasks = tasks.take(2)
     val openCount = tasks.count { !it.completed }
     val paneColor by animateColorAsState(
-        targetValue = quadrant.color.copy(alpha = 0.055f),
-        animationSpec = tween(durationMillis = 180),
+        targetValue = quadrant.color.copy(alpha = 0.04f),
+        animationSpec = tween(durationMillis = 200),
         label = "quadrantPaneColor"
     )
 
@@ -979,20 +1009,23 @@ private fun QuadrantPane(
             .fillMaxSize()
             .background(paneColor)
             .clickable { onSelected(quadrant) }
-            .padding(9.dp),
-        verticalArrangement = Arrangement.spacedBy(7.dp)
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(9.dp)
     ) {
         Row(verticalAlignment = Alignment.Top) {
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(3.dp)
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     ColorDot(quadrant.color)
-                    Spacer(Modifier.width(6.dp))
+                    Spacer(Modifier.width(7.dp))
                     Text(
                         text = quadrant.title,
-                        style = MaterialTheme.typography.labelLarge,
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = 0.1.sp
+                        ),
                         color = quadrant.color,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -1000,16 +1033,21 @@ private fun QuadrantPane(
                 }
                 Text(
                     text = quadrant.description,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        letterSpacing = 0.05.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
             }
             Text(
                 text = openCount.toString(),
-                style = MaterialTheme.typography.titleLarge,
-                color = quadrant.color
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = (-0.3).sp
+                ),
+                color = quadrant.color.copy(alpha = 0.92f)
             )
         }
         if (visibleTasks.isEmpty()) {
@@ -1021,8 +1059,10 @@ private fun QuadrantPane(
             if (tasks.size > visibleTasks.size) {
                 Text(
                     text = "还有 ${tasks.size - visibleTasks.size} 个，点按象限查看",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = quadrant.color,
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        letterSpacing = 0.05.sp
+                    ),
+                    color = quadrant.color.copy(alpha = 0.78f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -1036,14 +1076,16 @@ private fun EmptyQuadrantHint(quadrant: TaskPriority) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.66f), RoundedCornerShape(11.dp))
-            .padding(horizontal = 10.dp, vertical = 8.dp),
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.58f), RoundedCornerShape(9.dp))
+            .padding(horizontal = 12.dp, vertical = 9.dp),
         contentAlignment = Alignment.CenterStart
     ) {
         Text(
             text = "暂无${quadrant.shortTitle}事项",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            style = MaterialTheme.typography.labelMedium.copy(
+                letterSpacing = 0.05.sp
+            ),
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.68f)
         )
     }
 }
@@ -1058,18 +1100,18 @@ private fun CompactQuadrantTask(
             .fillMaxWidth()
             .background(
                 if (task.completed) {
-                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.74f)
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.58f)
                 } else {
-                    MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)
+                    MaterialTheme.colorScheme.surface.copy(alpha = 0.88f)
                 },
-                RoundedCornerShape(10.dp)
+                RoundedCornerShape(9.dp)
             )
-            .padding(8.dp),
-        verticalArrangement = Arrangement.spacedBy(6.dp)
+            .padding(9.dp),
+        verticalArrangement = Arrangement.spacedBy(7.dp)
     ) {
         Row(
             verticalAlignment = Alignment.Top,
-            horizontalArrangement = Arrangement.spacedBy(7.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             CompletionMark(
                 completed = task.completed,
@@ -1078,15 +1120,21 @@ private fun CompactQuadrantTask(
             Text(
                 text = task.title,
                 modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.titleMedium,
-                color = if (task.completed) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Medium,
+                    letterSpacing = 0.sp
+                ),
+                color = if (task.completed)
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
+                else
+                    MaterialTheme.colorScheme.onSurface,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
         }
         FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(7.dp),
-            verticalArrangement = Arrangement.spacedBy(5.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             task.dueLabel?.let {
                 CompactMeta(icon = Icons.Rounded.Schedule, text = it)
@@ -1142,18 +1190,20 @@ private fun CompactMeta(
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(3.dp)
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.secondary,
+            tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.85f),
             modifier = Modifier.size(13.dp)
         )
         Text(
             text = text,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            style = MaterialTheme.typography.labelMedium.copy(
+                letterSpacing = 0.05.sp
+            ),
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -1353,9 +1403,9 @@ private fun TaskRow(
 private fun ColorDot(color: Color) {
     Box(
         modifier = Modifier
-            .size(9.dp)
+            .size(10.dp)
             .background(color, CircleShape)
-            .border(1.dp, Color.White.copy(alpha = if (color.luminance() < 0.5f) 0.35f else 0.75f), CircleShape)
+            .border(1.2.dp, Color.White.copy(alpha = if (color.luminance() < 0.5f) 0.28f else 0.65f), CircleShape)
     )
 }
 
