@@ -314,4 +314,12 @@ class TaskRepository(context: Context) {
             if (minutes != null) dateMillis + minutes * 60_000L else dateMillis
         }
     }
+
+    suspend fun reorderTasks(tasks: List<TaskUiModel>) {
+        db.withTransaction {
+            tasks.forEachIndexed { index, task ->
+                dao.updateDisplayOrder(task.id, index)
+            }
+        }
+    }
 }
