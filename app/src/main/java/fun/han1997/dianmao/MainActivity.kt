@@ -766,8 +766,9 @@ private fun AppHeader(
                     Text(
                         text = "DianMao",
                         style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.SemiBold,
-                            letterSpacing = (-0.2).sp
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 26.sp,
+                            letterSpacing = (-0.3).sp
                         ),
                         color = MaterialTheme.colorScheme.onBackground
                     )
@@ -853,29 +854,31 @@ private fun AppHeader(
 @Composable
 private fun SummaryPill(value: String, label: String, color: Color) {
     Surface(
-        color = color.copy(alpha = 0.08f),
+        color = color.copy(alpha = 0.10f),
         contentColor = color,
-        shape = RoundedCornerShape(10.dp)
+        shape = RoundedCornerShape(11.dp)
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(7.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
                 text = value,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.SemiBold,
-                    letterSpacing = (-0.1).sp
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp,
+                    letterSpacing = (-0.2).sp
                 ),
                 color = color
             )
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.Normal,
                     letterSpacing = 0.1.sp
                 ),
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.82f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f)
             )
         }
     }
@@ -1054,7 +1057,7 @@ private fun QuadrantPane(
     val visibleTasks = tasks.take(2)
     val openCount = tasks.count { !it.completed }
     val paneColor by animateColorAsState(
-        targetValue = quadrant.color.copy(alpha = 0.04f),
+        targetValue = quadrant.color.copy(alpha = 0.06f),
         animationSpec = tween(durationMillis = 200),
         label = "quadrantPaneColor"
     )
@@ -1062,15 +1065,15 @@ private fun QuadrantPane(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(paneColor)
+            .background(paneColor, shape = RoundedCornerShape(18.dp))
             .clickable { onSelected(quadrant) }
-            .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(9.dp)
+            .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Row(verticalAlignment = Alignment.Top) {
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(5.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     ColorDot(quadrant.color)
@@ -1078,8 +1081,8 @@ private fun QuadrantPane(
                     Text(
                         text = quadrant.title,
                         style = MaterialTheme.typography.labelLarge.copy(
-                            fontWeight = FontWeight.SemiBold,
-                            letterSpacing = 0.1.sp
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.15.sp
                         ),
                         color = quadrant.color,
                         maxLines = 1,
@@ -1091,7 +1094,7 @@ private fun QuadrantPane(
                     style = MaterialTheme.typography.labelMedium.copy(
                         letterSpacing = 0.05.sp
                     ),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -1100,9 +1103,10 @@ private fun QuadrantPane(
                 text = openCount.toString(),
                 style = MaterialTheme.typography.titleLarge.copy(
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = (-0.3).sp
+                    fontSize = 28.sp,
+                    letterSpacing = (-0.4).sp
                 ),
-                color = quadrant.color.copy(alpha = 0.92f)
+                color = quadrant.color.copy(alpha = 0.95f)
             )
         }
         if (visibleTasks.isEmpty()) {
@@ -1303,11 +1307,11 @@ private fun TaskRow(
             .fillMaxWidth()
             .scale(scale),
         colors = CardDefaults.cardColors(
-            containerColor = if (task.completed) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.62f) else MaterialTheme.colorScheme.surface
+            containerColor = if (task.completed) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        shape = RoundedCornerShape(14.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.55f))
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (task.completed) 0.35f else 0.55f))
     ) {
         Row(
             modifier = Modifier
@@ -1316,7 +1320,7 @@ private fun TaskRow(
                 .semantics {
                     contentDescription = if (task.completed) "标记为未完成" else "标记为完成"
                 }
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+                .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.Top
         ) {
             CompletionMark(
@@ -1339,8 +1343,12 @@ private fun TaskRow(
                 }
                 Text(
                     text = task.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = if (task.completed) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 16.sp,
+                        letterSpacing = (-0.1).sp
+                    ),
+                    color = if (task.completed) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
