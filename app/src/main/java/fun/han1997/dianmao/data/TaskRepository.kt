@@ -113,8 +113,16 @@ class TaskRepository(context: Context) {
                 completionNote = existing.completionNote,
                 updatedAtMillis = now
             )
+        } else if (completed && existing.repeatRule == RepeatRule.None) {
+            // Non-recurring: auto-archive
+            existing.copy(
+                completed = true,
+                archived = true,
+                completionNote = existing.completionNote,
+                updatedAtMillis = now
+            )
         } else {
-            // No repeat or uncompleting: normal toggle
+            // Uncompleting: normal toggle
             existing.copy(
                 completed = completed,
                 completionNote = if (completed) existing.completionNote else null,
@@ -158,8 +166,16 @@ class TaskRepository(context: Context) {
                 completionNote = trimmedNote,
                 updatedAtMillis = now
             )
+        } else if (existing.repeatRule == RepeatRule.None) {
+            // Non-recurring: auto-archive
+            existing.copy(
+                completed = true,
+                archived = true,
+                completionNote = trimmedNote,
+                updatedAtMillis = now
+            )
         } else {
-            // No repeat: normal completion
+            // Fallback: normal completion
             existing.copy(
                 completed = true,
                 completionNote = trimmedNote,
