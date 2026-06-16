@@ -7,7 +7,13 @@ enum class RepeatRule(val label: String) {
     None("不重复"),
     Daily("每天"),
     Weekly("每周"),
-    Monthly("每月")
+    Monthly("每月"),
+    DailyCount("记数·每天"),
+    WeeklyCount("记数·每周"),
+    MonthlyCount("记数·每月");
+
+    fun isCycleBased(): Boolean = this in listOf(Daily, Weekly, Monthly)
+    fun isCountBased(): Boolean = this in listOf(DailyCount, WeeklyCount, MonthlyCount)
 }
 
 enum class QuadrantType {
@@ -37,6 +43,8 @@ data class TaskEntity(
     val calendarEventId: Long? = null,
     val useAlarm: Boolean,
     val repeatRule: RepeatRule = RepeatRule.None,
+    val completionCount: Int = 0,
+    val lastCompletedAtMillis: Long? = null,
     val completed: Boolean,
     val completionNote: String?,
     val archived: Boolean = false,
@@ -64,6 +72,8 @@ data class TaskUiModel(
     val calendarEventId: Long?,
     val useAlarm: Boolean,
     val repeatRule: RepeatRule,
+    val completionCount: Int,
+    val lastCompletedAtMillis: Long?,
     val completed: Boolean,
     val completionNote: String?,
     val archived: Boolean = false
@@ -80,6 +90,8 @@ fun TaskEntity.toUiModel(): TaskUiModel {
         calendarEventId = calendarEventId,
         useAlarm = useAlarm,
         repeatRule = repeatRule,
+        completionCount = completionCount,
+        lastCompletedAtMillis = lastCompletedAtMillis,
         completed = completed,
         completionNote = completionNote,
         archived = archived

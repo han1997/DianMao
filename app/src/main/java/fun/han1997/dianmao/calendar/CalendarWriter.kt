@@ -97,6 +97,9 @@ object CalendarWriter {
             RepeatRule.Daily -> "FREQ=DAILY"
             RepeatRule.Weekly -> "FREQ=WEEKLY"
             RepeatRule.Monthly -> "FREQ=MONTHLY"
+            RepeatRule.DailyCount -> "FREQ=DAILY"
+            RepeatRule.WeeklyCount -> "FREQ=WEEKLY"
+            RepeatRule.MonthlyCount -> "FREQ=MONTHLY"
         }
     }
 }
