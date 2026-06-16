@@ -1054,7 +1054,7 @@ private fun QuadrantPane(
     modifier: Modifier = Modifier,
     onSelected: (TaskPriority) -> Unit
 ) {
-    val visibleTasks = tasks.take(2)
+    val visibleTasks = tasks.take(4)
     val openCount = tasks.count { !it.completed }
     val paneColor by animateColorAsState(
         targetValue = quadrant.color.copy(alpha = 0.06f),
@@ -1154,62 +1154,46 @@ private fun EmptyQuadrantHint(quadrant: TaskPriority) {
 private fun CompactQuadrantTask(
     task: TaskUiModel
 ) {
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(
                 if (task.completed) {
-                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.58f)
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                 } else {
                     MaterialTheme.colorScheme.surface.copy(alpha = 0.88f)
                 },
                 RoundedCornerShape(9.dp)
             )
-            .padding(9.dp),
-        verticalArrangement = Arrangement.spacedBy(7.dp)
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.Top,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Row(
-            verticalAlignment = Alignment.Top,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            CompletionMark(
-                completed = task.completed,
-                color = task.quadrant.color
+        CompletionMark(
+            completed = task.completed,
+            color = task.quadrant.color
+        )
+        Text(
+            text = task.title,
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodyLarge.copy(
+                fontWeight = FontWeight.Normal,
+                letterSpacing = 0.sp
+            ),
+            color = if (task.completed)
+                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f)
+            else
+                MaterialTheme.colorScheme.onSurface,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+        if (task.dueLabel != null || task.useAlarm || task.useCalendar) {
+            Icon(
+                imageVector = Icons.Rounded.Schedule,
+                contentDescription = "有提醒",
+                modifier = Modifier.size(16.dp),
+                tint = task.quadrant.color.copy(alpha = 0.6f)
             )
-            Text(
-                text = task.title,
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Medium,
-                    letterSpacing = 0.sp
-                ),
-                color = if (task.completed)
-                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
-                else
-                    MaterialTheme.colorScheme.onSurface,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            task.dueLabel?.let {
-                CompactMeta(icon = Icons.Rounded.Schedule, text = it)
-            }
-            if (task.useAlarm) {
-                CompactMeta(icon = Icons.Rounded.Alarm, text = "响铃")
-            }
-            if (task.repeatRule != RepeatRule.None) {
-                CompactMeta(icon = Icons.Rounded.Alarm, text = task.repeatRule.label)
-            }
-            if (task.useCalendar) {
-                CompactMeta(icon = Icons.Rounded.CalendarMonth, text = "日历")
-            }
-            if (task.completionNote != null) {
-                CompactMeta(icon = Icons.AutoMirrored.Rounded.Notes, text = "有心得")
-            }
         }
     }
 }
