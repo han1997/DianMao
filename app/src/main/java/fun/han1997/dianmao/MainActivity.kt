@@ -98,6 +98,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -399,6 +400,11 @@ private fun DianMaoApp() {
     val scope = rememberCoroutineScope()
     val activeTasks by repository.activeTasks.collectAsState(initial = emptyList())
     val archivedTasks by repository.archivedTasks.collectAsState(initial = emptyList())
+
+    LaunchedEffect(Unit) {
+        repository.resetExpiredCycleTasks()
+    }
+
     var activePriority by rememberSaveable { mutableStateOf<TaskPriority?>(null) }
     var showAddSheet by rememberSaveable { mutableStateOf(false) }
     var showBackupPanel by rememberSaveable { mutableStateOf(false) }

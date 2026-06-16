@@ -39,7 +39,7 @@ class TaskRepository(context: Context) {
             dueAtMillis = dueAtMillis,
             useCalendar = form.useCalendar && dueAtMillis != null,
             useAlarm = form.useAlarm && dueAtMillis != null,
-            repeatRule = if (dueAtMillis != null && form.useAlarm) form.repeatRule else RepeatRule.None,
+            repeatRule = form.repeatRule,
             completed = false,
             completionNote = null,
             createdAtMillis = now,
@@ -59,7 +59,7 @@ class TaskRepository(context: Context) {
             dueAtMillis = dueAtMillis,
             useCalendar = form.useCalendar && dueAtMillis != null,
             useAlarm = form.useAlarm && dueAtMillis != null,
-            repeatRule = if (dueAtMillis != null && form.useAlarm) form.repeatRule else RepeatRule.None,
+            repeatRule = form.repeatRule,
             updatedAtMillis = System.currentTimeMillis()
         )
         dao.update(updated)
@@ -83,24 +83,69 @@ class TaskRepository(context: Context) {
 
     suspend fun toggleCompleted(task: TaskUiModel, completed: Boolean) {
         val existing = dao.findById(task.id) ?: return
-        dao.update(
+        val now = System.currentTimeMillis()
+
+        val updated = if (completed && existing.repeatRule.isCountBased()) {
+            // Count-based: increment count
+            existing.copy(
+                completed = true,
+                completionCount = existing.completionCount + 1,
+                lastCompletedAtMillis = now,
+                completionNote = existing.completionNote,
+                updatedAtMillis = now
+            )
+        } else if (completed && existing.repeatRule.isCycleBased()) {
+            // Cycle-based: record completion timestamp
+            existing.copy(
+                completed = true,
+                lastCompletedAtMillis = now,
+                completionNote = existing.completionNote,
+                updatedAtMillis = now
+            )
+        } else {
+            // No repeat or uncompleting: normal toggle
             existing.copy(
                 completed = completed,
                 completionNote = if (completed) existing.completionNote else null,
-                updatedAtMillis = System.currentTimeMillis()
+                updatedAtMillis = now
             )
-        )
+        }
+
+        dao.update(updated)
     }
 
     suspend fun saveCompletionNote(taskId: Long, note: String) {
         val existing = dao.findById(taskId) ?: return
-        dao.update(
+        val now = System.currentTimeMillis()
+        val trimmedNote = note.trim().ifBlank { null }
+
+        val updated = if (existing.repeatRule.isCountBased()) {
+            // Count-based: increment count
             existing.copy(
                 completed = true,
-                completionNote = note.trim().ifBlank { null },
-                updatedAtMillis = System.currentTimeMillis()
+                completionCount = existing.completionCount + 1,
+                lastCompletedAtMillis = now,
+                completionNote = trimmedNote,
+                updatedAtMillis = now
             )
-        )
+        } else if (existing.repeatRule.isCycleBased()) {
+            // Cycle-based: record completion timestamp
+            existing.copy(
+                completed = true,
+                lastCompletedAtMillis = now,
+                completionNote = trimmedNote,
+                updatedAtMillis = now
+            )
+        } else {
+            // No repeat: normal completion
+            existing.copy(
+                completed = true,
+                completionNote = trimmedNote,
+                updatedAtMillis = now
+            )
+        }
+
+        dao.update(updated)
     }
 
     suspend fun archiveTask(taskId: Long) {
@@ -121,6 +166,40 @@ class TaskRepository(context: Context) {
                 updatedAtMillis = System.currentTimeMillis()
             )
         )
+    }
+
+    suspend fun resetExpiredCycleTasks(nowMillis: Long = System.currentTimeMillis()) {
+        val completedTasks = dao.findAllTasks().filter { it.completed && it.repeatRule.isCycleBased() }
+        val tasksToReset = completedTasks.filter { task ->
+            val lastCompleted = task.lastCompletedAtMillis ?: return@filter false
+            !isInSamePeriod(lastCompleted, nowMillis, task.repeatRule)
+        }
+
+        tasksToReset.forEach { task ->
+            dao.update(
+                task.copy(
+                    completed = false,
+                    updatedAtMillis = nowMillis
+                )
+            )
+        }
+    }
+
+    private fun isInSamePeriod(time1: Long, time2: Long, repeatRule: RepeatRule): Boolean {
+        val zone = ZoneId.systemDefault()
+        val date1 = Instant.ofEpochMilli(time1).atZone(zone).toLocalDate()
+        val date2 = Instant.ofEpochMilli(time2).atZone(zone).toLocalDate()
+
+        return when (repeatRule) {
+            RepeatRule.Daily -> date1.isEqual(date2)
+            RepeatRule.Weekly -> {
+                val week1 = date1.year * 53 + date1.get(java.time.temporal.WeekFields.ISO.weekOfWeekBasedYear())
+                val week2 = date2.year * 53 + date2.get(java.time.temporal.WeekFields.ISO.weekOfWeekBasedYear())
+                week1 == week2
+            }
+            RepeatRule.Monthly -> date1.year == date2.year && date1.monthValue == date2.monthValue
+            else -> false
+        }
     }
 
     suspend fun exportBackupJson(): String {
