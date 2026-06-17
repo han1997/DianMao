@@ -1437,7 +1437,7 @@ private fun TaskRow(
                 .semantics {
                     contentDescription = if (task.completed) "标记为未完成" else "标记为完成"
                 }
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.Top
         ) {
             CompletionMark(
@@ -1447,7 +1447,7 @@ private fun TaskRow(
             Spacer(Modifier.width(10.dp))
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(7.dp)
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     ColorDot(task.quadrant.color)
@@ -1462,7 +1462,7 @@ private fun TaskRow(
                     text = task.title,
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Medium,
-                        fontSize = 16.sp,
+                        fontSize = 15.sp,
                         letterSpacing = (-0.1).sp
                     ),
                     color = if (task.completed) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurface,
@@ -1496,7 +1496,7 @@ private fun TaskRow(
                     if (!note.isNullOrBlank()) {
                         Text(
                             text = "完成备注：$note",
-                            style = MaterialTheme.typography.bodyMedium,
+                            style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis
