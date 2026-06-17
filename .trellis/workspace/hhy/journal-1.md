@@ -211,3 +211,42 @@ Added dedicated archived tasks view with modal UI and unarchive action. Fixed ar
 ### Next Steps
 
 - None - task complete
+
+
+## Session 7: 主页面美化：简化显示并添加拖拽排序功能
+
+**Date**: 2026-06-17
+**Task**: 主页面美化：简化显示并添加拖拽排序功能
+**Branch**: `master`
+
+### Summary
+
+优化四象限主页面显示密度（每个象限4个任务），移除元数据徽章；添加数据库displayOrder字段支持自定义排序；实现原生拖拽排序功能（长按拖动）；修复索引计算bug；优化动画消除重复交换效果。完整的拖拽体验：流畅、精准、持久化。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `6bc4bff` | (see git log) |
+| `734b8f1` | (see git log) |
+| `2c2d433` | (see git log) |
+| `bd6ec61` | (see git log) |
+| `4b93b2f` | (see git log) |
+| `10fdafe` | (see git log) |
+| `9469f01` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

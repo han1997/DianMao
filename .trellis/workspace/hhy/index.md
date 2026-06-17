@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 6
+- **Total Sessions**: 7
 - **Last Active**: 2026-06-17
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~213 | Active |
+| `journal-1.md` | ~252 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 7 | 2026-06-17 | 主页面美化：简化显示并添加拖拽排序功能 | `6bc4bff`, `734b8f1`, `2c2d433`, `bd6ec61`, `4b93b2f`, `10fdafe`, `9469f01` | `master` |
 | 6 | 2026-06-17 | Archive view, recurring task confirmation, UI polish | `bc530bf`, `8a5a6d8`, `d7d324c`, `c96afa3` | `master` |
 | 5 | 2026-06-16 | 主页面视觉精致化 | `303c9be` | `master` |
 | 4 | 2026-06-16 | Fix edit item back navigation bug | `e7f5f5a`, `ee760d1`, `cee8742`, `47c3099` | `master` |
