@@ -1415,7 +1415,7 @@ private fun TaskRow(
         label = "taskScale"
     )
 
-    LaunchedEffect(task.id, task.lastCompletedAtMillis, task.completed) {
+    LaunchedEffect(task.id, task.lastCompletedAtMillis, task.completed, task.repeatRule) {
         canComplete = repository.canCompleteInCurrentCycle(task)
     }
 
@@ -1507,7 +1507,7 @@ private fun TaskRow(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 IconButton(
                     onClick = { onEditNote(task) },
-                    enabled = canComplete || task.completed,
+                    enabled = task.completed || canComplete,
                     modifier = Modifier.size(38.dp)
                 ) {
                     Icon(
