@@ -363,9 +363,9 @@ class TaskRepository(context: Context) {
         return when (repeatRule) {
             RepeatRule.Daily -> time1.isEqual(time2)
             RepeatRule.Weekly -> {
-                val week1 = time1.atStartOfDay().with(java.time.DayOfWeek.MONDAY)
-                val week2 = time2.atStartOfDay().with(java.time.DayOfWeek.MONDAY)
-                week1.isEqual(week2)
+                val week1 = time1.year * 53 + time1.get(java.time.temporal.WeekFields.ISO.weekOfWeekBasedYear())
+                val week2 = time2.year * 53 + time2.get(java.time.temporal.WeekFields.ISO.weekOfWeekBasedYear())
+                week1 == week2
             }
             RepeatRule.Monthly -> {
                 time1.year == time2.year && time1.monthValue == time2.monthValue

@@ -672,6 +672,7 @@ private fun DianMaoApp() {
                                     ) {
                                         TaskRow(
                                             task = task,
+                                            repository = repository,
                                             onToggleComplete = toggleComplete,
                                             onEditTask = { t ->
                                                 if (t.repeatRule != RepeatRule.None) {
@@ -1398,6 +1399,7 @@ private fun SectionHeader(title: String, subtitle: String) {
 @Composable
 private fun TaskRow(
     task: TaskUiModel,
+    repository: TaskRepository,
     onToggleComplete: (TaskUiModel) -> Unit,
     onEditTask: (TaskUiModel) -> Unit,
     onDeleteTask: (TaskUiModel) -> Unit,
@@ -1405,12 +1407,17 @@ private fun TaskRow(
     onArchiveTask: (TaskUiModel) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    var canComplete by remember { mutableStateOf(true) }
     var actionsExpanded by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
         targetValue = if (task.completed) 0.985f else 1f,
         animationSpec = tween(durationMillis = 180),
         label = "taskScale"
     )
+
+    LaunchedEffect(task.id, task.lastCompletedAtMillis, task.completed) {
+        canComplete = repository.canCompleteInCurrentCycle(task)
+    }
 
     Card(
         modifier = modifier
@@ -1500,6 +1507,7 @@ private fun TaskRow(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 IconButton(
                     onClick = { onEditNote(task) },
+                    enabled = canComplete || task.completed,
                     modifier = Modifier.size(38.dp)
                 ) {
                     Icon(
