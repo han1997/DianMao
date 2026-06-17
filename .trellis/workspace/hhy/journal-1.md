@@ -250,3 +250,40 @@ Added dedicated archived tasks view with modal UI and unarchive action. Fixed ar
 ### Next Steps
 
 - None - task complete
+
+
+## Session 8: Add recurring task history tracking and fix cycle completion logic
+
+**Date**: 2026-06-17
+**Task**: Add recurring task history tracking and fix cycle completion logic
+**Branch**: `master`
+
+### Summary
+
+Implemented completion history tracking for recurring tasks with TaskCompletionEntity table, created history detail panel UI, fixed cycle boundary enforcement to prevent duplicate completions within same cycle, and documented the complete contract in database guidelines spec.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `10d998a` | (see git log) |
+| `a914db9` | (see git log) |
+| `a58a140` | (see git log) |
+| `f318a89` | (see git log) |
+| `95ed453` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
