@@ -603,7 +603,13 @@ private fun DianMaoApp() {
                                             .firstOrNull { item ->
                                                 offset.y.toInt() in item.offset..(item.offset + item.size)
                                             }
-                                            ?.let { dragDropState.onDragStart(it.index) }
+                                            ?.let {
+                                                // Subtract 1 to account for header item at index 0
+                                                val taskIndex = it.index - 1
+                                                if (taskIndex >= 0) {
+                                                    dragDropState.onDragStart(taskIndex)
+                                                }
+                                            }
                                     },
                                     onDrag = { change, dragAmount ->
                                         change.consume()
