@@ -8,16 +8,17 @@ import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
-const val TASK_DATABASE_VERSION = 7
+const val TASK_DATABASE_VERSION = 8
 
 @Database(
-    entities = [TaskEntity::class],
+    entities = [TaskEntity::class, TaskCompletionEntity::class],
     version = TASK_DATABASE_VERSION,
     exportSchema = true
 )
 @TypeConverters(TaskConverters::class)
 abstract class TaskDatabase : RoomDatabase() {
     abstract fun taskDao(): TaskDao
+    abstract fun taskCompletionDao(): TaskCompletionDao
 
     companion object {
         @Volatile
@@ -30,7 +31,7 @@ abstract class TaskDatabase : RoomDatabase() {
                     TaskDatabase::class.java,
                     "dianmao.db"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
                     .build()
                     .also { INSTANCE = it }
             }
@@ -75,6 +76,21 @@ abstract class TaskDatabase : RoomDatabase() {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("ALTER TABLE tasks ADD COLUMN displayOrder INTEGER NOT NULL DEFAULT 0")
                 db.execSQL("UPDATE tasks SET displayOrder = id")
+            }
+        }
+
+        private val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS task_completions (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        taskId INTEGER NOT NULL,
+                        completedAtMillis INTEGER NOT NULL,
+                        note TEXT,
+                        FOREIGN KEY(taskId) REFERENCES tasks(id) ON DELETE CASCADE
+                    )
+                """)
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_task_completions_taskId ON task_completions(taskId)")
             }
         }
     }

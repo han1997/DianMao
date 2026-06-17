@@ -10,6 +10,7 @@ import java.time.ZoneId
 class TaskRepository(context: Context) {
     private val db = TaskDatabase.getInstance(context)
     private val dao = db.taskDao()
+    private val completionDao = db.taskCompletionDao()
 
     val tasks: Flow<List<TaskUiModel>> = dao.observeTasks().map { list ->
         list.map { it.toUiModel() }
@@ -138,6 +139,17 @@ class TaskRepository(context: Context) {
         val now = System.currentTimeMillis()
         val trimmedNote = note.trim().ifBlank { null }
 
+        // Create completion record for all recurring tasks
+        if (existing.repeatRule != RepeatRule.None) {
+            completionDao.insert(
+                TaskCompletionEntity(
+                    taskId = taskId,
+                    completedAtMillis = now,
+                    note = trimmedNote
+                )
+            )
+        }
+
         val updated = if (existing.repeatRule.isCountBased()) {
             // Count-based: increment count, no alarm rescheduling
             existing.copy(
@@ -152,6 +164,7 @@ class TaskRepository(context: Context) {
             val nextDue = RepeatReminderCalculator.nextDueAt(existing.dueAtMillis, existing.repeatRule)
             existing.copy(
                 completed = false,
+                completionCount = existing.completionCount + 1,
                 lastCompletedAtMillis = now,
                 dueLabel = DateTimeFormatters.labelFor(midnightMillis(nextDue), minutesOfDay(nextDue)),
                 dueAtMillis = nextDue,
@@ -159,9 +172,10 @@ class TaskRepository(context: Context) {
                 updatedAtMillis = now
             )
         } else if (existing.repeatRule.isCycleBased()) {
-            // Cycle-based without alarm: record completion timestamp
+            // Cycle-based without alarm: mark completed, increment count
             existing.copy(
                 completed = true,
+                completionCount = existing.completionCount + 1,
                 lastCompletedAtMillis = now,
                 completionNote = trimmedNote,
                 updatedAtMillis = now
@@ -320,6 +334,43 @@ class TaskRepository(context: Context) {
             tasks.forEachIndexed { index, task ->
                 dao.updateDisplayOrder(task.id, index)
             }
+        }
+    }
+
+    fun observeCompletions(taskId: Long): Flow<List<TaskCompletionEntity>> {
+        return completionDao.observeCompletions(taskId)
+    }
+
+    suspend fun deleteCompletion(completionId: Long) {
+        completionDao.deleteById(completionId)
+    }
+
+    suspend fun canCompleteInCurrentCycle(task: TaskUiModel): Boolean {
+        if (task.repeatRule == RepeatRule.None) return !task.completed
+        if (task.repeatRule.isCountBased()) return true
+
+        // For cycle-based: check if last completion was in current cycle
+        val lastCompleted = task.lastCompletedAtMillis ?: return true
+        val now = System.currentTimeMillis()
+        return !isInSameCycle(lastCompleted, now, task.repeatRule)
+    }
+
+    private fun isInSameCycle(millis1: Long, millis2: Long, repeatRule: RepeatRule): Boolean {
+        val zone = ZoneId.systemDefault()
+        val time1 = Instant.ofEpochMilli(millis1).atZone(zone).toLocalDate()
+        val time2 = Instant.ofEpochMilli(millis2).atZone(zone).toLocalDate()
+
+        return when (repeatRule) {
+            RepeatRule.Daily -> time1.isEqual(time2)
+            RepeatRule.Weekly -> {
+                val week1 = time1.atStartOfDay().with(java.time.DayOfWeek.MONDAY)
+                val week2 = time2.atStartOfDay().with(java.time.DayOfWeek.MONDAY)
+                week1.isEqual(week2)
+            }
+            RepeatRule.Monthly -> {
+                time1.year == time2.year && time1.monthValue == time2.monthValue
+            }
+            else -> false
         }
     }
 }

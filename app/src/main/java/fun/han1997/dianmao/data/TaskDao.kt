@@ -50,3 +50,18 @@ interface TaskDao {
     suspend fun delete(task: TaskEntity)
 }
 
+@Dao
+interface TaskCompletionDao {
+    @Query("SELECT * FROM task_completions WHERE taskId = :taskId ORDER BY completedAtMillis DESC")
+    fun observeCompletions(taskId: Long): Flow<List<TaskCompletionEntity>>
+
+    @Query("SELECT * FROM task_completions WHERE taskId = :taskId ORDER BY completedAtMillis DESC")
+    suspend fun findCompletions(taskId: Long): List<TaskCompletionEntity>
+
+    @Insert
+    suspend fun insert(completion: TaskCompletionEntity): Long
+
+    @Query("DELETE FROM task_completions WHERE id = :completionId")
+    suspend fun deleteById(completionId: Long)
+}
+

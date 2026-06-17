@@ -1,6 +1,8 @@
 package `fun`.han1997.dianmao.data
 
 import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
 enum class RepeatRule(val label: String) {
@@ -96,3 +98,22 @@ fun TaskEntity.toUiModel(): TaskUiModel {
         archived = archived
     )
 }
+
+@Entity(
+    tableName = "task_completions",
+    foreignKeys = [
+        ForeignKey(
+            entity = TaskEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["taskId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [Index(value = ["taskId"])]
+)
+data class TaskCompletionEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val taskId: Long,
+    val completedAtMillis: Long,
+    val note: String?
+)
