@@ -28,6 +28,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,7 +51,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.ui.zIndex
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
@@ -394,7 +404,7 @@ private fun DianMaoTheme(content: @Composable () -> Unit) {
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 private fun DianMaoApp() {
     val context = LocalContext.current
@@ -563,8 +573,50 @@ private fun DianMaoApp() {
                         )
                     }
                 } else {
+                    val listState = rememberLazyListState()
+                    val dragDropState = rememberDragDropListState(
+                        lazyListState = listState,
+                        onMove = { fromIndex, toIndex ->
+                            val list = reorderableDetailTasks.toMutableList()
+                            val item = list.removeAt(fromIndex)
+                            list.add(toIndex, item)
+                            reorderableDetailTasks = list
+                        }
+                    )
+
+                    LaunchedEffect(dragDropState.draggedIndex) {
+                        if (dragDropState.draggedIndex == null) {
+                            scope.launch {
+                                repository.reorderTasks(reorderableDetailTasks)
+                            }
+                        }
+                    }
+
                     LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
+                        state = listState,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .pointerInput(Unit) {
+                                detectDragGesturesAfterLongPress(
+                                    onDragStart = { offset ->
+                                        listState.layoutInfo.visibleItemsInfo
+                                            .firstOrNull { item ->
+                                                offset.y.toInt() in item.offset..(item.offset + item.size)
+                                            }
+                                            ?.let { dragDropState.onDragStart(it.index) }
+                                    },
+                                    onDrag = { change, dragAmount ->
+                                        change.consume()
+                                        dragDropState.onDrag(dragAmount.y)
+                                    },
+                                    onDragEnd = {
+                                        dragDropState.onDragEnd()
+                                    },
+                                    onDragCancel = {
+                                        dragDropState.onDragEnd()
+                                    }
+                                )
+                            },
                         contentPadding = PaddingValues(start = 18.dp, top = 6.dp, end = 18.dp, bottom = 112.dp),
                         verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
@@ -582,32 +634,29 @@ private fun DianMaoApp() {
                                 }
                             } else {
                                 itemsIndexed(reorderableDetailTasks, key = { _, task -> task.id }) { index, task ->
-                                    TaskRow(
-                                        task = task,
-                                        onToggleComplete = toggleComplete,
-                                        onEditTask = { taskForEdit = it },
-                                        onDeleteTask = { taskForDelete = it },
-                                        onEditNote = { taskForNote = it },
-                                        onArchiveTask = archiveTask,
-                                        canMoveUp = index > 0,
-                                        canMoveDown = index < reorderableDetailTasks.size - 1,
-                                        onMoveUp = {
-                                            val list = reorderableDetailTasks.toMutableList()
-                                            list.add(index - 1, list.removeAt(index))
-                                            reorderableDetailTasks = list
-                                            scope.launch {
-                                                repository.reorderTasks(reorderableDetailTasks)
+                                    val isDragging = dragDropState.draggedIndex == index
+                                    val offsetY = if (isDragging) dragDropState.draggedOffset else 0f
+
+                                    Box(
+                                        modifier = Modifier
+                                            .zIndex(if (isDragging) 1f else 0f)
+                                            .graphicsLayer {
+                                                translationY = offsetY
+                                                shadowElevation = if (isDragging) 8.dp.toPx() else 0f
+                                                scaleX = if (isDragging) 1.02f else 1f
+                                                scaleY = if (isDragging) 1.02f else 1f
                                             }
-                                        },
-                                        onMoveDown = {
-                                            val list = reorderableDetailTasks.toMutableList()
-                                            list.add(index + 1, list.removeAt(index))
-                                            reorderableDetailTasks = list
-                                            scope.launch {
-                                                repository.reorderTasks(reorderableDetailTasks)
-                                            }
-                                        }
-                                    )
+                                            .animateItemPlacement()
+                                    ) {
+                                        TaskRow(
+                                            task = task,
+                                            onToggleComplete = toggleComplete,
+                                            onEditTask = { taskForEdit = it },
+                                            onDeleteTask = { taskForDelete = it },
+                                            onEditNote = { taskForNote = it },
+                                            onArchiveTask = archiveTask
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -1307,11 +1356,7 @@ private fun TaskRow(
     onDeleteTask: (TaskUiModel) -> Unit,
     onEditNote: (TaskUiModel) -> Unit,
     onArchiveTask: (TaskUiModel) -> Unit = {},
-    modifier: Modifier = Modifier,
-    canMoveUp: Boolean = false,
-    canMoveDown: Boolean = false,
-    onMoveUp: () -> Unit = {},
-    onMoveDown: () -> Unit = {}
+    modifier: Modifier = Modifier
 ) {
     var actionsExpanded by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
@@ -1431,36 +1476,6 @@ private fun TaskRow(
                         expanded = actionsExpanded,
                         onDismissRequest = { actionsExpanded = false }
                     ) {
-                        if (canMoveUp) {
-                            DropdownMenuItem(
-                                text = { Text("上移") },
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Rounded.ArrowUpward,
-                                        contentDescription = null
-                                    )
-                                },
-                                onClick = {
-                                    actionsExpanded = false
-                                    onMoveUp()
-                                }
-                            )
-                        }
-                        if (canMoveDown) {
-                            DropdownMenuItem(
-                                text = { Text("下移") },
-                                leadingIcon = {
-                                    Icon(
-                                        imageVector = Icons.Rounded.ArrowDownward,
-                                        contentDescription = null
-                                    )
-                                },
-                                onClick = {
-                                    actionsExpanded = false
-                                    onMoveDown()
-                                }
-                            )
-                        }
                         DropdownMenuItem(
                             text = { Text("编辑事项") },
                             leadingIcon = {
@@ -2409,4 +2424,55 @@ private fun CompletionNoteDialog(
             }
         }
     )
+}
+
+@Composable
+fun rememberDragDropListState(
+    lazyListState: LazyListState,
+    onMove: (Int, Int) -> Unit
+): DragDropListState {
+    val state = remember { DragDropListState(lazyListState, onMove) }
+    return state
+}
+
+class DragDropListState(
+    private val lazyListState: LazyListState,
+    private val onMove: (Int, Int) -> Unit
+) {
+    var draggedIndex by mutableStateOf<Int?>(null)
+    var draggedOffset by mutableStateOf(0f)
+
+    fun onDragStart(index: Int) {
+        draggedIndex = index
+    }
+
+    fun onDrag(delta: Float) {
+        draggedOffset += delta
+
+        val draggedIdx = draggedIndex ?: return
+        val startOffset = draggedOffset
+        
+        val currentElement = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == draggedIdx }
+        val targetElement = lazyListState.layoutInfo.visibleItemsInfo.find {
+            val targetCenter = it.offset + it.size / 2
+            val draggedCenter = (currentElement?.offset ?: 0) + startOffset + (currentElement?.size ?: 0) / 2
+
+            if (startOffset > 0) {
+                draggedCenter > targetCenter && it.index > draggedIdx
+            } else {
+                draggedCenter < targetCenter && it.index < draggedIdx
+            }
+        }
+
+        if (targetElement != null) {
+            onMove(draggedIdx, targetElement.index)
+            draggedIndex = targetElement.index
+            draggedOffset = 0f
+        }
+    }
+
+    fun onDragEnd() {
+        draggedIndex = null
+        draggedOffset = 0f
+    }
 }
