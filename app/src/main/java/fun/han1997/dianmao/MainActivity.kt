@@ -1462,7 +1462,7 @@ private fun TaskRow(
                     text = task.title,
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Medium,
-                        fontSize = 15.sp,
+                        fontSize = 14.sp,
                         letterSpacing = (-0.1).sp
                     ),
                     color = if (task.completed) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurface,
@@ -1504,7 +1504,10 @@ private fun TaskRow(
                     }
                 }
             }
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Top
+            ) {
                 IconButton(
                     onClick = { onEditNote(task) },
                     modifier = Modifier.size(38.dp)
