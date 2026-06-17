@@ -1438,7 +1438,7 @@ private fun TaskRow(
                     contentDescription = if (task.completed) "标记为未完成" else "标记为完成"
                 }
                 .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.Top
+            verticalAlignment = Alignment.CenterVertically
         ) {
             CompletionMark(
                 completed = task.completed,
@@ -1504,10 +1504,7 @@ private fun TaskRow(
                     }
                 }
             }
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Top
-            ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 IconButton(
                     onClick = { onEditNote(task) },
                     modifier = Modifier.size(38.dp)
