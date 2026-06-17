@@ -481,9 +481,12 @@ private fun DianMaoApp() {
     }
 
     var reorderableDetailTasks by remember { mutableStateOf<List<TaskUiModel>>(emptyList()) }
+    var isDragging by remember { mutableStateOf(false) }
 
     LaunchedEffect(quadrantDetailTasks) {
-        reorderableDetailTasks = quadrantDetailTasks
+        if (!isDragging) {
+            reorderableDetailTasks = quadrantDetailTasks
+        }
     }
 
     val toggleComplete: (TaskUiModel) -> Unit = { target ->
@@ -585,9 +588,15 @@ private fun DianMaoApp() {
                     )
 
                     LaunchedEffect(dragDropState.draggedIndex) {
-                        if (dragDropState.draggedIndex == null) {
-                            scope.launch {
-                                repository.reorderTasks(reorderableDetailTasks)
+                        if (dragDropState.draggedIndex != null) {
+                            isDragging = true
+                        } else {
+                            if (isDragging) {
+                                scope.launch {
+                                    repository.reorderTasks(reorderableDetailTasks)
+                                }
+                                kotlinx.coroutines.delay(50)
+                                isDragging = false
                             }
                         }
                     }
@@ -640,17 +649,17 @@ private fun DianMaoApp() {
                                 }
                             } else {
                                 itemsIndexed(reorderableDetailTasks, key = { _, task -> task.id }) { index, task ->
-                                    val isDragging = dragDropState.draggedIndex == index
-                                    val offsetY = if (isDragging) dragDropState.draggedOffset else 0f
+                                    val isBeingDragged = dragDropState.draggedIndex == index
+                                    val offsetY = if (isBeingDragged) dragDropState.draggedOffset else 0f
 
                                     Box(
                                         modifier = Modifier
-                                            .zIndex(if (isDragging) 1f else 0f)
+                                            .zIndex(if (isBeingDragged) 1f else 0f)
                                             .graphicsLayer {
                                                 translationY = offsetY
-                                                shadowElevation = if (isDragging) 8.dp.toPx() else 0f
-                                                scaleX = if (isDragging) 1.02f else 1f
-                                                scaleY = if (isDragging) 1.02f else 1f
+                                                shadowElevation = if (isBeingDragged) 8.dp.toPx() else 0f
+                                                scaleX = if (isBeingDragged) 1.02f else 1f
+                                                scaleY = if (isBeingDragged) 1.02f else 1f
                                             }
                                             .animateItemPlacement()
                                     ) {
