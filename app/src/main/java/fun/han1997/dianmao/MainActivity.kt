@@ -12,7 +12,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -1489,25 +1488,14 @@ private fun TaskRow(
                         CompactMeta(icon = Icons.AutoMirrored.Rounded.Notes, text = "有心得")
                     }
                 }
-                AnimatedContent(
-                    targetState = task.completionNote,
-                    label = "noteContent"
-                ) { note ->
-                    if (!note.isNullOrBlank()) {
-                        Text(
-                            text = "完成备注：$note",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
             }
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
                 IconButton(
                     onClick = { onEditNote(task) },
-                    modifier = Modifier.size(38.dp)
+                    modifier = Modifier.size(36.dp)
                 ) {
                     Icon(
                         imageVector = if (task.completed) Icons.Rounded.EditNote else Icons.Rounded.DoneAll,
@@ -1518,7 +1506,7 @@ private fun TaskRow(
                 Box {
                     IconButton(
                         onClick = { actionsExpanded = true },
-                        modifier = Modifier.size(38.dp)
+                        modifier = Modifier.size(36.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.MoreVert,
