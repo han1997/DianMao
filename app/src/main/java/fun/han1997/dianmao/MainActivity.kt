@@ -44,6 +44,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -91,6 +92,7 @@ import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -103,6 +105,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -111,6 +114,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -152,6 +156,8 @@ import `fun`.han1997.dianmao.data.TaskFormState
 import `fun`.han1997.dianmao.data.TaskPriority
 import `fun`.han1997.dianmao.data.TaskRepository
 import `fun`.han1997.dianmao.data.TaskUiModel
+import `fun`.han1997.dianmao.data.TaskCompletionEntity
+import `fun`.han1997.dianmao.data.DateTimeFormatters
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -426,6 +432,7 @@ private fun DianMaoApp() {
     var showArchivedPanel by rememberSaveable { mutableStateOf(false) }
     var taskForNote by remember { mutableStateOf<TaskUiModel?>(null) }
     var taskForEdit by remember { mutableStateOf<TaskUiModel?>(null) }
+    var taskForHistory by remember { mutableStateOf<TaskUiModel?>(null) }
     var taskForDelete by remember { mutableStateOf<TaskUiModel?>(null) }
     var taskForUncompletion by remember { mutableStateOf<TaskUiModel?>(null) }
     var backupStatus by rememberSaveable { mutableStateOf<String?>(null) }
@@ -666,7 +673,13 @@ private fun DianMaoApp() {
                                         TaskRow(
                                             task = task,
                                             onToggleComplete = toggleComplete,
-                                            onEditTask = { taskForEdit = it },
+                                            onEditTask = { t ->
+                                                if (t.repeatRule != RepeatRule.None) {
+                                                    taskForHistory = t
+                                                } else {
+                                                    taskForEdit = t
+                                                }
+                                            },
                                             onDeleteTask = { taskForDelete = it },
                                             onEditNote = { taskForNote = it },
                                             onArchiveTask = archiveTask
@@ -724,6 +737,25 @@ private fun DianMaoApp() {
                         dismissTaskPanel()
                     }
                 )
+
+                taskForHistory?.let { task ->
+                    RecurringTaskHistoryPanel(
+                        task = task,
+                        repository = repository,
+                        onDismiss = { taskForHistory = null },
+                        onEdit = { t ->
+                            taskForHistory = null
+                            taskForEdit = t
+                        },
+                        onComplete = { taskForNote = it },
+                        onDeleteCompletion = { completionId ->
+                            scope.launch {
+                                repository.deleteCompletion(completionId)
+                            }
+                        }
+                    )
+                }
+
                 BackupPanel(
                     visible = showBackupPanel,
                     initialSettings = webDavSettings,
@@ -2489,5 +2521,223 @@ class DragDropListState(
     fun onDragEnd() {
         draggedIndex = null
         draggedOffset = 0f
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun RecurringTaskHistoryPanel(
+    task: TaskUiModel,
+    repository: TaskRepository,
+    onDismiss: () -> Unit,
+    onEdit: (TaskUiModel) -> Unit,
+    onComplete: (TaskUiModel) -> Unit,
+    onDeleteCompletion: (Long) -> Unit
+) {
+    val completions by repository.observeCompletions(task.id).collectAsState(initial = emptyList())
+    val scope = rememberCoroutineScope()
+    var canComplete by remember { mutableStateOf(false) }
+
+    LaunchedEffect(task) {
+        canComplete = repository.canCompleteInCurrentCycle(task)
+    }
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp)
+        ) {
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = task.title,
+                    style = MaterialTheme.typography.headlineSmall,
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(onClick = { onEdit(task) }) {
+                    Icon(Icons.Rounded.Edit, contentDescription = "编辑")
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Task info
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                AssistChip(
+                    onClick = {},
+                    label = { Text(task.quadrant.label) },
+                    leadingIcon = {
+                        Box(
+                            modifier = Modifier
+                                .size(12.dp)
+                                .background(
+                                    Color(task.quadrant.colorInt()),
+                                    shape = CircleShape
+                                )
+                        )
+                    }
+                )
+                Text(
+                    text = task.repeatRule.label,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Stats
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "${task.completionCount}",
+                        style = MaterialTheme.typography.headlineMedium
+                    )
+                    Text(
+                        text = "总完成次数",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(
+                        text = "${completions.size}",
+                        style = MaterialTheme.typography.headlineMedium
+                    )
+                    Text(
+                        text = "历史记录",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Complete button
+            Button(
+                onClick = { onComplete(task) },
+                enabled = canComplete,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(Icons.Rounded.DoneAll, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(if (canComplete) "完成本次" else "本周期已完成")
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // History section
+            Text(
+                text = "完成历史",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+
+            if (completions.isEmpty()) {
+                Text(
+                    text = "暂无完成记录",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 32.dp)
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier.heightIn(max = 400.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(completions, key = { it.id }) { completion ->
+                        CompletionItem(
+                            completion = completion,
+                            onDelete = { onDeleteCompletion(completion.id) }
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+fun CompletionItem(
+    completion: TaskCompletionEntity,
+    onDelete: () -> Unit
+) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = DateTimeFormatters.formatTimestamp(completion.completedAtMillis),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                if (!completion.note.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = completion.note,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            IconButton(onClick = { showDeleteDialog = true }) {
+                Icon(
+                    Icons.Rounded.Delete,
+                    contentDescription = "删除",
+                    tint = MaterialTheme.colorScheme.error
+                )
+            }
+        }
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("删除完成记录") },
+            text = { Text("确定要删除这条完成记录吗？") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDelete()
+                        showDeleteDialog = false
+                    }
+                ) {
+                    Text("删除")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("取消")
+                }
+            }
+        )
     }
 }

@@ -7,6 +7,7 @@ import java.util.Locale
 object DateTimeFormatters {
     private val dateTime = SimpleDateFormat("M月d日 HH:mm", Locale.CHINA)
     private val dateOnly = SimpleDateFormat("M月d日", Locale.CHINA)
+    private val fullDateTime = SimpleDateFormat("yyyy年M月d日 HH:mm", Locale.CHINA)
 
     fun labelFor(dateMillis: Long, minutesOfDay: Int?): String {
         return if (minutesOfDay == null) {
@@ -19,5 +20,7 @@ object DateTimeFormatters {
     }
 
     fun alarmLabel(dateTimeMillis: Long): String = dateTime.format(Date(dateTimeMillis))
+
+    fun formatTimestamp(millis: Long): String = fullDateTime.format(Date(millis))
 }
 
