@@ -47,8 +47,10 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.ui.draw.shadow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -73,6 +75,8 @@ import androidx.compose.material.icons.rounded.FileUpload
 import androidx.compose.material.icons.rounded.Inventory2
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Unarchive
+import androidx.compose.material.icons.rounded.ArrowUpward
+import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Settings
@@ -465,6 +469,13 @@ private fun DianMaoApp() {
     val quadrantDetailTasks = remember(activeTasks, activePriority) {
         activePriority?.let { priority -> activeTasks.filter { it.quadrant == priority } }.orEmpty()
     }
+
+    var reorderableDetailTasks by remember { mutableStateOf<List<TaskUiModel>>(emptyList()) }
+
+    LaunchedEffect(quadrantDetailTasks) {
+        reorderableDetailTasks = quadrantDetailTasks
+    }
+
     val toggleComplete: (TaskUiModel) -> Unit = { target ->
         if (target.completed) {
             if (target.repeatRule != RepeatRule.None) {
@@ -561,23 +572,41 @@ private fun DianMaoApp() {
                             item {
                                 QuadrantDetailHeader(
                                     quadrant = priority,
-                                    tasks = quadrantDetailTasks,
+                                    tasks = reorderableDetailTasks,
                                     onBack = { activePriority = null }
                                 )
                             }
-                            if (quadrantDetailTasks.isEmpty()) {
+                            if (reorderableDetailTasks.isEmpty()) {
                                 item {
                                     QuadrantDetailEmptyState(priority)
                                 }
                             } else {
-                                items(quadrantDetailTasks, key = { it.id }) { task ->
+                                itemsIndexed(reorderableDetailTasks, key = { _, task -> task.id }) { index, task ->
                                     TaskRow(
                                         task = task,
                                         onToggleComplete = toggleComplete,
                                         onEditTask = { taskForEdit = it },
                                         onDeleteTask = { taskForDelete = it },
                                         onEditNote = { taskForNote = it },
-                                        onArchiveTask = archiveTask
+                                        onArchiveTask = archiveTask,
+                                        canMoveUp = index > 0,
+                                        canMoveDown = index < reorderableDetailTasks.size - 1,
+                                        onMoveUp = {
+                                            val list = reorderableDetailTasks.toMutableList()
+                                            list.add(index - 1, list.removeAt(index))
+                                            reorderableDetailTasks = list
+                                            scope.launch {
+                                                repository.reorderTasks(reorderableDetailTasks)
+                                            }
+                                        },
+                                        onMoveDown = {
+                                            val list = reorderableDetailTasks.toMutableList()
+                                            list.add(index + 1, list.removeAt(index))
+                                            reorderableDetailTasks = list
+                                            scope.launch {
+                                                repository.reorderTasks(reorderableDetailTasks)
+                                            }
+                                        }
                                     )
                                 }
                             }
@@ -1277,7 +1306,12 @@ private fun TaskRow(
     onEditTask: (TaskUiModel) -> Unit,
     onDeleteTask: (TaskUiModel) -> Unit,
     onEditNote: (TaskUiModel) -> Unit,
-    onArchiveTask: (TaskUiModel) -> Unit = {}
+    onArchiveTask: (TaskUiModel) -> Unit = {},
+    modifier: Modifier = Modifier,
+    canMoveUp: Boolean = false,
+    canMoveDown: Boolean = false,
+    onMoveUp: () -> Unit = {},
+    onMoveDown: () -> Unit = {}
 ) {
     var actionsExpanded by remember { mutableStateOf(false) }
     val scale by animateFloatAsState(
@@ -1287,7 +1321,7 @@ private fun TaskRow(
     )
 
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .scale(scale),
         colors = CardDefaults.cardColors(
@@ -1397,6 +1431,36 @@ private fun TaskRow(
                         expanded = actionsExpanded,
                         onDismissRequest = { actionsExpanded = false }
                     ) {
+                        if (canMoveUp) {
+                            DropdownMenuItem(
+                                text = { Text("上移") },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Rounded.ArrowUpward,
+                                        contentDescription = null
+                                    )
+                                },
+                                onClick = {
+                                    actionsExpanded = false
+                                    onMoveUp()
+                                }
+                            )
+                        }
+                        if (canMoveDown) {
+                            DropdownMenuItem(
+                                text = { Text("下移") },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Rounded.ArrowDownward,
+                                        contentDescription = null
+                                    )
+                                },
+                                onClick = {
+                                    actionsExpanded = false
+                                    onMoveDown()
+                                }
+                            )
+                        }
                         DropdownMenuItem(
                             text = { Text("编辑事项") },
                             leadingIcon = {
