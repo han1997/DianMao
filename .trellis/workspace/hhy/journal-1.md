@@ -323,3 +323,36 @@ Fixed recurring task completion button becoming unresponsive due to incorrect en
 ### Next Steps
 
 - None - task complete
+
+
+## Session 10: Refine task card layout: remove inline note, flatten action buttons
+
+**Date**: 2026-06-17
+**Task**: Refine task card layout: remove inline note, flatten action buttons
+**Branch**: `master`
+
+### Summary
+
+Removed AnimatedContent note preview from TaskRow (chip already signals note). Changed right-side buttons from vertical Column to horizontal Row so card height follows content instead of button tower.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `38035b1` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
