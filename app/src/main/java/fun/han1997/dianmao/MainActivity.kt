@@ -1507,7 +1507,6 @@ private fun TaskRow(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 IconButton(
                     onClick = { onEditNote(task) },
-                    enabled = if (task.completed) true else canComplete,
                     modifier = Modifier.size(38.dp)
                 ) {
                     Icon(
