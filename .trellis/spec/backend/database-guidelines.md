@@ -190,3 +190,257 @@ db.withTransaction {
     dao.insertAll(tasks)
 }
 ```
+
+---
+
+## Scenario: Recurring Task Completion with History Tracking
+
+### 1. Scope / Trigger
+
+Trigger this contract when implementing recurring task completion behavior with cycle boundaries and historical completion records.
+
+### 2. Signatures
+
+**Database Schema:**
+```kotlin
+@Entity(
+    tableName = "task_completions",
+    foreignKeys = [ForeignKey(
+        entity = TaskEntity::class,
+        parentColumns = ["id"],
+        childColumns = ["taskId"],
+        onDelete = ForeignKey.CASCADE
+    )],
+    indices = [Index(value = ["taskId"])]
+)
+data class TaskCompletionEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long,
+    val taskId: Long,
+    val completedAtMillis: Long,
+    val note: String?
+)
+```
+
+**DAO Methods:**
+```kotlin
+@Dao
+interface TaskCompletionDao {
+    fun observeCompletions(taskId: Long): Flow<List<TaskCompletionEntity>>
+    suspend fun insert(completion: TaskCompletionEntity): Long
+    suspend fun deleteById(completionId: Long)
+}
+```
+
+**Repository Methods:**
+```kotlin
+suspend fun canCompleteInCurrentCycle(task: TaskUiModel): Boolean
+suspend fun saveCompletionNote(taskId: Long, note: String)
+suspend fun deleteCompletion(completionId: Long)
+fun observeCompletions(taskId: Long): Flow<List<TaskCompletionEntity>>
+```
+
+### 3. Contracts
+
+**Cycle Boundaries:**
+- Daily: Same calendar date (LocalDate comparison)
+- Weekly: Same ISO week (Monday-Sunday, uses ISO week-of-year)
+- Monthly: Same year and month
+- Count-based: No cycle restriction (unlimited completions)
+
+**Completion Recording:**
+- Create `TaskCompletionEntity` for every recurring task completion
+- Store `completedAtMillis` and optional `note`
+- Increment `completionCount` on parent task
+- Update `lastCompletedAtMillis` on parent task
+
+**Cycle Enforcement:**
+- Check `canCompleteInCurrentCycle()` before allowing completion
+- Compare `lastCompletedAtMillis` against current time using cycle rules
+- Return `false` if already completed in current cycle
+
+**Foreign Key Behavior:**
+- `ON DELETE CASCADE`: Deleting a task automatically deletes all its completion records
+
+### 4. Validation & Error Matrix
+
+**Cycle Calculation Bugs:**
+- Using `with(DayOfWeek.MONDAY)` for weekly cycle → incorrect week boundaries (Sunday/Monday mismatch)
+- Comparing `Instant` instead of `LocalDate` for daily → timezone issues
+- Not using ISO week numbers → incorrect cross-year week comparison
+
+**State Inconsistencies:**
+- Not incrementing `completionCount` → stats drift from actual history
+- Not updating `lastCompletedAtMillis` → cycle check always passes
+- Creating completion record without updating parent task → orphaned data
+
+**UI Sync Issues:**
+- Not checking `canCompleteInCurrentCycle()` in UI → duplicate completions possible
+- Not observing `completions` Flow → history list doesn't update
+- Not using `LaunchedEffect` on task state → stale cycle check
+
+### 5. Good/Base/Bad Cases
+
+**Good:**
+```kotlin
+// Repository: Create completion record + update parent atomically
+suspend fun saveCompletionNote(taskId: Long, note: String) {
+    val existing = dao.findById(taskId) ?: return
+    val now = System.currentTimeMillis()
+    
+    if (existing.repeatRule != RepeatRule.None) {
+        completionDao.insert(
+            TaskCompletionEntity(taskId, now, note)
+        )
+    }
+    
+    val updated = existing.copy(
+        completed = true,
+        completionCount = existing.completionCount + 1,
+        lastCompletedAtMillis = now,
+        completionNote = note
+    )
+    dao.update(updated)
+}
+
+// UI: Check cycle before enabling button
+LaunchedEffect(task.id, task.lastCompletedAtMillis, task.completed) {
+    canComplete = repository.canCompleteInCurrentCycle(task)
+}
+```
+
+**Base:**
+```kotlin
+// Non-recurring task: just mark completed, no history
+existing.copy(completed = true, completionNote = note)
+```
+
+**Bad:**
+```kotlin
+// Wrong: Uses temporal adjustment for weekly cycle
+val week1 = time1.atStartOfDay().with(DayOfWeek.MONDAY)
+val week2 = time2.atStartOfDay().with(DayOfWeek.MONDAY)
+week1.isEqual(week2)  // ❌ Sunday and Monday can incorrectly match
+
+// Wrong: No cycle check in UI
+IconButton(
+    onClick = { onComplete(task) },
+    enabled = !task.completed  // ❌ Allows duplicate completions
+)
+```
+
+### 6. Tests Required
+
+**Unit Tests (if added):**
+- `isInSameCycle()` with dates at cycle boundaries (23:59 → 00:01)
+- `isInSameCycle()` across year boundaries (Dec 31 → Jan 1)
+- `isInSameCycle()` for ISO week calculation (Sunday → Monday)
+- `canCompleteInCurrentCycle()` for all RepeatRule types
+
+**Integration Tests:**
+- Complete daily task → button disabled until midnight
+- Complete weekly task → button disabled until next Monday
+- Complete monthly task → button disabled until 1st of next month
+- Count-based task → button always enabled
+
+**Assertions:**
+- `completionCount` increments on each completion
+- `TaskCompletionEntity` created with correct timestamp
+- `lastCompletedAtMillis` updated to completion time
+- Foreign key cascade deletes completion records when task deleted
+
+### 7. Wrong vs Correct
+
+#### Wrong: Buggy Weekly Cycle Calculation
+
+```kotlin
+private fun isInSameCycle(millis1: Long, millis2: Long, repeatRule: RepeatRule): Boolean {
+    val time1 = Instant.ofEpochMilli(millis1).atZone(ZoneId.systemDefault()).toLocalDate()
+    val time2 = Instant.ofEpochMilli(millis2).atZone(ZoneId.systemDefault()).toLocalDate()
+    
+    return when (repeatRule) {
+        RepeatRule.Weekly -> {
+            val week1 = time1.atStartOfDay().with(DayOfWeek.MONDAY)
+            val week2 = time2.atStartOfDay().with(DayOfWeek.MONDAY)
+            week1.isEqual(week2)  // ❌ Incorrect for cross-week dates
+        }
+        // ...
+    }
+}
+```
+
+**Problem:** `with(DayOfWeek.MONDAY)` adjusts to the nearest Monday, which can be in the previous or next week. A Sunday completion and Monday completion can incorrectly be treated as the same week.
+
+#### Correct: ISO Week Number Calculation
+
+```kotlin
+private fun isInSameCycle(millis1: Long, millis2: Long, repeatRule: RepeatRule): Boolean {
+    val zone = ZoneId.systemDefault()
+    val time1 = Instant.ofEpochMilli(millis1).atZone(zone).toLocalDate()
+    val time2 = Instant.ofEpochMilli(millis2).atZone(zone).toLocalDate()
+    
+    return when (repeatRule) {
+        RepeatRule.Daily -> time1.isEqual(time2)
+        RepeatRule.Weekly -> {
+            val week1 = time1.year * 53 + time1.get(WeekFields.ISO.weekOfWeekBasedYear())
+            val week2 = time2.year * 53 + time2.get(WeekFields.ISO.weekOfWeekBasedYear())
+            week1 == week2  // ✅ Accurate across year boundaries
+        }
+        RepeatRule.Monthly -> {
+            time1.year == time2.year && time1.monthValue == time2.monthValue
+        }
+        else -> false
+    }
+}
+```
+
+**Why:** ISO week numbers (Monday-Sunday) are stable across year boundaries. Multiplying by 53 (max weeks per year) ensures year rollover doesn't cause false positives.
+
+#### Wrong: No Cycle Check in UI
+
+```kotlin
+@Composable
+private fun TaskRow(task: TaskUiModel, onComplete: (TaskUiModel) -> Unit) {
+    IconButton(
+        onClick = { onComplete(task) },
+        enabled = !task.completed  // ❌ No cycle boundary check
+    )
+}
+```
+
+**Problem:** A daily task completed at 11pm can be completed again at 11:01pm, violating the "once per day" requirement.
+
+#### Correct: Reactive Cycle Check
+
+```kotlin
+@Composable
+private fun TaskRow(
+    task: TaskUiModel,
+    repository: TaskRepository,
+    onComplete: (TaskUiModel) -> Unit
+) {
+    var canComplete by remember { mutableStateOf(true) }
+    
+    LaunchedEffect(task.id, task.lastCompletedAtMillis, task.completed) {
+        canComplete = repository.canCompleteInCurrentCycle(task)
+    }
+    
+    IconButton(
+        onClick = { onComplete(task) },
+        enabled = canComplete || task.completed  // ✅ Respects cycle boundaries
+    )
+}
+```
+
+**Why:** `LaunchedEffect` recomputes `canComplete` whenever the task's completion state changes, ensuring the button accurately reflects whether the current cycle allows completion.
+
+---
+
+## Common Mistakes (Recurring Tasks)
+
+* Using `with(DayOfWeek.MONDAY)` for weekly cycle calculation instead of ISO week numbers
+* Not passing `repository` parameter to UI components that need cycle checks
+* Checking `!task.completed` instead of `canCompleteInCurrentCycle()` in UI
+* Creating completion records without incrementing parent task's `completionCount`
+* Not updating `lastCompletedAtMillis` when recording completion
+* Comparing `Instant` directly instead of converting to `LocalDate` for daily cycles
+* Missing `LaunchedEffect` dependencies: UI shows stale cycle state after completion
