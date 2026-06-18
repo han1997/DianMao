@@ -5,6 +5,7 @@ import android.content.ContentUris
 import android.content.ContentValues
 import android.content.Context
 import android.provider.CalendarContract
+import android.util.Log
 import `fun`.han1997.dianmao.data.RepeatRule
 import `fun`.han1997.dianmao.data.TaskUiModel
 import java.util.TimeZone
@@ -59,10 +60,13 @@ object CalendarWriter {
         val reminderValues = ContentValues().apply {
             put(CalendarContract.Reminders.EVENT_ID, eventId)
             put(CalendarContract.Reminders.MINUTES, 0)
-            put(CalendarContract.Reminders.METHOD, CalendarContract.Reminders.METHOD_ALARM)
+            put(CalendarContract.Reminders.METHOD, CalendarContract.Reminders.METHOD_ALERT)
         }
-        runCatching {
+        val result = runCatching {
             resolver.insert(CalendarContract.Reminders.CONTENT_URI, reminderValues)
+        }
+        if (result.isFailure) {
+            Log.w("CalendarWriter", "Failed to insert reminder for event $eventId", result.exceptionOrNull())
         }
     }
 
