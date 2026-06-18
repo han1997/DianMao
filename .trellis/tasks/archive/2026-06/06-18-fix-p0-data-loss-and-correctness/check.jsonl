@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Verify transaction annotations and migration patterns match spec"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Quality bar for data integrity fixes"}
