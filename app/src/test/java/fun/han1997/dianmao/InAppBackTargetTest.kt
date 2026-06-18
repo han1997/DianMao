@@ -11,7 +11,8 @@ class InAppBackTargetTest {
             showBackupPanel = true,
             showArchivedPanel = true,
             isTaskPanelVisible = true,
-            hasActivePriority = true
+            hasActivePriority = true,
+            taskForDetail = true
         )
 
         assertEquals(InAppBackTarget.BackupPanel, target)
@@ -23,22 +24,37 @@ class InAppBackTargetTest {
             showBackupPanel = false,
             showArchivedPanel = true,
             isTaskPanelVisible = true,
-            hasActivePriority = true
+            hasActivePriority = true,
+            taskForDetail = true
         )
 
         assertEquals(InAppBackTarget.ArchivedPanel, target)
     }
 
     @Test
-    fun taskPanelTakesPriorityOverQuadrantDetail() {
+    fun taskPanelTakesPriorityOverTaskDetailAndQuadrantDetail() {
         val target = resolveInAppBackTarget(
             showBackupPanel = false,
             showArchivedPanel = false,
             isTaskPanelVisible = true,
-            hasActivePriority = true
+            hasActivePriority = true,
+            taskForDetail = true
         )
 
         assertEquals(InAppBackTarget.TaskPanel, target)
+    }
+
+    @Test
+    fun taskDetailTakesPriorityOverQuadrantDetail() {
+        val target = resolveInAppBackTarget(
+            showBackupPanel = false,
+            showArchivedPanel = false,
+            isTaskPanelVisible = false,
+            hasActivePriority = true,
+            taskForDetail = true
+        )
+
+        assertEquals(InAppBackTarget.TaskDetail, target)
     }
 
     @Test
@@ -47,7 +63,8 @@ class InAppBackTargetTest {
             showBackupPanel = false,
             showArchivedPanel = false,
             isTaskPanelVisible = false,
-            hasActivePriority = true
+            hasActivePriority = true,
+            taskForDetail = false
         )
 
         assertEquals(InAppBackTarget.QuadrantDetail, target)
@@ -59,7 +76,8 @@ class InAppBackTargetTest {
             showBackupPanel = false,
             showArchivedPanel = false,
             isTaskPanelVisible = false,
-            hasActivePriority = false
+            hasActivePriority = false,
+            taskForDetail = false
         )
 
         assertNull(target)

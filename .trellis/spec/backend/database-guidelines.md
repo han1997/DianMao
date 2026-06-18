@@ -51,10 +51,15 @@ nullability/default changed in `TaskEntity`.
 * Room schema export stays enabled. Commit the generated schema JSON whenever
   the database schema changes.
 * Backup import/export must be updated for every persisted task field.
+* Production database builders must not use `fallbackToDestructiveMigration()`;
+  missing migrations should fail visibly instead of silently deleting local
+  task data.
 
 ### 4. Validation & Error Matrix
 
 * Missing adjacent migration -> Room opens fail at runtime.
+* `fallbackToDestructiveMigration()` enabled -> missing migrations can silently
+  wipe the local task database.
 * Entity field missing from `toUiModel()` -> UI/app flow silently loses stored data.
 * Non-null column without default -> migration fails on existing rows.
 * Schema JSON not committed -> future migration diffs lose the baseline.
@@ -119,6 +124,8 @@ name, for example `calendarEventId`.
 * Updating `TaskEntity` without updating `TaskUiModel` and `toUiModel()`.
 * Updating `TaskEntity` without updating `TaskBackupCodec`.
 * Bumping the Room database version without adding the adjacent migration.
+* Leaving `fallbackToDestructiveMigration()` enabled after adding explicit
+  migrations; it masks migration gaps by clearing user data.
 * Forgetting to commit `app/schemas/**/<version>.json` after schema changes.
 * Managing external records without persisting their stable external id.
 * Writing local JVM unit tests that use `org.json` — Android's `org.json` is a
