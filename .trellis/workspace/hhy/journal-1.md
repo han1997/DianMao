@@ -423,3 +423,36 @@ Restored accessible quadrant detail header actions, made summary stats wrap safe
 ### Next Steps
 
 - None - task complete
+
+
+## Session 13: Custom launcher icon + task detail page with editable history
+
+**Date**: 2026-06-18
+**Task**: Custom launcher icon + task detail page with editable history
+**Branch**: `master`
+
+### Summary
+
+Designed and implemented DianMao's custom Android launcher icon (warm-red seal-dot matching '点卯' branding). Built full-screen task detail page with: task info, completion note card, stats row, editable history timeline, bottom action bar. Completion history notes are now inline-editable. Fixed edit navigation so editing from detail page returns to detail. Simplified all edit flows to use AddTaskPanel directly. FAB now only visible on home screen.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `fe803b4` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
