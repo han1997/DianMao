@@ -1,0 +1,11 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Monochrome layer for Android 13+ themed icons -->
+    <!-- Single circle outline representing the "seal dot" -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M76,52 C76,64.15 66.15,74 54,74 C41.85,74 32,64.15 32,52 C32,39.85 41.85,30 54,30 C66.15,30 76,39.85 76,52 Z" />
+</vector>

@@ -345,6 +345,10 @@ class TaskRepository(context: Context) {
         completionDao.deleteById(completionId)
     }
 
+    suspend fun updateCompletionNote(completionId: Long, note: String?) {
+        completionDao.updateNote(completionId, note?.trim()?.takeIf { it.isNotBlank() })
+    }
+
     suspend fun canCompleteInCurrentCycle(task: TaskUiModel): Boolean {
         if (task.repeatRule == RepeatRule.None) return !task.completed
         if (task.repeatRule.isCountBased()) return true

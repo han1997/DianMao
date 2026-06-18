@@ -73,6 +73,7 @@ import androidx.compose.material.icons.rounded.Archive
 import androidx.compose.material.icons.rounded.Alarm
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material.icons.rounded.CloudUpload
@@ -82,8 +83,11 @@ import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.EditNote
 import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.FileUpload
+import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Inventory2
 import androidx.compose.material.icons.rounded.MoreVert
+import androidx.compose.material.icons.rounded.Repeat
+import androidx.compose.material.icons.rounded.Replay
 import androidx.compose.material.icons.rounded.Unarchive
 import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.ArrowDownward
@@ -99,6 +103,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -182,6 +187,7 @@ class MainActivity : ComponentActivity() {
 }
 
 internal enum class InAppBackTarget {
+    TaskDetail,
     BackupPanel,
     ArchivedPanel,
     TaskPanel,
@@ -192,12 +198,14 @@ internal fun resolveInAppBackTarget(
     showBackupPanel: Boolean,
     showArchivedPanel: Boolean,
     isTaskPanelVisible: Boolean,
-    hasActivePriority: Boolean
+    hasActivePriority: Boolean,
+    taskForDetail: Boolean
 ): InAppBackTarget? {
     return when {
         showBackupPanel -> InAppBackTarget.BackupPanel
         showArchivedPanel -> InAppBackTarget.ArchivedPanel
         isTaskPanelVisible -> InAppBackTarget.TaskPanel
+        taskForDetail -> InAppBackTarget.TaskDetail
         hasActivePriority -> InAppBackTarget.QuadrantDetail
         else -> null
     }
@@ -434,7 +442,18 @@ private fun DianMaoApp() {
     var taskForHistory by remember { mutableStateOf<TaskUiModel?>(null) }
     var taskForDelete by remember { mutableStateOf<TaskUiModel?>(null) }
     var taskForUncompletion by remember { mutableStateOf<TaskUiModel?>(null) }
+    var taskForDetail by remember { mutableStateOf<TaskUiModel?>(null) }
     var backupStatus by rememberSaveable { mutableStateOf<String?>(null) }
+
+    // Refresh taskForDetail when the task data changes (after edit, complete, etc.)
+    LaunchedEffect(activeTasks, archivedTasks, taskForDetail?.id) {
+        taskForDetail?.let { current ->
+            val updated = (activeTasks + archivedTasks).firstOrNull { it.id == current.id }
+            if (updated != null && updated != current) {
+                taskForDetail = updated
+            }
+        }
+    }
     var webDavSettings by remember { mutableStateOf(backupSettingsStore.loadWebDavSettings()) }
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -526,7 +545,8 @@ private fun DianMaoApp() {
         showBackupPanel = showBackupPanel,
         showArchivedPanel = showArchivedPanel,
         isTaskPanelVisible = isTaskPanelVisible,
-        hasActivePriority = activePriority != null
+        hasActivePriority = activePriority != null,
+        taskForDetail = taskForDetail != null
     )
 
     BackHandler(enabled = backTarget != null) {
@@ -534,6 +554,7 @@ private fun DianMaoApp() {
             InAppBackTarget.BackupPanel -> showBackupPanel = false
             InAppBackTarget.ArchivedPanel -> showArchivedPanel = false
             InAppBackTarget.TaskPanel -> dismissTaskPanel()
+            InAppBackTarget.TaskDetail -> taskForDetail = null
             InAppBackTarget.QuadrantDetail -> activePriority = null
             null -> Unit
         }
@@ -543,12 +564,14 @@ private fun DianMaoApp() {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
             floatingActionButton = {
-                FloatingActionButton(
-                    onClick = { showAddSheet = true },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ) {
-                    Icon(Icons.Rounded.Add, contentDescription = "新增事项")
+                if (activePriority == null && taskForDetail == null) {
+                    FloatingActionButton(
+                        onClick = { showAddSheet = true },
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ) {
+                        Icon(Icons.Rounded.Add, contentDescription = "新增事项")
+                    }
                 }
             }
         ) { padding ->
@@ -674,21 +697,43 @@ private fun DianMaoApp() {
                                             repository = repository,
                                             onToggleComplete = toggleComplete,
                                             onEditTask = { t ->
-                                                if (t.repeatRule != RepeatRule.None) {
-                                                    taskForHistory = t
-                                                } else {
-                                                    taskForEdit = t
-                                                }
+                                                taskForEdit = t
                                             },
                                             onDeleteTask = { taskForDelete = it },
                                             onEditNote = { taskForNote = it },
-                                            onArchiveTask = archiveTask
+                                            onArchiveTask = archiveTask,
+                                            onViewDetail = { taskForDetail = it }
                                         )
                                     }
                                 }
                             }
                         }
                     }
+                }
+
+                taskForDetail?.let { task ->
+                    TaskDetailScreen(
+                        task = task,
+                        repository = repository,
+                        onBack = { taskForDetail = null },
+                        onEdit = {
+                            taskForEdit = task
+                        },
+                        onToggleComplete = toggleComplete,
+                        onDelete = { taskForDelete = it; taskForDetail = null },
+                        onEditNote = { taskForNote = it },
+                        onArchive = archiveTask,
+                        onDeleteCompletion = { completionId ->
+                            scope.launch {
+                                repository.deleteCompletion(completionId)
+                            }
+                        },
+                        onUpdateCompletionNote = { completionId, note ->
+                            scope.launch {
+                                repository.updateCompletionNote(completionId, note)
+                            }
+                        }
+                    )
                 }
 
                 AddTaskPanel(
@@ -751,6 +796,11 @@ private fun DianMaoApp() {
                         onDeleteCompletion = { completionId ->
                             scope.launch {
                                 repository.deleteCompletion(completionId)
+                            }
+                        },
+                        onUpdateCompletionNote = { completionId, note ->
+                            scope.launch {
+                                repository.updateCompletionNote(completionId, note)
                             }
                         }
                     )
@@ -1369,9 +1419,9 @@ private fun CompactQuadrantTask(
 }
 
 @Composable
-private fun CompletionMark(completed: Boolean, color: Color) {
+private fun CompletionMark(completed: Boolean, color: Color, modifier: Modifier = Modifier) {
     Box(
-        modifier = Modifier
+        modifier = modifier
             .padding(top = 2.dp)
             .size(18.dp)
             .background(
@@ -1448,6 +1498,7 @@ private fun TaskRow(
     onEditTask: (TaskUiModel) -> Unit,
     onDeleteTask: (TaskUiModel) -> Unit,
     onEditNote: (TaskUiModel) -> Unit,
+    onViewDetail: (TaskUiModel) -> Unit = {},
     onArchiveTask: (TaskUiModel) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -1477,20 +1528,26 @@ private fun TaskRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .clickable(role = Role.Checkbox) { onToggleComplete(task) }
-                .semantics {
-                    contentDescription = if (task.completed) "标记为未完成" else "标记为完成"
-                }
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             CompletionMark(
                 completed = task.completed,
-                color = task.quadrant.color
+                color = task.quadrant.color,
+                modifier = Modifier
+                    .clickable(role = Role.Checkbox) { onToggleComplete(task) }
+                    .semantics {
+                        contentDescription = if (task.completed) "标记为未完成" else "标记为完成"
+                    }
             )
             Spacer(Modifier.width(10.dp))
             Column(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { onViewDetail(task) }
+                    .semantics {
+                        contentDescription = "查看事项详情：${task.title}"
+                    },
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -2572,7 +2629,8 @@ fun RecurringTaskHistoryPanel(
     onDismiss: () -> Unit,
     onEdit: (TaskUiModel) -> Unit,
     onComplete: (TaskUiModel) -> Unit,
-    onDeleteCompletion: (Long) -> Unit
+    onDeleteCompletion: (Long) -> Unit,
+    onUpdateCompletionNote: (Long, String?) -> Unit = { _, _ -> }
 ) {
     val completions by repository.observeCompletions(task.id).collectAsState(initial = emptyList())
     val scope = rememberCoroutineScope()
@@ -2717,9 +2775,13 @@ fun RecurringTaskHistoryPanel(
 @Composable
 fun CompletionItem(
     completion: TaskCompletionEntity,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onUpdateNote: (Long, String?) -> Unit = { _, _ -> }
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var isEditingNote by remember { mutableStateOf(false) }
+    var editNoteText by remember { mutableStateOf(completion.note.orEmpty()) }
+    val focusManager = LocalFocusManager.current
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -2727,32 +2789,87 @@ fun CompletionItem(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .padding(12.dp)
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
                     text = DateTimeFormatters.formatTimestamp(completion.completedAtMillis),
                     style = MaterialTheme.typography.bodyMedium
                 )
-                if (!completion.note.isNullOrBlank()) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = completion.note,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(
+                        onClick = {
+                            editNoteText = completion.note.orEmpty()
+                            isEditingNote = true
+                        },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            Icons.Rounded.Edit,
+                            contentDescription = "编辑备注",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                    IconButton(
+                        onClick = { showDeleteDialog = true },
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            Icons.Rounded.Delete,
+                            contentDescription = "删除",
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
                 }
             }
-            IconButton(onClick = { showDeleteDialog = true }) {
-                Icon(
-                    Icons.Rounded.Delete,
-                    contentDescription = "删除",
-                    tint = MaterialTheme.colorScheme.error
+            if (isEditingNote) {
+                OutlinedTextField(
+                    value = editNoteText,
+                    onValueChange = { editNoteText = it },
+                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                    placeholder = { Text("写点什么") },
+                    textStyle = MaterialTheme.typography.bodySmall,
+                    singleLine = false,
+                    maxLines = 3,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = {
+                        onUpdateNote(completion.id, editNoteText)
+                        isEditingNote = false
+                        focusManager.clearFocus()
+                    })
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(
+                        onClick = {
+                            isEditingNote = false
+                            editNoteText = completion.note.orEmpty()
+                        }
+                    ) { Text("取消") }
+                    TextButton(
+                        onClick = {
+                            onUpdateNote(completion.id, editNoteText)
+                            isEditingNote = false
+                        }
+                    ) { Text("保存") }
+                }
+            } else if (!completion.note.isNullOrBlank()) {
+                Text(
+                    text = completion.note,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp)
                 )
             }
         }
@@ -2779,5 +2896,301 @@ fun CompletionItem(
                 }
             }
         )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+private fun TaskDetailScreen(
+    task: TaskUiModel,
+    repository: TaskRepository,
+    onBack: () -> Unit,
+    onEdit: () -> Unit,
+    onToggleComplete: (TaskUiModel) -> Unit,
+    onDelete: (TaskUiModel) -> Unit,
+    onEditNote: (TaskUiModel) -> Unit,
+    onArchive: (TaskUiModel) -> Unit,
+    onDeleteCompletion: (Long) -> Unit,
+    onUpdateCompletionNote: (Long, String?) -> Unit
+) {
+    val completions by repository.observeCompletions(task.id).collectAsState(initial = emptyList())
+    val scope = rememberCoroutineScope()
+    val listState = rememberLazyListState()
+
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = MaterialTheme.colorScheme.background
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Top bar
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 8.dp, end = 8.dp, top = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(
+                        Icons.AutoMirrored.Rounded.ArrowBack,
+                        contentDescription = "返回",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    text = "事项详情",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(Modifier.weight(1f))
+                IconButton(onClick = onEdit) {
+                    Icon(
+                        Icons.Rounded.Edit,
+                        contentDescription = "编辑",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 20.dp),
+                contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Task title
+                item {
+                    Text(
+                        text = task.title,
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontWeight = FontWeight.SemiBold
+                        ),
+                        color = if (task.completed) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                // Meta section
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(12.dp)
+                                    .background(task.quadrant.color, CircleShape)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = task.quadrant.label,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = task.quadrant.color,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            task.dueLabel?.let {
+                                CompactMeta(icon = Icons.Rounded.Schedule, text = it)
+                            }
+                            if (task.useCalendar) {
+                                CompactMeta(icon = Icons.Rounded.CalendarMonth, text = "系统日历")
+                            }
+                            if (task.useAlarm) {
+                                CompactMeta(icon = Icons.Rounded.Alarm, text = "响铃")
+                            }
+                            if (task.repeatRule != RepeatRule.None) {
+                                CompactMeta(icon = Icons.Rounded.Repeat, text = task.repeatRule.label)
+                            }
+                            if (task.completionCount > 0) {
+                                CompactMeta(icon = Icons.Rounded.CheckCircle, text = "已完成 ${task.completionCount} 次")
+                            }
+                        }
+                    }
+                }
+
+                // Completion note (if exists)
+                task.completionNote?.takeIf { it.isNotBlank() }?.let { note ->
+                    item {
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Text(
+                                text = "完成心得",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                            ) {
+                                Text(
+                                    text = note,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    modifier = Modifier.padding(14.dp),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Stats row
+                if (task.repeatRule != RepeatRule.None || completions.isNotEmpty()) {
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(24.dp)
+                        ) {
+                            Column {
+                                Text(
+                                    text = "${task.completionCount}",
+                                    style = MaterialTheme.typography.headlineMedium.copy(
+                                        fontWeight = FontWeight.Bold
+                                    ),
+                                    color = task.quadrant.color
+                                )
+                                Text(
+                                    text = "总完成次数",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Column {
+                                Text(
+                                    text = "${completions.size}",
+                                    style = MaterialTheme.typography.headlineMedium.copy(
+                                        fontWeight = FontWeight.Bold
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "历史记录",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            task.lastCompletedAtMillis?.let {
+                                Column {
+                                    Text(
+                                        text = DateTimeFormatters.formatTimestamp(it),
+                                        style = MaterialTheme.typography.titleSmall.copy(
+                                            fontWeight = FontWeight.Medium
+                                        ),
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = "上次完成",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Completion history
+                item {
+                    Text(
+                        text = "完成历史",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    )
+                }
+
+                if (completions.isEmpty()) {
+                    item {
+                        Column(
+                            modifier = Modifier.padding(vertical = 24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                Icons.Rounded.History,
+                                contentDescription = null,
+                                modifier = Modifier.size(40.dp),
+                                tint = MaterialTheme.colorScheme.outline
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                text = if (task.repeatRule != RepeatRule.None) "完成循环事项后这里会记录每次完成" else "暂无完成记录",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                } else {
+                    items(completions, key = { it.id }) { completion ->
+                        CompletionItem(
+                            completion = completion,
+                            onDelete = { onDeleteCompletion(completion.id) },
+                            onUpdateNote = { id, note -> onUpdateCompletionNote(id, note) }
+                        )
+                    }
+                }
+            }
+
+            // Bottom action bar
+            Surface(
+                tonalElevation = 2.dp,
+                shadowElevation = 8.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 14.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    FilledTonalButton(
+                        onClick = { onToggleComplete(task) },
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Icon(
+                            imageVector = if (task.completed) Icons.Rounded.Replay else Icons.Rounded.DoneAll,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(if (task.completed) "标为未完成" else "完成")
+                    }
+                    if (task.completed) {
+                        FilledTonalButton(
+                            onClick = { onArchive(task) },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.filledTonalButtonColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                            )
+                        ) {
+                            Icon(
+                                Icons.Rounded.Archive,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text("归档")
+                        }
+                    }
+                    IconButton(
+                        onClick = { onDelete(task) },
+                        modifier = Modifier
+                            .size(48.dp)
+                            .background(
+                                MaterialTheme.colorScheme.errorContainer,
+                                CircleShape
+                            )
+                    ) {
+                        Icon(
+                            Icons.Rounded.Delete,
+                            contentDescription = "删除",
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
+        }
     }
 }

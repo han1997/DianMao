@@ -61,6 +61,9 @@ interface TaskCompletionDao {
     @Insert
     suspend fun insert(completion: TaskCompletionEntity): Long
 
+    @Query("UPDATE task_completions SET note = :note WHERE id = :completionId")
+    suspend fun updateNote(completionId: Long, note: String?)
+
     @Query("DELETE FROM task_completions WHERE id = :completionId")
     suspend fun deleteById(completionId: Long)
 }
