@@ -48,12 +48,18 @@ interface TaskDao {
 
     @Delete
     suspend fun delete(task: TaskEntity)
+
+    @Query("UPDATE tasks SET completionCount = :count WHERE id = :taskId")
+    suspend fun updateCompletionCount(taskId: Long, count: Int)
 }
 
 @Dao
 interface TaskCompletionDao {
     @Query("SELECT * FROM task_completions WHERE taskId = :taskId ORDER BY completedAtMillis DESC")
     fun observeCompletions(taskId: Long): Flow<List<TaskCompletionEntity>>
+
+    @Query("SELECT * FROM task_completions WHERE id = :completionId LIMIT 1")
+    suspend fun findById(completionId: Long): TaskCompletionEntity?
 
     @Query("SELECT * FROM task_completions WHERE taskId = :taskId ORDER BY completedAtMillis DESC")
     suspend fun findCompletions(taskId: Long): List<TaskCompletionEntity>
@@ -66,5 +72,17 @@ interface TaskCompletionDao {
 
     @Query("DELETE FROM task_completions WHERE id = :completionId")
     suspend fun deleteById(completionId: Long)
+
+    @Query("DELETE FROM task_completions")
+    suspend fun deleteAll()
+
+    @Query("SELECT COUNT(*) FROM task_completions WHERE taskId = :taskId")
+    suspend fun countForTask(taskId: Long): Int
+
+    @Query("SELECT * FROM task_completions ORDER BY taskId ASC, completedAtMillis DESC")
+    suspend fun findAll(): List<TaskCompletionEntity>
+
+    @Insert
+    suspend fun insertAll(completions: List<TaskCompletionEntity>)
 }
 

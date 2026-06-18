@@ -873,8 +873,15 @@ private fun DianMaoApp() {
             onDismiss = { taskForNote = null },
             onSave = { note ->
                 scope.launch {
-                    repository.saveCompletionNote(task.id, note)
+                    val updated = repository.saveCompletionNote(task.id, note)
                     scheduler.cancel(task.id)
+                    if (updated != null && updated.useAlarm && updated.dueAtMillis != null) {
+                        val uiTask = task.copy(
+                            dueAtMillis = updated.dueAtMillis,
+                            dueLabel = updated.dueLabel
+                        )
+                        scheduler.schedule(uiTask)
+                    }
                 }
                 taskForNote = null
             }

@@ -83,7 +83,8 @@ class TaskRepository(context: Context) {
     }
 
     suspend fun toggleCompleted(task: TaskUiModel, completed: Boolean) {
-        val existing = dao.findById(task.id) ?: return
+        db.withTransaction {
+            val existing = dao.findById(task.id) ?: return@withTransaction
         val now = System.currentTimeMillis()
 
         val updated = if (completed && existing.repeatRule.isCountBased()) {
@@ -132,10 +133,13 @@ class TaskRepository(context: Context) {
         }
 
         dao.update(updated)
+        }
     }
 
-    suspend fun saveCompletionNote(taskId: Long, note: String) {
-        val existing = dao.findById(taskId) ?: return
+    suspend fun saveCompletionNote(taskId: Long, note: String): TaskEntity? {
+        var result: TaskEntity? = null
+        db.withTransaction {
+        val existing = dao.findById(taskId) ?: return@withTransaction
         val now = System.currentTimeMillis()
         val trimmedNote = note.trim().ifBlank { null }
 
@@ -198,6 +202,9 @@ class TaskRepository(context: Context) {
         }
 
         dao.update(updated)
+        result = updated
+        }
+        return result
     }
 
     suspend fun archiveTask(taskId: Long) {
@@ -255,14 +262,18 @@ class TaskRepository(context: Context) {
     }
 
     suspend fun exportBackupJson(): String {
-        return TaskBackupCodec.encode(dao.findAllTasks())
+        return TaskBackupCodec.encode(dao.findAllTasks(), completionDao.findAll())
     }
 
     suspend fun importBackupJson(json: String): Int {
-        val tasks = TaskBackupCodec.decodeForImport(json)
+        val (tasks, completions) = TaskBackupCodec.decodeForImport(json)
         db.withTransaction {
             dao.deleteAll()
+            completionDao.deleteAll()
             dao.insertAll(tasks)
+            if (completions.isNotEmpty()) {
+                completionDao.insertAll(completions)
+            }
         }
         return tasks.size
     }
@@ -342,7 +353,12 @@ class TaskRepository(context: Context) {
     }
 
     suspend fun deleteCompletion(completionId: Long) {
-        completionDao.deleteById(completionId)
+        db.withTransaction {
+            val completion = completionDao.findById(completionId) ?: return@withTransaction
+            completionDao.deleteById(completionId)
+            val actualCount = completionDao.countForTask(completion.taskId)
+            dao.updateCompletionCount(completion.taskId, actualCount)
+        }
     }
 
     suspend fun updateCompletionNote(completionId: Long, note: String?) {

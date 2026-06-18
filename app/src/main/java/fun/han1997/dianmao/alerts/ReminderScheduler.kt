@@ -18,7 +18,7 @@ class ReminderScheduler(private val context: Context) {
         }
         val pendingIntent = PendingIntent.getBroadcast(
             context,
-            task.id.toInt(),
+            task.id.hashCode(),
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntentCompatFlags.immutable()
         )
@@ -33,7 +33,7 @@ class ReminderScheduler(private val context: Context) {
         val intent = Intent(context, TaskReminderReceiver::class.java)
         val pendingIntent = PendingIntent.getBroadcast(
             context,
-            taskId.toInt(),
+            taskId.hashCode(),
             intent,
             PendingIntent.FLAG_NO_CREATE or PendingIntentCompatFlags.immutable()
         )

@@ -29,7 +29,7 @@ class TaskReminderReceiver : BroadcastReceiver() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
         ) {
-            NotificationManagerCompat.from(context).notify(taskId.toInt(), notification)
+            NotificationManagerCompat.from(context).notify(taskId.hashCode(), notification)
         }
 
         val pendingResult = goAsync()

@@ -5,9 +5,13 @@ import org.json.JSONObject
 
 object TaskBackupCodec {
     private const val FORMAT = "dianmao.tasks"
-    private const val BACKUP_VERSION = 1
+    private const val BACKUP_VERSION = 2
 
-    fun encode(tasks: List<TaskEntity>, createdAtMillis: Long = System.currentTimeMillis()): String {
+    fun encode(
+        tasks: List<TaskEntity>,
+        completions: List<TaskCompletionEntity>,
+        createdAtMillis: Long = System.currentTimeMillis()
+    ): String {
         val root = JSONObject()
             .put("format", FORMAT)
             .put("backupVersion", BACKUP_VERSION)
@@ -19,18 +23,35 @@ object TaskBackupCodec {
                     tasks.forEach { put(taskToJson(it)) }
                 }
             )
+            .put(
+                "completions",
+                JSONArray().apply {
+                    completions.forEach { put(completionToJson(it)) }
+                }
+            )
         return root.toString(2)
     }
 
-    fun decodeForImport(json: String): List<TaskEntity> {
+    fun decodeForImport(json: String): Pair<List<TaskEntity>, List<TaskCompletionEntity>> {
         val root = JSONObject(json)
         require(root.getString("format") == FORMAT) { "Unsupported backup format" }
         require(root.getInt("backupVersion") <= BACKUP_VERSION) { "Unsupported backup version" }
 
         val tasks = root.getJSONArray("tasks")
-        return List(tasks.length()) { index ->
+        val taskList = List(tasks.length()) { index ->
             taskFromJson(tasks.getJSONObject(index)).copy(calendarEventId = null)
         }
+
+        val completions = if (root.has("completions")) {
+            val arr = root.getJSONArray("completions")
+            List(arr.length()) { index ->
+                completionFromJson(arr.getJSONObject(index))
+            }
+        } else {
+            emptyList()
+        }
+
+        return Pair(taskList, completions)
     }
 
     private fun taskToJson(task: TaskEntity): JSONObject {
@@ -44,9 +65,12 @@ object TaskBackupCodec {
             .putNullable("calendarEventId", task.calendarEventId)
             .put("useAlarm", task.useAlarm)
             .put("repeatRule", task.repeatRule.name)
+            .put("completionCount", task.completionCount)
+            .putNullable("lastCompletedAtMillis", task.lastCompletedAtMillis)
             .put("completed", task.completed)
             .putNullable("completionNote", task.completionNote)
             .put("archived", task.archived)
+            .put("displayOrder", task.displayOrder)
             .put("createdAtMillis", task.createdAtMillis)
             .put("updatedAtMillis", task.updatedAtMillis)
     }
@@ -62,11 +86,31 @@ object TaskBackupCodec {
             calendarEventId = json.nullableLong("calendarEventId"),
             useAlarm = json.getBoolean("useAlarm"),
             repeatRule = RepeatRule.valueOf(json.getString("repeatRule")),
+            completionCount = json.optInt("completionCount", 0),
+            lastCompletedAtMillis = json.nullableLong("lastCompletedAtMillis"),
             completed = json.getBoolean("completed"),
             completionNote = json.nullableString("completionNote"),
             archived = json.optBoolean("archived", false),
+            displayOrder = json.optInt("displayOrder", 0),
             createdAtMillis = json.getLong("createdAtMillis"),
             updatedAtMillis = json.getLong("updatedAtMillis")
+        )
+    }
+
+    private fun completionToJson(completion: TaskCompletionEntity): JSONObject {
+        return JSONObject()
+            .put("id", completion.id)
+            .put("taskId", completion.taskId)
+            .put("completedAtMillis", completion.completedAtMillis)
+            .putNullable("note", completion.note)
+    }
+
+    private fun completionFromJson(json: JSONObject): TaskCompletionEntity {
+        return TaskCompletionEntity(
+            id = json.getLong("id"),
+            taskId = json.getLong("taskId"),
+            completedAtMillis = json.getLong("completedAtMillis"),
+            note = json.nullableString("note")
         )
     }
 
