@@ -19,7 +19,7 @@ object CalendarWriter {
         val values = eventValues(task, dueAt, calendarId)
         val existingEventId = task.calendarEventId
 
-        if (existingEventId != null) {
+        val eventId: Long = if (existingEventId != null) {
             val updatedRows = runCatching {
                 resolver.update(
                     ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, existingEventId),
@@ -29,13 +29,41 @@ object CalendarWriter {
                 )
             }.getOrDefault(0)
 
-            if (updatedRows > 0) return existingEventId
+            if (updatedRows > 0) existingEventId else {
+                insertEvent(resolver, values) ?: return null
+            }
+        } else {
+            insertEvent(resolver, values) ?: return null
         }
 
+        setReminder(resolver, eventId)
+        return eventId
+    }
+
+    private fun insertEvent(resolver: ContentResolver, values: ContentValues): Long? {
         val uri = runCatching {
             resolver.insert(CalendarContract.Events.CONTENT_URI, values)
         }.getOrNull()
         return uri?.let(ContentUris::parseId)
+    }
+
+    private fun setReminder(resolver: ContentResolver, eventId: Long) {
+        // Remove existing reminders for this event, then add one
+        runCatching {
+            resolver.delete(
+                CalendarContract.Reminders.CONTENT_URI,
+                "${CalendarContract.Reminders.EVENT_ID} = ?",
+                arrayOf(eventId.toString())
+            )
+        }
+        val reminderValues = ContentValues().apply {
+            put(CalendarContract.Reminders.EVENT_ID, eventId)
+            put(CalendarContract.Reminders.MINUTES, 0)
+            put(CalendarContract.Reminders.METHOD, CalendarContract.Reminders.METHOD_ALARM)
+        }
+        runCatching {
+            resolver.insert(CalendarContract.Reminders.CONTENT_URI, reminderValues)
+        }
     }
 
     fun deleteEvent(context: Context, eventId: Long): Boolean {
@@ -82,6 +110,7 @@ object CalendarWriter {
             put(CalendarContract.Events.DTEND, dueAt + EVENT_DURATION_MILLIS)
             put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().id)
             put(CalendarContract.Events.DESCRIPTION, "DianMao")
+            put(CalendarContract.Events.HAS_ALARM, 1)
             val rRule = repeatRuleToRRule(task.repeatRule)
             if (rRule == null) {
                 putNull(CalendarContract.Events.RRULE)
