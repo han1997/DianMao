@@ -490,3 +490,36 @@ Fixed 6 P0 bugs: backup codec now saves all fields + task_completions table; tog
 ### Next Steps
 
 - None - task complete
+
+
+## Session 15: Calendar event alarm reminder
+
+**Date**: 2026-06-18
+**Task**: Calendar event alarm reminder
+**Branch**: `master`
+
+### Summary
+
+Added calendar reminder (METHOD_ALARM, 0 min) when writing events to system calendar. Events now set HAS_ALARM=1 and insert a reminder row so the calendar app triggers a notification at event time. Existing reminders are replaced on update.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `fcd0dd8` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
