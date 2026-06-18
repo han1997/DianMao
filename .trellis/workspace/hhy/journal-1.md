@@ -456,3 +456,37 @@ Designed and implemented DianMao's custom Android launcher icon (warm-red seal-d
 ### Next Steps
 
 - None - task complete
+
+
+## Session 14: Fix P0 data loss and correctness bugs
+
+**Date**: 2026-06-18
+**Task**: Fix P0 data loss and correctness bugs
+**Branch**: `master`
+
+### Summary
+
+Fixed 6 P0 bugs: backup codec now saves all fields + task_completions table; toggleCompleted/saveCompletionNote made transactional; alarm reschedule after completing cycle-based recurring task; Long ID hashCode instead of toInt truncation; completionCount re-synced after deletion; fallbackToDestructiveMigration added to Room.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b606e96` | (see git log) |
+| `d837b81` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
