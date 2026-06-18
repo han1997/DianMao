@@ -85,124 +85,124 @@ class TaskRepository(context: Context) {
     suspend fun toggleCompleted(task: TaskUiModel, completed: Boolean) {
         db.withTransaction {
             val existing = dao.findById(task.id) ?: return@withTransaction
-        val now = System.currentTimeMillis()
+            val now = System.currentTimeMillis()
 
-        val updated = if (completed && existing.repeatRule.isCountBased()) {
-            // Count-based: increment count, no alarm rescheduling
-            existing.copy(
-                completed = true,
-                completionCount = existing.completionCount + 1,
-                lastCompletedAtMillis = now,
-                completionNote = existing.completionNote,
-                updatedAtMillis = now
-            )
-        } else if (completed && existing.repeatRule.isCycleBased() && existing.useAlarm && existing.dueAtMillis != null) {
-            // Cycle-based with alarm: advance to next cycle
-            val nextDue = RepeatReminderCalculator.nextDueAt(existing.dueAtMillis, existing.repeatRule)
-            existing.copy(
-                completed = false,
-                lastCompletedAtMillis = now,
-                dueLabel = DateTimeFormatters.labelFor(midnightMillis(nextDue), minutesOfDay(nextDue)),
-                dueAtMillis = nextDue,
-                completionNote = existing.completionNote,
-                updatedAtMillis = now
-            )
-        } else if (completed && existing.repeatRule.isCycleBased()) {
-            // Cycle-based without alarm: record completion timestamp
-            existing.copy(
-                completed = true,
-                lastCompletedAtMillis = now,
-                completionNote = existing.completionNote,
-                updatedAtMillis = now
-            )
-        } else if (completed && existing.repeatRule == RepeatRule.None) {
-            // Non-recurring: auto-archive
-            existing.copy(
-                completed = true,
-                archived = true,
-                completionNote = existing.completionNote,
-                updatedAtMillis = now
-            )
-        } else {
-            // Uncompleting: preserve note
-            existing.copy(
-                completed = completed,
-                completionNote = existing.completionNote,
-                updatedAtMillis = now
-            )
-        }
+            val updated = if (completed && existing.repeatRule.isCountBased()) {
+                // Count-based: increment count, no alarm rescheduling
+                existing.copy(
+                    completed = true,
+                    completionCount = existing.completionCount + 1,
+                    lastCompletedAtMillis = now,
+                    completionNote = existing.completionNote,
+                    updatedAtMillis = now
+                )
+            } else if (completed && existing.repeatRule.isCycleBased() && existing.useAlarm && existing.dueAtMillis != null) {
+                // Cycle-based with alarm: advance to next cycle
+                val nextDue = RepeatReminderCalculator.nextDueAt(existing.dueAtMillis, existing.repeatRule)
+                existing.copy(
+                    completed = false,
+                    lastCompletedAtMillis = now,
+                    dueLabel = DateTimeFormatters.labelFor(midnightMillis(nextDue), minutesOfDay(nextDue)),
+                    dueAtMillis = nextDue,
+                    completionNote = existing.completionNote,
+                    updatedAtMillis = now
+                )
+            } else if (completed && existing.repeatRule.isCycleBased()) {
+                // Cycle-based without alarm: record completion timestamp
+                existing.copy(
+                    completed = true,
+                    lastCompletedAtMillis = now,
+                    completionNote = existing.completionNote,
+                    updatedAtMillis = now
+                )
+            } else if (completed && existing.repeatRule == RepeatRule.None) {
+                // Non-recurring: auto-archive
+                existing.copy(
+                    completed = true,
+                    archived = true,
+                    completionNote = existing.completionNote,
+                    updatedAtMillis = now
+                )
+            } else {
+                // Uncompleting: preserve note
+                existing.copy(
+                    completed = completed,
+                    completionNote = existing.completionNote,
+                    updatedAtMillis = now
+                )
+            }
 
-        dao.update(updated)
+            dao.update(updated)
         }
     }
 
     suspend fun saveCompletionNote(taskId: Long, note: String): TaskEntity? {
         var result: TaskEntity? = null
         db.withTransaction {
-        val existing = dao.findById(taskId) ?: return@withTransaction
-        val now = System.currentTimeMillis()
-        val trimmedNote = note.trim().ifBlank { null }
+            val existing = dao.findById(taskId) ?: return@withTransaction
+            val now = System.currentTimeMillis()
+            val trimmedNote = note.trim().ifBlank { null }
 
-        // Create completion record for all recurring tasks
-        if (existing.repeatRule != RepeatRule.None) {
-            completionDao.insert(
-                TaskCompletionEntity(
-                    taskId = taskId,
-                    completedAtMillis = now,
-                    note = trimmedNote
+            // Create completion record for all recurring tasks
+            if (existing.repeatRule != RepeatRule.None) {
+                completionDao.insert(
+                    TaskCompletionEntity(
+                        taskId = taskId,
+                        completedAtMillis = now,
+                        note = trimmedNote
+                    )
                 )
-            )
-        }
+            }
 
-        val updated = if (existing.repeatRule.isCountBased()) {
-            // Count-based: increment count, no alarm rescheduling
-            existing.copy(
-                completed = true,
-                completionCount = existing.completionCount + 1,
-                lastCompletedAtMillis = now,
-                completionNote = trimmedNote,
-                updatedAtMillis = now
-            )
-        } else if (existing.repeatRule.isCycleBased() && existing.useAlarm && existing.dueAtMillis != null) {
-            // Cycle-based with alarm: advance to next cycle
-            val nextDue = RepeatReminderCalculator.nextDueAt(existing.dueAtMillis, existing.repeatRule)
-            existing.copy(
-                completed = false,
-                completionCount = existing.completionCount + 1,
-                lastCompletedAtMillis = now,
-                dueLabel = DateTimeFormatters.labelFor(midnightMillis(nextDue), minutesOfDay(nextDue)),
-                dueAtMillis = nextDue,
-                completionNote = trimmedNote,
-                updatedAtMillis = now
-            )
-        } else if (existing.repeatRule.isCycleBased()) {
-            // Cycle-based without alarm: mark completed, increment count
-            existing.copy(
-                completed = true,
-                completionCount = existing.completionCount + 1,
-                lastCompletedAtMillis = now,
-                completionNote = trimmedNote,
-                updatedAtMillis = now
-            )
-        } else if (existing.repeatRule == RepeatRule.None) {
-            // Non-recurring: auto-archive
-            existing.copy(
-                completed = true,
-                archived = true,
-                completionNote = trimmedNote,
-                updatedAtMillis = now
-            )
-        } else {
-            // Fallback: normal completion
-            existing.copy(
-                completed = true,
-                completionNote = trimmedNote,
-                updatedAtMillis = now
-            )
-        }
+            val updated = if (existing.repeatRule.isCountBased()) {
+                // Count-based: increment count, no alarm rescheduling
+                existing.copy(
+                    completed = true,
+                    completionCount = existing.completionCount + 1,
+                    lastCompletedAtMillis = now,
+                    completionNote = trimmedNote,
+                    updatedAtMillis = now
+                )
+            } else if (existing.repeatRule.isCycleBased() && existing.useAlarm && existing.dueAtMillis != null) {
+                // Cycle-based with alarm: advance to next cycle
+                val nextDue = RepeatReminderCalculator.nextDueAt(existing.dueAtMillis, existing.repeatRule)
+                existing.copy(
+                    completed = false,
+                    completionCount = existing.completionCount + 1,
+                    lastCompletedAtMillis = now,
+                    dueLabel = DateTimeFormatters.labelFor(midnightMillis(nextDue), minutesOfDay(nextDue)),
+                    dueAtMillis = nextDue,
+                    completionNote = trimmedNote,
+                    updatedAtMillis = now
+                )
+            } else if (existing.repeatRule.isCycleBased()) {
+                // Cycle-based without alarm: mark completed, increment count
+                existing.copy(
+                    completed = true,
+                    completionCount = existing.completionCount + 1,
+                    lastCompletedAtMillis = now,
+                    completionNote = trimmedNote,
+                    updatedAtMillis = now
+                )
+            } else if (existing.repeatRule == RepeatRule.None) {
+                // Non-recurring: auto-archive
+                existing.copy(
+                    completed = true,
+                    archived = true,
+                    completionNote = trimmedNote,
+                    updatedAtMillis = now
+                )
+            } else {
+                // Fallback: normal completion
+                existing.copy(
+                    completed = true,
+                    completionNote = trimmedNote,
+                    updatedAtMillis = now
+                )
+            }
 
-        dao.update(updated)
-        result = updated
+            dao.update(updated)
+            result = updated
         }
         return result
     }
