@@ -36,6 +36,7 @@ permission, provider availability, or user-controlled settings.
 * Calendar write: `CalendarWriter.saveOrUpdateEvent(context, task): Long?`
 * Calendar delete: `CalendarWriter.deleteEvent(context, eventId): Boolean`
 * Fallback insert: `CalendarWriter.buildInsertIntent(task): Intent?`
+* Fallback reminder extras: `CalendarWriter.reminderIntentExtras(): Map<String, Int>`
 * Notification permission check: `ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)`
 
 ### 3. Contracts
@@ -44,6 +45,14 @@ permission, provider availability, or user-controlled settings.
   best-effort platform side effect.
 * Calendar direct writes return the managed event id on success and `null` on
   failure; callers may open the system insert UI as a fallback.
+* Calendar direct writes should prefer calendars that appear writable and whose
+  `ALLOWED_REMINDERS` includes `METHOD_ALERT`, but provider metadata is only a
+  hint. Candidate ranking must not block event creation when those fields are
+  missing or inaccurate.
+* Calendar insert-intent fallback must request calendar-app reminder support
+  with `Events.HAS_ALARM = 1`, `Reminders.MINUTES = 0`, and
+  `Reminders.METHOD = METHOD_ALERT`; this path is best effort because the
+  receiving calendar app controls whether extras are honored.
 * Calendar deletes return success/failure but task deletion still proceeds.
 * Android 13+ notification posting must perform an inline permission check
   immediately before `NotificationManagerCompat.notify(...)` so Android lint
@@ -53,6 +62,13 @@ permission, provider availability, or user-controlled settings.
 
 * Calendar permission missing -> do not call direct Calendar Provider write;
   use insert intent fallback when creating/updating a calendar-enabled task.
+* Calendar permission missing + due date present -> fallback insert intent
+  includes immediate alert reminder extras, not just event title/time fields.
+* Visible syncing calendar reports stronger write access -> prefer it over
+  weaker candidates, but do not reject all candidates solely because access
+  metadata is low or missing.
+* Multiple calendar candidates exist -> prefer one that supports
+  `METHOD_ALERT`; otherwise fall back to the primary/strongest candidate.
 * Calendar row missing for stored id -> attempt insert and store the new id.
 * Calendar delete fails -> continue local delete/disable flow; the side effect
   was best effort.
@@ -63,14 +79,28 @@ permission, provider availability, or user-controlled settings.
 
 * Good: Check calendar permission in the app flow, call `saveOrUpdateEvent`,
   store the returned id only when non-null.
+* Good: Rank calendar candidates so reminder-capable likely-writable calendars
+  win when metadata is available, while still returning a fallback calendar if
+  all metadata looks incomplete.
+* Good: Share fallback reminder extras through a pure helper so JVM unit tests
+  can assert the contract without constructing Android framework `Intent`
+  objects.
 * Base: No due date means calendar/alarm side effects are disabled by repository
   normalization.
+* Bad: Treat access-level metadata as a hard gate, return `null`, and block all
+  calendar writes on devices whose provider reports incomplete calendar
+  metadata.
 * Bad: Hide notification permission checks in a helper that lint cannot trace,
   then call `notify(...)` inside the helper-guarded branch.
 
 ### 6. Tests Required
 
 * Run `:app:lintDebug`; Android lint catches missing runtime permission checks.
+* Add a regression test for calendar candidate ranking when reminder-capable
+  and non-capable calendars coexist, plus a fallback case where access metadata
+  is incomplete but a calendar id must still be returned.
+* Assert fallback insert reminder extras through `reminderIntentExtras()`:
+  `HAS_ALARM = 1`, `MINUTES = 0`, and `METHOD = METHOD_ALERT`.
 * Run `:app:assembleDebug`; platform API signatures and Room/KSP projection must
   compile together.
 * For future instrumentation tests, assert that missing permissions do not crash
@@ -99,6 +129,61 @@ if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
 }
 ```
 
+#### Wrong
+
+```kotlin
+val projection = arrayOf(CalendarContract.Calendars._ID)
+val selection = "${CalendarContract.Calendars.VISIBLE} = 1 AND ${CalendarContract.Calendars.SYNC_EVENTS} = 1"
+
+resolver.query(..., projection, selection, null, null)?.use { cursor ->
+    if (cursor.moveToFirst()) return cursor.getLong(0)
+}
+```
+
+This can target a calendar whose reminders are unusable, because it ignores the
+provider metadata entirely.
+
+#### Correct
+
+```kotlin
+val candidates = readCalendarCandidates(cursor)
+return chooseBestCalendarId(candidates)
+```
+
+Candidate selection uses provider metadata as ranking hints. It prefers
+`METHOD_ALERT` support and stronger write access when present, but still falls
+back to another visible syncing calendar instead of blocking event creation.
+
+#### Wrong
+
+```kotlin
+Intent(Intent.ACTION_INSERT).apply {
+    data = CalendarContract.Events.CONTENT_URI
+    putExtra(CalendarContract.Events.TITLE, task.title)
+    putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, dueAt)
+    putExtra(CalendarContract.EXTRA_EVENT_END_TIME, dueAt + duration)
+}
+```
+
+This creates a calendar event but leaves the calendar app no explicit reminder
+request on the fallback path.
+
+#### Correct
+
+```kotlin
+Intent(Intent.ACTION_INSERT).apply {
+    data = CalendarContract.Events.CONTENT_URI
+    putExtra(CalendarContract.Events.TITLE, task.title)
+    putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, dueAt)
+    putExtra(CalendarContract.EXTRA_EVENT_END_TIME, dueAt + duration)
+    reminderIntentExtras().forEach { (key, value) -> putExtra(key, value) }
+}
+```
+
+Plain JVM tests should assert `reminderIntentExtras()` instead of constructing
+the full Android `Intent`, because framework `Intent.setData` is not mocked in
+local unit tests.
+
 ---
 
 ## API Error Responses
@@ -112,6 +197,8 @@ Not applicable. This app currently has no HTTP API layer.
 * Treating Calendar Provider writes as guaranteed after local task save.
 * Clearing or deleting local task state only after an external provider call
   succeeds.
+* Updating the direct Calendar Provider reminder path while forgetting the
+  permission-missing fallback insert intent path.
 * Moving runtime permission checks into helpers that Android lint cannot follow.
 
 ## Scenario: AlarmManager Reminder Restoration
