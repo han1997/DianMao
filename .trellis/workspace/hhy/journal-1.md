@@ -389,3 +389,37 @@ Shrunk quadrant pane title/description/number fonts, forced summary pills to sin
 ### Next Steps
 
 - None - task complete
+
+
+## Session 12: Fix quadrant detail header regressions
+
+**Date**: 2026-06-18
+**Task**: Fix quadrant detail header regressions
+**Branch**: `master`
+
+### Summary
+
+Restored accessible quadrant detail header actions, made summary stats wrap safely on narrow layouts, and documented the Compose accessibility/layout pattern.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `053e68b` | (see git log) |
+| `f7ff43c` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

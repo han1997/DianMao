@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 11
-- **Last Active**: 2026-06-17
+- **Total Sessions**: 12
+- **Last Active**: 2026-06-18
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~391 | Active |
+| `journal-1.md` | ~425 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 12 | 2026-06-18 | Fix quadrant detail header regressions | `053e68b`, `f7ff43c` | `master` |
 | 11 | 2026-06-17 | Refine home screen density and screen adaptation | `b07434e` | `master` |
 | 10 | 2026-06-17 | Refine task card layout: remove inline note, flatten action buttons | `38035b1` | `master` |
 | 9 | 2026-06-17 | Fix completion button unresponsive issue for recurring tasks | `50064f2`, `66afc5c`, `411eadb`, `230c0cb` | `master` |
