@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend spec index for relevant project conventions."}
+{"file": ".trellis/spec/backend/database-guidelines.md", "reason": "Room migration and destructive data-loss safety requirements."}
+{"file": ".trellis/spec/backend/compose-patterns.md", "reason": "BackHandler and back-target priority resolver contracts."}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Platform side-effect and safety guidance for app behavior boundaries."}
