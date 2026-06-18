@@ -1011,8 +1011,8 @@ private fun SummaryPill(value: String, label: String, color: Color, modifier: Mo
     }
 }
 
-@Composable
 @OptIn(ExperimentalLayoutApi::class)
+@Composable
 private fun QuadrantDetailHeader(
     quadrant: TaskPriority,
     tasks: List<TaskUiModel>,
@@ -1023,79 +1023,122 @@ private fun QuadrantDetailHeader(
     val completedTasks = tasks.count { it.completed }
 
     Surface(
-        color = MaterialTheme.colorScheme.surface,
+        color = quadrant.color.copy(alpha = 0.08f),
         shape = RoundedCornerShape(14.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.56f))
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
     ) {
         Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            modifier = Modifier.padding(start = 14.dp, end = 14.dp, bottom = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            // Accent strip
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(3.dp)
+                    .background(quadrant.color, RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp))
+            )
+            // Title row with inline back
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 IconButton(
                     onClick = onBack,
-                    modifier = Modifier.size(36.dp)
+                    modifier = Modifier.size(48.dp)
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                        contentDescription = "返回四象限"
+                        contentDescription = "返回四象限",
+                        modifier = Modifier.size(20.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                Column(
+                ColorDot(quadrant.color)
+                Text(
                     modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        ColorDot(quadrant.color)
-                        Spacer(Modifier.width(7.dp))
-                        Text(
-                            text = quadrant.title,
-                            style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                    Text(
-                        text = quadrant.description,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
+                    text = quadrant.title,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            // Description
+            Text(
+                text = quadrant.description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            // Inline stats
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                SummaryPill(value = openTasks.toString(), label = "未完成", color = quadrant.color, modifier = Modifier.weight(1f))
-                SummaryPill(value = timedTasks.toString(), label = "有提醒", color = MaterialTheme.colorScheme.secondary, modifier = Modifier.weight(1f))
-                SummaryPill(value = completedTasks.toString(), label = "已复盘", color = TaskPriority.NotImportantNotUrgent.color, modifier = Modifier.weight(1f))
+                InlineStatDot(count = openTasks, label = "未完成", color = quadrant.color)
+                InlineStatDot(count = timedTasks, label = "有提醒", color = MaterialTheme.colorScheme.secondary)
+                InlineStatDot(count = completedTasks, label = "已复盘", color = TaskPriority.NotImportantNotUrgent.color)
             }
         }
     }
 }
 
 @Composable
+private fun InlineStatDot(count: Int, label: String, color: Color) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(6.dp)
+                .background(color, CircleShape)
+        )
+        Text(
+            text = "$count $label",
+            style = MaterialTheme.typography.labelMedium.copy(
+                fontWeight = FontWeight.Medium,
+                letterSpacing = 0.sp
+            ),
+            color = color.copy(alpha = 0.78f)
+        )
+    }
+}
+
+@Composable
 private fun QuadrantDetailEmptyState(quadrant: TaskPriority) {
     Surface(
-        color = quadrant.color.copy(alpha = 0.055f),
+        color = quadrant.color.copy(alpha = 0.07f),
         shape = RoundedCornerShape(14.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+                .padding(start = 14.dp, end = 14.dp, bottom = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Text(
-                text = "这个象限还没有事项",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
+            // Accent strip matching header
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(3.dp)
+                    .background(quadrant.color, RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp))
             )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                ColorDot(quadrant.color)
+                Text(
+                    text = "这个象限还没有事项",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
             Text(
                 text = "点右下角新增事项，会默认放入“${quadrant.title}”。",
                 style = MaterialTheme.typography.bodyMedium,
