@@ -286,6 +286,77 @@ ModalBottomSheet(onDismissRequest = { dismissTaskPanel() })
 
 ---
 
+## Pattern: Accessible Header Actions and Wrap-Safe Summary Rows
+
+**Problem**: Compact UI refreshes often replace `IconButton` with a generic `clickable` container and flatten summary chips into a single `Row`. This preserves the look but regresses accessibility and small-screen resilience.
+
+**Contracts**:
+- Header navigation or dismiss actions should use `IconButton` or another control that preserves button semantics.
+- Actionable icon targets should be at least `48.dp` even when the glyph itself is smaller.
+- Mixed-width summary items must use `FlowRow` or weighted cells when text length or font scale can vary.
+- A plain `Row` is only safe when each child has a bounded width strategy.
+
+**Good**:
+```kotlin
+Row(
+    modifier = Modifier.fillMaxWidth(),
+    verticalAlignment = Alignment.CenterVertically
+) {
+    IconButton(
+        onClick = onBack,
+        modifier = Modifier.size(48.dp)
+    ) {
+        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+    }
+    Text(
+        text = title,
+        modifier = Modifier.weight(1f),
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
+    )
+}
+
+FlowRow(
+    modifier = Modifier.fillMaxWidth(),
+    horizontalArrangement = Arrangement.spacedBy(12.dp),
+    verticalArrangement = Arrangement.spacedBy(6.dp)
+) {
+    InlineStatDot(count = openCount, label = "Open", color = primary)
+    InlineStatDot(count = reminderCount, label = "Reminder", color = secondary)
+}
+```
+
+**Bad**:
+```kotlin
+Row(verticalAlignment = Alignment.CenterVertically) {
+    Box(
+        modifier = Modifier
+            .size(36.dp)
+            .clickable(onClick = onBack)
+    ) {
+        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+    }
+    Text(text = title)
+}
+
+Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    InlineStatDot(count = openCount, label = "Open", color = primary)
+    InlineStatDot(count = reminderCount, label = "Reminder", color = secondary)
+    InlineStatDot(count = doneCount, label = "Done", color = tertiary)
+}
+```
+
+**Why**:
+- `IconButton` keeps accessibility semantics and minimum touch affordance without reimplementing them manually.
+- `weight(1f)` ensures the title absorbs remaining width instead of forcing sibling controls to compete unpredictably.
+- `FlowRow` degrades gracefully on narrow devices and with larger system font scales.
+
+**Manual tests**:
+- Open the detail header on a narrow device or emulator and verify the stats wrap cleanly instead of clipping.
+- Increase system font scale and verify the back action remains easy to tap and the title still ellipsizes predictably.
+
+---
+
 ## Related Specs
 
 - [Overlay Navigation Thinking Guide](../guides/overlay-navigation-thinking-guide.md) - Checklist for back navigation design
