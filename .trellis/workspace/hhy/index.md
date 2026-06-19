@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 15
-- **Last Active**: 2026-06-18
+- **Total Sessions**: 18
+- **Last Active**: 2026-06-19
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~525 | Active |
+| `journal-1.md` | ~625 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,9 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 18 | 2026-06-19 | TickTick-inspired visual polish | `bbad3bc`, `f073b76` | `master` |
+| 17 | 2026-06-19 | Calendar reminder and task subtasks | `8f0a803` | `master` |
+| 16 | 2026-06-18 | Fix test suite and migration safety | `162d98e` | `master` |
 | 15 | 2026-06-18 | Calendar event alarm reminder | `fcd0dd8` | `master` |
 | 14 | 2026-06-18 | Fix P0 data loss and correctness bugs | `b606e96`, `d837b81` | `master` |
 | 13 | 2026-06-18 | Custom launcher icon + task detail page with editable history | `fe803b4` | `master` |

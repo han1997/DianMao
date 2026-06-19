@@ -523,3 +523,103 @@ Added calendar reminder (METHOD_ALARM, 0 min) when writing events to system cale
 ### Next Steps
 
 - None - task complete
+
+
+## Session 16: Fix test suite and migration safety
+
+**Date**: 2026-06-18
+**Task**: Fix test suite and migration safety
+**Branch**: `master`
+
+### Summary
+
+Restored back target unit tests after the task detail state was added, removed Room destructive migration fallback, and documented the migration safety rule.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `162d98e` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 17: Calendar reminder and task subtasks
+
+**Date**: 2026-06-19
+**Task**: Calendar reminder and task subtasks
+**Branch**: `master`
+
+### Summary
+
+Enabled system calendar reminder access, added persisted task subtasks with editable checklists and detail-page completion, updated Room schema and backup handling.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `8f0a803` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+
+## Session 18: TickTick-inspired visual polish
+
+**Date**: 2026-06-19
+**Task**: TickTick-inspired visual polish
+**Branch**: `master`
+
+### Summary
+
+Refined DianMao with a TickTick-inspired quadrant-first visual polish: warmer neutral theme, quieter header, lighter quadrant board, list-like task rows, compact metadata chips, consistent sheet/detail/archive surfaces, and documented the quiet task UI pattern.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `bbad3bc` | (see git log) |
+| `f073b76` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
