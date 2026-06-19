@@ -1,5 +1,9 @@
 # Changelog
 
+- Extended the quiet task form polish to secondary controls: subtasks, date/time
+  actions, repeat chips, and completion-note editors now share the same rounded
+  low-noise input vocabulary.
+
 - Refined quadrant detail and task form polish: quadrant detail rows no longer
   repeat the current quadrant tag, and add/edit controls now use a stronger
   capture field plus quieter quadrant, time, reminder, and repeat setting rows.

@@ -446,6 +446,16 @@ private fun quietBorder(alpha: Float = 0.22f): BorderStroke {
     return BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = alpha))
 }
 
+@Composable
+private fun quietTextFieldColors() = TextFieldDefaults.colors(
+    focusedContainerColor = MaterialTheme.colorScheme.surface,
+    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.18f),
+    focusedIndicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.45f),
+    unfocusedIndicatorColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f),
+    disabledIndicatorColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.10f)
+)
+
 private val PanelShape = RoundedCornerShape(18.dp)
 private val SheetShape = RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)
 private val RowShape = RoundedCornerShape(12.dp)
@@ -1870,21 +1880,23 @@ private fun SubTaskEditor(
             OutlinedTextField(
                 value = draft,
                 onValueChange = onDraftChange,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 56.dp),
                 placeholder = { Text("添加一个小任务") },
                 singleLine = true,
+                shape = RowShape,
+                textStyle = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                 keyboardActions = KeyboardActions(onDone = { onAdd() }),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                )
+                colors = quietTextFieldColors()
             )
             FilledTonalButton(
                 onClick = onAdd,
                 enabled = draft.isNotBlank(),
-                shape = RoundedCornerShape(12.dp),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp)
+                modifier = Modifier.heightIn(min = 56.dp),
+                shape = RowShape,
+                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp)
             ) {
                 Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(4.dp))
@@ -1895,8 +1907,8 @@ private fun SubTaskEditor(
         if (subTasks.isEmpty()) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp),
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.78f),
+                shape = RowShape,
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f),
                 border = quietBorder(0.10f)
             ) {
                 Text(
@@ -1928,36 +1940,45 @@ private fun SubTaskEditRow(
     onCheckedChange: (Boolean) -> Unit,
     onDelete: () -> Unit
 ) {
-    Row(
+    Surface(
         modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
+        shape = RowShape,
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f),
+        border = quietBorder(0.10f)
     ) {
-        Checkbox(
-            checked = item.completed,
-            onCheckedChange = onCheckedChange
-        )
-        OutlinedTextField(
-            value = item.title,
-            onValueChange = onTitleChange,
-            modifier = Modifier.weight(1f),
-            placeholder = { Text("子事项") },
-            singleLine = true,
-            textStyle = MaterialTheme.typography.bodyMedium,
-            colors = TextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surface
-            )
-        )
-        IconButton(
-            onClick = onDelete,
-            modifier = Modifier.size(48.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 2.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Icon(
-                Icons.Rounded.Delete,
-                contentDescription = "删除子事项",
-                tint = MaterialTheme.colorScheme.error
+            Checkbox(
+                checked = item.completed,
+                onCheckedChange = onCheckedChange
             )
+            OutlinedTextField(
+                value = item.title,
+                onValueChange = onTitleChange,
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 52.dp),
+                placeholder = { Text("子事项") },
+                singleLine = true,
+                shape = RowShape,
+                textStyle = MaterialTheme.typography.bodyMedium,
+                colors = quietTextFieldColors()
+            )
+            IconButton(
+                onClick = onDelete,
+                modifier = Modifier.size(48.dp)
+            ) {
+                Icon(
+                    Icons.Rounded.Delete,
+                    contentDescription = "删除子事项",
+                    tint = MaterialTheme.colorScheme.error.copy(alpha = 0.82f)
+                )
+            }
         }
     }
 }
@@ -1981,14 +2002,15 @@ private fun SubTaskReadOnlySection(
             )
         }
         Surface(
-            shape = RoundedCornerShape(14.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.46f)
+            shape = RowShape,
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.34f),
+            border = quietBorder(0.10f)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 task.subTasks.forEach { item ->
                     Row(
@@ -1999,7 +2021,8 @@ private fun SubTaskReadOnlySection(
                                 role = Role.Checkbox,
                                 onValueChange = { checked -> onToggleSubTask(item.id, checked) }
                             )
-                            .padding(vertical = 2.dp),
+                            .heightIn(min = 48.dp)
+                            .padding(end = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
@@ -2162,12 +2185,7 @@ private fun AddTaskPanel(
                             ),
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                             keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                                focusedIndicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.45f),
-                                unfocusedIndicatorColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f)
-                            )
+                            colors = quietTextFieldColors()
                         )
                         }
                         SubTaskEditor(
@@ -2671,6 +2689,7 @@ private fun RepeatRulePicker(
                     selected = selected == rule,
                     onClick = { if (enabled) onSelected(rule) },
                     enabled = enabled,
+                    shape = ChipShape,
                     label = { Text(rule.label) }
                 )
             }
@@ -2712,7 +2731,7 @@ private fun DateTimePickerRow(
         ) {
             OutlinedButton(
                 onClick = onPickDate,
-                shape = RoundedCornerShape(12.dp),
+                shape = RowShape,
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
             ) {
                 Icon(Icons.Rounded.CalendarMonth, contentDescription = null)
@@ -2722,7 +2741,7 @@ private fun DateTimePickerRow(
             OutlinedButton(
                 onClick = onPickTime,
                 enabled = dueDateMillis != null,
-                shape = RoundedCornerShape(12.dp),
+                shape = RowShape,
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
             ) {
                 Icon(Icons.Rounded.Schedule, contentDescription = null)
@@ -2949,7 +2968,11 @@ private fun CompletionNoteDialog(
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("心得或复盘") },
                     placeholder = { Text("这件事完成后，我学到或确认了什么？") },
-                    minLines = 3
+                    minLines = 3,
+                    maxLines = 6,
+                    shape = RowShape,
+                    textStyle = MaterialTheme.typography.bodyMedium,
+                    colors = quietTextFieldColors()
                 )
             }
         },
@@ -3233,9 +3256,12 @@ fun CompletionItem(
                     onValueChange = { editNoteText = it },
                     modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
                     placeholder = { Text("写点什么") },
-                    textStyle = MaterialTheme.typography.bodySmall,
+                    textStyle = MaterialTheme.typography.bodyMedium,
                     singleLine = false,
-                    maxLines = 3,
+                    minLines = 2,
+                    maxLines = 4,
+                    shape = RowShape,
+                    colors = quietTextFieldColors(),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = {
                         onUpdateNote(completion.id, editNoteText)
