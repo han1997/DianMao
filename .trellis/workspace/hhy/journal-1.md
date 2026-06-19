@@ -623,3 +623,36 @@ Refined DianMao with a TickTick-inspired quadrant-first visual polish: warmer ne
 ### Next Steps
 
 - None - task complete
+
+
+## Session 19: Polish quadrant detail and task form
+
+**Date**: 2026-06-19
+**Task**: Polish quadrant detail and task form
+**Branch**: `master`
+
+### Summary
+
+Removed repeated quadrant tags from quadrant detail rows and refined the add/edit task sheet with a stronger capture field plus quieter quadrant, time, reminder, and repeat setting rows.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `af5c026` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
