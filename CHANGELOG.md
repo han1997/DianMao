@@ -1,5 +1,8 @@
 # Changelog
 
+- Added a compact home time-focus lane that surfaces up to three unfinished
+  overdue, today, or nearest upcoming timed tasks above the quadrant board.
+
 - Improved capture-first workflow: quadrant detail pages now expose quick add,
   and saving a new task keeps the sheet open with confirmation feedback while
   resetting fields for the next capture.

@@ -198,6 +198,50 @@ internal enum class InAppBackTarget {
     QuadrantDetail
 }
 
+internal enum class TimeFocusKind {
+    Overdue,
+    Today,
+    Upcoming
+}
+
+internal data class TimeFocusItem(
+    val task: TaskUiModel,
+    val kind: TimeFocusKind
+)
+
+internal fun buildTimeFocusItems(
+    tasks: List<TaskUiModel>,
+    nowMillis: Long = System.currentTimeMillis(),
+    zoneId: ZoneId = ZoneId.systemDefault(),
+    limit: Int = 3
+): List<TimeFocusItem> {
+    val today = Instant.ofEpochMilli(nowMillis).atZone(zoneId).toLocalDate()
+    val tomorrowStartMillis = today.plusDays(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+
+    return tasks.mapNotNull { task ->
+        val dueAt = task.dueAtMillis ?: return@mapNotNull null
+        if (task.completed || task.archived) return@mapNotNull null
+        val kind = when {
+            dueAt < nowMillis -> TimeFocusKind.Overdue
+            dueAt < tomorrowStartMillis -> TimeFocusKind.Today
+            else -> TimeFocusKind.Upcoming
+        }
+        TimeFocusItem(task = task, kind = kind)
+    }.sortedWith(
+        compareBy<TimeFocusItem>(
+            { it.kind.rank },
+            { it.task.dueAtMillis ?: Long.MAX_VALUE }
+        )
+    ).take(limit)
+}
+
+private val TimeFocusKind.rank: Int
+    get() = when (this) {
+        TimeFocusKind.Overdue -> 0
+        TimeFocusKind.Today -> 1
+        TimeFocusKind.Upcoming -> 2
+    }
+
 internal fun resolveInAppBackTarget(
     showBackupPanel: Boolean,
     showArchivedPanel: Boolean,
@@ -641,6 +685,10 @@ private fun DianMaoApp() {
                             onOpenArchived = {
                                 showArchivedPanel = true
                             }
+                        )
+                        TimeFocusLane(
+                            tasks = activeTasks,
+                            onTaskSelected = { taskForDetail = it }
                         )
                         QuadrantBoard(
                             tasks = activeTasks,
@@ -1117,6 +1165,113 @@ private fun SummaryPill(value: String, label: String, color: Color, modifier: Mo
                 ),
                 color = color.copy(alpha = 0.78f)
             )
+        }
+    }
+}
+
+@Composable
+private fun TimeFocusLane(
+    tasks: List<TaskUiModel>,
+    onTaskSelected: (TaskUiModel) -> Unit
+) {
+    val focusItems = buildTimeFocusItems(tasks)
+    if (focusItems.isEmpty()) return
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surface,
+        shape = RowShape,
+        border = quietBorder(0.14f)
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = "今日关注",
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "${focusItems.size} 项",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f)
+                )
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                focusItems.forEach { item ->
+                    TimeFocusRow(
+                        item = item,
+                        onClick = { onTaskSelected(item.task) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun TimeFocusRow(
+    item: TimeFocusItem,
+    onClick: () -> Unit
+) {
+    val color = when (item.kind) {
+        TimeFocusKind.Overdue -> MaterialTheme.colorScheme.error
+        TimeFocusKind.Today -> MaterialTheme.colorScheme.primary
+        TimeFocusKind.Upcoming -> MaterialTheme.colorScheme.secondary
+    }
+    val label = when (item.kind) {
+        TimeFocusKind.Overdue -> "过期"
+        TimeFocusKind.Today -> "今天"
+        TimeFocusKind.Upcoming -> "近期"
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .background(color.copy(alpha = 0.07f), RowShape)
+            .border(1.dp, color.copy(alpha = 0.12f), RowShape)
+            .clickable(onClick = onClick, role = Role.Button)
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.Top,
+        horizontalArrangement = Arrangement.spacedBy(9.dp)
+    ) {
+        Surface(
+            color = color.copy(alpha = 0.12f),
+            contentColor = color,
+            shape = ChipShape
+        ) {
+            Text(
+                text = label,
+                modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
+                maxLines = 1
+            )
+        }
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+            Text(
+                text = item.task.title,
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                item.task.dueLabel?.let {
+                    CompactMeta(icon = Icons.Rounded.Schedule, text = it)
+                }
+                CompactMeta(icon = Icons.Rounded.Inventory2, text = item.task.quadrant.shortTitle)
+            }
         }
     }
 }

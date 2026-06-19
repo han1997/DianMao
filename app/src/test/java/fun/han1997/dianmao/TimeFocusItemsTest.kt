@@ -1,0 +1,105 @@
+package `fun`.han1997.dianmao
+
+import `fun`.han1997.dianmao.data.RepeatRule
+import `fun`.han1997.dianmao.data.TaskPriority
+import `fun`.han1997.dianmao.data.TaskUiModel
+import java.time.LocalDate
+import java.time.ZoneId
+import org.junit.Assert.assertEquals
+import org.junit.Test
+
+class TimeFocusItemsTest {
+    private val zoneId: ZoneId = ZoneId.of("Asia/Shanghai")
+
+    @Test
+    fun ordersOverdueBeforeTodayBeforeUpcoming() {
+        val today = LocalDate.of(2026, 6, 19)
+        val now = millis(today, hour = 10)
+
+        val items = buildTimeFocusItems(
+            tasks = listOf(
+                task(id = 1, dueAtMillis = millis(today.plusDays(1), hour = 9)),
+                task(id = 2, dueAtMillis = millis(today, hour = 8)),
+                task(id = 3, dueAtMillis = millis(today, hour = 18)),
+                task(id = 4, dueAtMillis = millis(today.minusDays(1), hour = 20))
+            ),
+            nowMillis = now,
+            zoneId = zoneId,
+            limit = 4
+        )
+
+        assertEquals(listOf(4L, 2L, 3L, 1L), items.map { it.task.id })
+        assertEquals(
+            listOf(TimeFocusKind.Overdue, TimeFocusKind.Overdue, TimeFocusKind.Today, TimeFocusKind.Upcoming),
+            items.map { it.kind }
+        )
+    }
+
+    @Test
+    fun excludesCompletedArchivedAndUnscheduledTasks() {
+        val today = LocalDate.of(2026, 6, 19)
+        val now = millis(today, hour = 10)
+
+        val items = buildTimeFocusItems(
+            tasks = listOf(
+                task(id = 1, dueAtMillis = null),
+                task(id = 2, dueAtMillis = millis(today, hour = 11), completed = true),
+                task(id = 3, dueAtMillis = millis(today, hour = 12), archived = true),
+                task(id = 4, dueAtMillis = millis(today, hour = 13))
+            ),
+            nowMillis = now,
+            zoneId = zoneId
+        )
+
+        assertEquals(listOf(4L), items.map { it.task.id })
+    }
+
+    @Test
+    fun respectsLimitAfterSorting() {
+        val today = LocalDate.of(2026, 6, 19)
+        val now = millis(today, hour = 10)
+
+        val items = buildTimeFocusItems(
+            tasks = listOf(
+                task(id = 1, dueAtMillis = millis(today.plusDays(3), hour = 9)),
+                task(id = 2, dueAtMillis = millis(today, hour = 16)),
+                task(id = 3, dueAtMillis = millis(today.minusDays(1), hour = 9)),
+                task(id = 4, dueAtMillis = millis(today.plusDays(1), hour = 9))
+            ),
+            nowMillis = now,
+            zoneId = zoneId,
+            limit = 2
+        )
+
+        assertEquals(listOf(3L, 2L), items.map { it.task.id })
+    }
+
+    private fun millis(date: LocalDate, hour: Int): Long {
+        return date.atTime(hour, 0).atZone(zoneId).toInstant().toEpochMilli()
+    }
+
+    private fun task(
+        id: Long,
+        dueAtMillis: Long?,
+        completed: Boolean = false,
+        archived: Boolean = false
+    ): TaskUiModel {
+        return TaskUiModel(
+            id = id,
+            title = "Task $id",
+            quadrant = TaskPriority.ImportantUrgent,
+            dueLabel = dueAtMillis?.toString(),
+            dueAtMillis = dueAtMillis,
+            useCalendar = false,
+            calendarEventId = null,
+            useAlarm = dueAtMillis != null,
+            repeatRule = RepeatRule.None,
+            subTasks = emptyList(),
+            completionCount = 0,
+            lastCompletedAtMillis = null,
+            completed = completed,
+            completionNote = null,
+            archived = archived
+        )
+    }
+}
