@@ -724,3 +724,37 @@ Implemented capture-first task entry: add is available from quadrant detail, new
 ### Next Steps
 
 - None - task complete
+
+
+## Session 22: Add today time focus lane
+
+**Date**: 2026-06-19
+**Task**: Add today time focus lane
+**Branch**: `master`
+
+### Summary
+
+Added compact TimeFocusLane between AppHeader and QuadrantBoard on home screen. Shows up to 3 unfinished timed tasks ordered overdue→today→upcoming. Pure helper buildTimeFocusItems with unit tests. Updated compose-patterns spec with the new pattern.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f044f6f` | (see git log) |
+| `8a804e5` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

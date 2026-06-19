@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 21
+- **Total Sessions**: 22
 - **Last Active**: 2026-06-19
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~726 | Active |
+| `journal-1.md` | ~760 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 22 | 2026-06-19 | Add today time focus lane | `f044f6f`, `8a804e5` | `master` |
 | 21 | 2026-06-19 | Improve capture-first task entry | `9ae0962`, `d2eeb58` | `master` |
 | 20 | 2026-06-19 | Polish secondary task form controls | `bcb5c6b`, `202787d` | `master` |
 | 19 | 2026-06-19 | Polish quadrant detail and task form | `af5c026` | `master` |
