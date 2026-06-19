@@ -1,5 +1,9 @@
 # Changelog
 
+- Improved capture-first workflow: quadrant detail pages now expose quick add,
+  and saving a new task keeps the sheet open with confirmation feedback while
+  resetting fields for the next capture.
+
 - Extended the quiet task form polish to secondary controls: subtasks, date/time
   actions, repeat chips, and completion-note editors now share the same rounded
   low-noise input vocabulary.

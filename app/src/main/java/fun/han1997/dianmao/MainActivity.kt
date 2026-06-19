@@ -608,7 +608,7 @@ private fun DianMaoApp() {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
             floatingActionButton = {
-                if (activePriority == null && taskForDetail == null) {
+                if (taskForDetail == null) {
                     FloatingActionButton(
                         onClick = { showAddSheet = true },
                         containerColor = MaterialTheme.colorScheme.primary,
@@ -830,7 +830,9 @@ private fun DianMaoApp() {
                                 }
                             }
                         }
-                        dismissTaskPanel()
+                        if (previousTask != null) {
+                            dismissTaskPanel()
+                        }
                     }
                 )
 
@@ -2068,6 +2070,7 @@ private fun AddTaskPanel(
     var repeatRule by rememberSaveable { mutableStateOf(RepeatRule.None) }
     var subTasks by remember { mutableStateOf<List<TaskSubTask>>(emptyList()) }
     var subTaskDraft by rememberSaveable { mutableStateOf("") }
+    var saveFeedback by rememberSaveable { mutableStateOf<String?>(null) }
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     val formScrollState = rememberScrollState()
@@ -2084,6 +2087,14 @@ private fun AddTaskPanel(
             repeatRule = editingTask?.repeatRule ?: RepeatRule.None
             subTasks = editingTask?.subTasks ?: emptyList()
             subTaskDraft = ""
+            saveFeedback = null
+        }
+    }
+
+    LaunchedEffect(saveFeedback) {
+        if (saveFeedback != null) {
+            kotlinx.coroutines.delay(2200)
+            saveFeedback = null
         }
     }
 
@@ -2277,6 +2288,37 @@ private fun AddTaskPanel(
                             onSelected = { repeatRule = it }
                         )
                     }
+                    AnimatedVisibility(
+                        visible = saveFeedback != null,
+                        enter = fadeIn(tween(120)) + slideInVertically(tween(160)) { it / 3 },
+                        exit = fadeOut(tween(120))
+                    ) {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RowShape,
+                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.54f),
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            border = quietBorder(0.08f)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    Icons.Rounded.Check,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Text(
+                                    text = saveFeedback.orEmpty(),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                    }
                     Button(
                         onClick = {
                             val trimmed = title.trim()
@@ -2294,6 +2336,7 @@ private fun AddTaskPanel(
                                     )
                                 )
                                 if (!isEditing) {
+                                    saveFeedback = "已保存到 ${priority.shortTitle}，可继续记录"
                                     title = ""
                                     dueDateMillis = null
                                     dueTimeMinutes = null
@@ -2302,7 +2345,6 @@ private fun AddTaskPanel(
                                     repeatRule = RepeatRule.None
                                     subTasks = emptyList()
                                     subTaskDraft = ""
-                                    priority = initialPriority
                                 }
                             }
                         },
