@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 20
+- **Total Sessions**: 21
 - **Last Active**: 2026-06-19
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~692 | Active |
+| `journal-1.md` | ~726 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 21 | 2026-06-19 | Improve capture-first task entry | `9ae0962`, `d2eeb58` | `master` |
 | 20 | 2026-06-19 | Polish secondary task form controls | `bcb5c6b`, `202787d` | `master` |
 | 19 | 2026-06-19 | Polish quadrant detail and task form | `af5c026` | `master` |
 | 18 | 2026-06-19 | TickTick-inspired visual polish | `bbad3bc`, `f073b76` | `master` |

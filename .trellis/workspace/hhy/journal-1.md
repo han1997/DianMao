@@ -690,3 +690,37 @@ Extended quiet task form styling to subtasks, date/time actions, repeat chips, c
 ### Next Steps
 
 - None - task complete
+
+
+## Session 21: Improve capture-first task entry
+
+**Date**: 2026-06-19
+**Task**: Improve capture-first task entry
+**Branch**: `master`
+
+### Summary
+
+Implemented capture-first task entry: add is available from quadrant detail, new saves keep the sheet open with feedback while resetting fields, edit saves still close, and the pattern is documented.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `9ae0962` | (see git log) |
+| `d2eeb58` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
