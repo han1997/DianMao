@@ -656,3 +656,37 @@ Removed repeated quadrant tags from quadrant detail rows and refined the add/edi
 ### Next Steps
 
 - None - task complete
+
+
+## Session 20: Polish secondary task form controls
+
+**Date**: 2026-06-19
+**Task**: Polish secondary task form controls
+**Branch**: `master`
+
+### Summary
+
+Extended quiet task form styling to subtasks, date/time actions, repeat chips, completion-note inputs, and documented the shared quiet text-field convention.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `bcb5c6b` | (see git log) |
+| `202787d` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
