@@ -736,7 +736,8 @@ private fun DianMaoApp() {
                                             onDeleteTask = { taskForDelete = it },
                                             onEditNote = { taskForNote = it },
                                             onArchiveTask = archiveTask,
-                                            onViewDetail = { taskForDetail = it }
+                                            onViewDetail = { taskForDetail = it },
+                                            showQuadrantMeta = false
                                         )
                                     }
                                 }
@@ -1551,6 +1552,7 @@ private fun TaskRow(
     onEditNote: (TaskUiModel) -> Unit,
     onViewDetail: (TaskUiModel) -> Unit = {},
     onArchiveTask: (TaskUiModel) -> Unit = {},
+    showQuadrantMeta: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     var canComplete by remember { mutableStateOf(true) }
@@ -1626,7 +1628,9 @@ private fun TaskRow(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
-                    CompactMeta(icon = Icons.Rounded.Inventory2, text = task.quadrant.shortTitle)
+                    if (showQuadrantMeta) {
+                        CompactMeta(icon = Icons.Rounded.Inventory2, text = task.quadrant.shortTitle)
+                    }
                     task.dueLabel?.let {
                         CompactMeta(icon = Icons.Rounded.Schedule, text = it)
                     }
@@ -1764,6 +1768,42 @@ private fun TaskFormSection(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+            }
+            content()
+        }
+    }
+}
+
+@Composable
+private fun FormSettingBlock(
+    title: String,
+    subtitle: String? = null,
+    enabled: Boolean = true,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RowShape,
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (enabled) 0.26f else 0.16f),
+        border = quietBorder(if (enabled) 0.10f else 0.06f)
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            subtitle?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (enabled) 0.82f else 0.58f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
             content()
         }
@@ -2072,6 +2112,13 @@ private fun AddTaskPanel(
                         .padding(horizontal = 18.dp, vertical = 14.dp),
                     verticalArrangement = Arrangement.spacedBy(9.dp)
                 ) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .width(38.dp)
+                            .height(4.dp)
+                            .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.34f), CircleShape)
+                    )
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(if (isEditing) "编辑事项" else "新增事项", style = MaterialTheme.typography.titleLarge)
@@ -2106,13 +2153,20 @@ private fun AddTaskPanel(
                             label = { Text("事项内容") },
                             placeholder = { Text("例如：确认明天下午会议材料") },
                             singleLine = false,
-                            minLines = 1,
-                            maxLines = 3,
+                            minLines = 2,
+                            maxLines = 4,
+                            shape = RowShape,
+                            textStyle = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 17.sp
+                            ),
                             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                             keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                             colors = TextFieldDefaults.colors(
                                 focusedContainerColor = MaterialTheme.colorScheme.surface,
-                                unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                                focusedIndicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.45f),
+                                unfocusedIndicatorColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f)
                             )
                         )
                         }
@@ -2135,8 +2189,7 @@ private fun AddTaskPanel(
                                 subTasks = subTasks.filterNot { it.id == id }
                             }
                         )
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Text("象限", style = MaterialTheme.typography.titleMedium)
+                        FormSettingBlock(title = "象限") {
                             FlowRow(
                                 horizontalArrangement = Arrangement.spacedBy(7.dp),
                                 verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -2605,12 +2658,10 @@ private fun RepeatRulePicker(
     enabled: Boolean,
     onSelected: (RepeatRule) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(
-            text = "重复规则",
-            style = MaterialTheme.typography.titleMedium,
-            color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
-        )
+    FormSettingBlock(
+        title = "重复规则",
+        enabled = enabled
+    ) {
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(7.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -2651,21 +2702,10 @@ private fun DateTimePickerRow(
         listOfNotNull(date, time).joinToString(" ")
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = "时间",
-                modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.titleMedium
-            )
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
+    FormSettingBlock(
+        title = "时间",
+        subtitle = label
+    ) {
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(7.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -2840,36 +2880,42 @@ private fun ToggleRow(
     enabled: Boolean = true,
     onCheckedChange: (Boolean) -> Unit
 ) {
-    Row(
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = enabled) { onCheckedChange(!checked) }
-            .padding(vertical = 2.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .clickable(enabled = enabled) { onCheckedChange(!checked) },
+        shape = RowShape,
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (enabled) 0.26f else 0.16f),
+        border = quietBorder(if (enabled) 0.10f else 0.06f)
     ) {
-        val contentColor = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
-        Icon(
-            icon,
-            contentDescription = null,
-            modifier = Modifier.size(20.dp),
-            tint = if (enabled) MaterialTheme.colorScheme.secondary else contentColor
-        )
-        Spacer(Modifier.width(10.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.bodyLarge, color = contentColor)
-            Text(
-                subtitle,
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            val contentColor = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+            Icon(
+                icon,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = if (enabled) MaterialTheme.colorScheme.secondary else contentColor.copy(alpha = 0.62f)
+            )
+            Spacer(Modifier.width(10.dp))
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(title, style = MaterialTheme.typography.bodyLarge, color = contentColor)
+                Text(
+                    subtitle,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (enabled) 0.82f else 0.58f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Switch(
+                checked = checked && enabled,
+                enabled = enabled,
+                onCheckedChange = onCheckedChange
             )
         }
-        Switch(
-            checked = checked && enabled,
-            enabled = enabled,
-            onCheckedChange = onCheckedChange
-        )
     }
 }
 

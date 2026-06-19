@@ -1,5 +1,9 @@
 # Changelog
 
+- Refined quadrant detail and task form polish: quadrant detail rows no longer
+  repeat the current quadrant tag, and add/edit controls now use a stronger
+  capture field plus quieter quadrant, time, reminder, and repeat setting rows.
+
 - TickTick-inspired visual polish: refine the warm-neutral theme, quieter home
   header, lighter quadrant board, list-like task rows, compact metadata chips,
   and more consistent sheet/detail/archive surfaces.
