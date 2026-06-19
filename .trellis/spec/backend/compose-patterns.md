@@ -357,6 +357,81 @@ Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
 
 ---
 
+## Pattern: Quiet Daily Task UI
+
+**Problem**: DianMao needs TickTick-like scanning polish without losing its
+four-quadrant model. Overly heavy cards, saturated inactive states, dashboard
+metrics, and cramped custom controls make the app feel less native and slower to
+use.
+
+**Contracts**:
+- Preserve DianMao's warm primary accent for primary actions and current
+  selection; do not switch the product identity to a reference app's palette.
+- Use balanced compact density: reduce excess padding and border strength, but
+  keep primary action targets at about `48.dp`.
+- Use tinted neutrals for app background, surfaces, and scrims; avoid
+  `Color.White` and `Color.Black` in refreshed UI code.
+- Metadata should be compact and semantic. Use quiet chips or inline icon/text
+  groups for due time, calendar, alarm, repeat, quadrant, subtasks, and notes.
+- Task rows should prioritize completion state and title first; secondary
+  classification belongs in lighter metadata.
+- Letter spacing should stay `0.sp` in refreshed UI. Do not use negative
+  tracking to fake density.
+
+**Good**:
+```kotlin
+private val RowShape = RoundedCornerShape(12.dp)
+private val ChipShape = RoundedCornerShape(8.dp)
+
+@Composable
+private fun quietBorder(alpha: Float = 0.22f): BorderStroke {
+    return BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = alpha))
+}
+
+Surface(
+    color = MaterialTheme.colorScheme.surface,
+    shape = RowShape,
+    border = quietBorder(0.18f)
+) {
+    Row(Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+        CompletionMark(...)
+        Text(task.title, style = MaterialTheme.typography.titleMedium)
+        CompactMeta(icon = Icons.Rounded.Schedule, text = task.dueLabel)
+    }
+}
+```
+
+**Bad**:
+```kotlin
+Card(
+    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.55f)),
+    shape = RoundedCornerShape(16.dp)
+) {
+    Column(Modifier.padding(16.dp)) {
+        Text(task.quadrant.title)
+        Text(task.title, letterSpacing = (-0.1).sp)
+    }
+}
+```
+
+**Why**: The good pattern keeps rows scannable and native while preserving
+touch targets and accessibility. The bad pattern spends too much vertical space
+on classification, uses heavy borders, and relies on negative letter spacing for
+density.
+
+**Reference implementation**:
+- `app/src/main/java/fun/han1997/dianmao/MainActivity.kt`
+- `DianMaoTheme`, `AppHeader`, `QuadrantBoard`, `TaskRow`, `CompactMeta`,
+  `AddTaskPanel`, `TaskDetailScreen`
+
+**Verification**:
+- Run `:app:compileDebugKotlin`, `:app:lintDebug`, and `:app:assembleDebug`
+  after broad Compose polish.
+- Search touched UI files for `letterSpacing = (-`, `Color.White`, and
+  `Color.Black`.
+
+---
+
 ## Related Specs
 
 - [Overlay Navigation Thinking Guide](../guides/overlay-navigation-thinking-guide.md) - Checklist for back navigation design
