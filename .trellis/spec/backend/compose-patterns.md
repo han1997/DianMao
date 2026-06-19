@@ -375,6 +375,10 @@ use.
   groups for due time, calendar, alarm, repeat, quadrant, subtasks, and notes.
 - Task rows should prioritize completion state and title first; secondary
   classification belongs in lighter metadata.
+- Task form text fields should reuse a shared quiet text-field color helper
+  for task capture, subtasks, and completion notes instead of scattering local
+  `TextFieldDefaults.colors` blocks. Independent tool panels can keep their own
+  field styling when they are outside the daily task workflow.
 - Letter spacing should stay `0.sp` in refreshed UI. Do not use negative
   tracking to fake density.
 
@@ -387,6 +391,14 @@ private val ChipShape = RoundedCornerShape(8.dp)
 private fun quietBorder(alpha: Float = 0.22f): BorderStroke {
     return BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = alpha))
 }
+
+@Composable
+private fun quietTextFieldColors() = TextFieldDefaults.colors(
+    focusedContainerColor = MaterialTheme.colorScheme.surface,
+    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+    focusedIndicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.45f),
+    unfocusedIndicatorColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f)
+)
 
 Surface(
     color = MaterialTheme.colorScheme.surface,
