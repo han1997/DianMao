@@ -506,6 +506,77 @@ density.
 
 ---
 
+## Pattern: Home Time Focus Lane
+
+**Problem**: Time-sensitive tasks can be buried inside quadrants, but a full
+Today page or dashboard-heavy summary would add navigation weight and weaken the
+four-quadrant model.
+
+**Contracts**:
+- Build the lane from a pure helper with this shape:
+  `buildTimeFocusItems(tasks, nowMillis, zoneId, limit)`.
+- Exclude tasks that are completed, archived, or missing `dueAtMillis`.
+- Classify timed tasks as `Overdue` when `dueAtMillis < nowMillis`, `Today`
+  when due before the next local midnight, and `Upcoming` otherwise.
+- Sort by focus kind rank (`Overdue`, `Today`, `Upcoming`) and then by due time.
+- Limit the lane to a small number of rows; the home default is three.
+- Hide the lane entirely when no focus items exist.
+- Place the lane between `AppHeader` and `QuadrantBoard`; keep the quadrant
+  board visible and primary below it.
+- Tapping a focus row should open task detail, not mutate completion, reminders,
+  calendar events, repeat state, or persistence.
+- Rows should use quiet task UI styling: restrained semantic tint, `FlowRow`
+  metadata, minimum `48.dp` touch height, and button semantics for row taps.
+
+**Good**:
+```kotlin
+TimeFocusLane(
+    tasks = activeTasks,
+    onTaskSelected = { taskForDetail = it }
+)
+
+internal fun buildTimeFocusItems(
+    tasks: List<TaskUiModel>,
+    nowMillis: Long,
+    zoneId: ZoneId,
+    limit: Int = 3
+): List<TimeFocusItem> {
+    val today = Instant.ofEpochMilli(nowMillis).atZone(zoneId).toLocalDate()
+    val tomorrowStartMillis = today.plusDays(1).atStartOfDay(zoneId)
+        .toInstant()
+        .toEpochMilli()
+
+    return tasks.mapNotNull { task ->
+        val dueAt = task.dueAtMillis ?: return@mapNotNull null
+        if (task.completed || task.archived) return@mapNotNull null
+        val kind = when {
+            dueAt < nowMillis -> TimeFocusKind.Overdue
+            dueAt < tomorrowStartMillis -> TimeFocusKind.Today
+            else -> TimeFocusKind.Upcoming
+        }
+        TimeFocusItem(task = task, kind = kind)
+    }.sortedWith(compareBy({ it.kind.rank }, { it.task.dueAtMillis }))
+        .take(limit)
+}
+```
+
+**Bad**:
+```kotlin
+// Turns the home screen into a second planner model and changes task behavior.
+TodayDashboard(
+    tasks = allTasks,
+    onClick = { completeTaskAndRescheduleReminder(it) }
+)
+```
+
+**Tests Required**:
+- Unit tests for the pure helper must cover overdue/today/upcoming ordering,
+  completed/archived/unscheduled exclusion, and the row limit after sorting.
+- Compose or build verification must still prove the home screen and task
+  detail click path compile after the lane is inserted.
+
+---
+
 ## Related Specs
 
 - [Overlay Navigation Thinking Guide](../guides/overlay-navigation-thinking-guide.md) - Checklist for back navigation design
