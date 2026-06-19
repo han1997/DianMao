@@ -41,6 +41,7 @@ class TaskRepository(context: Context) {
             useCalendar = form.useCalendar && dueAtMillis != null,
             useAlarm = form.useAlarm && dueAtMillis != null,
             repeatRule = form.repeatRule,
+            subTasks = normalizedSubTasks(form.subTasks),
             completed = false,
             completionNote = null,
             createdAtMillis = now,
@@ -61,6 +62,22 @@ class TaskRepository(context: Context) {
             useCalendar = form.useCalendar && dueAtMillis != null,
             useAlarm = form.useAlarm && dueAtMillis != null,
             repeatRule = form.repeatRule,
+            subTasks = normalizedSubTasks(form.subTasks),
+            updatedAtMillis = System.currentTimeMillis()
+        )
+        dao.update(updated)
+        return updated.toUiModel()
+    }
+
+    suspend fun updateSubTaskCompleted(taskId: Long, subTaskId: Long, completed: Boolean): TaskUiModel? {
+        val existing = dao.findById(taskId) ?: return null
+        if (existing.subTasks.none { it.id == subTaskId }) return existing.toUiModel()
+        if (existing.subTasks.firstOrNull { it.id == subTaskId }?.completed == completed) return existing.toUiModel()
+        val updatedSubTasks = existing.subTasks.map { item ->
+            if (item.id == subTaskId) item.copy(completed = completed) else item
+        }
+        val updated = existing.copy(
+            subTasks = updatedSubTasks,
             updatedAtMillis = System.currentTimeMillis()
         )
         dao.update(updated)
@@ -337,6 +354,27 @@ class TaskRepository(context: Context) {
         return form.dueDateMillis?.let { dateMillis ->
             val minutes = form.dueTimeMinutes
             if (minutes != null) dateMillis + minutes * 60_000L else dateMillis
+        }
+    }
+
+    private fun normalizedSubTasks(items: List<TaskSubTask>): List<TaskSubTask> {
+        val usedIds = mutableSetOf<Long>()
+        var nextId = (items.maxOfOrNull { it.id } ?: 0L) + 1L
+        return items.mapNotNull { item ->
+            val title = item.title.trim()
+            if (title.isBlank()) {
+                null
+            } else {
+                val id = if (item.id > 0 && usedIds.add(item.id)) {
+                    item.id
+                } else {
+                    while (!usedIds.add(nextId)) {
+                        nextId += 1L
+                    }
+                    nextId++
+                }
+                item.copy(id = id, title = title)
+            }
         }
     }
 

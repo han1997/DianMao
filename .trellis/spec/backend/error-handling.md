@@ -36,6 +36,7 @@ permission, provider availability, or user-controlled settings.
 * Calendar write: `CalendarWriter.saveOrUpdateEvent(context, task): Long?`
 * Calendar delete: `CalendarWriter.deleteEvent(context, eventId): Boolean`
 * Fallback insert: `CalendarWriter.buildInsertIntent(task): Intent?`
+* Manual reminder open: `CalendarWriter.buildOpenReminderIntent(task): Intent?`
 * Fallback reminder extras: `CalendarWriter.reminderIntentExtras(): Map<String, Int>`
 * Notification permission check: `ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)`
 
@@ -53,6 +54,9 @@ permission, provider availability, or user-controlled settings.
   with `Events.HAS_ALARM = 1`, `Reminders.MINUTES = 0`, and
   `Reminders.METHOD = METHOD_ALERT`; this path is best effort because the
   receiving calendar app controls whether extras are honored.
+* Manual "open system calendar reminder" actions should open the existing
+  calendar event editor when `calendarEventId` is present, otherwise fall back
+  to the insert intent with the same reminder extras.
 * Calendar deletes return success/failure but task deletion still proceeds.
 * Android 13+ notification posting must perform an inline permission check
   immediately before `NotificationManagerCompat.notify(...)` so Android lint
@@ -64,6 +68,8 @@ permission, provider availability, or user-controlled settings.
   use insert intent fallback when creating/updating a calendar-enabled task.
 * Calendar permission missing + due date present -> fallback insert intent
   includes immediate alert reminder extras, not just event title/time fields.
+* User taps manual calendar reminder button -> start the built intent
+  best-effort; failure to resolve a calendar app must not affect the local task.
 * Visible syncing calendar reports stronger write access -> prefer it over
   weaker candidates, but do not reject all candidates solely because access
   metadata is low or missing.
@@ -85,6 +91,8 @@ permission, provider availability, or user-controlled settings.
 * Good: Share fallback reminder extras through a pure helper so JVM unit tests
   can assert the contract without constructing Android framework `Intent`
   objects.
+* Good: Keep the manual open button on the task detail surface and only show it
+  for calendar-enabled tasks with a due time, so the list view stays focused.
 * Base: No due date means calendar/alarm side effects are disabled by repository
   normalization.
 * Bad: Treat access-level metadata as a hard gate, return `null`, and block all
@@ -184,6 +192,30 @@ Plain JVM tests should assert `reminderIntentExtras()` instead of constructing
 the full Android `Intent`, because framework `Intent.setData` is not mocked in
 local unit tests.
 
+#### Wrong
+
+```kotlin
+IconButton(onClick = { context.startActivity(CalendarWriter.buildInsertIntent(task)) }) {
+    Icon(Icons.Rounded.CalendarMonth, contentDescription = null)
+}
+```
+
+This can create duplicate calendar events even when the app already stored a
+managed event id.
+
+#### Correct
+
+```kotlin
+FilledTonalButton(onClick = { openCalendarReminder(context, task) }) {
+    Icon(Icons.Rounded.CalendarMonth, contentDescription = null)
+    Text("Open system calendar reminder")
+}
+```
+
+`openCalendarReminder` uses `buildOpenReminderIntent`: existing managed events
+open through `ACTION_EDIT`, while tasks without an event id use the same insert
+fallback as the permission-missing save flow.
+
 ---
 
 ## API Error Responses
@@ -199,6 +231,8 @@ Not applicable. This app currently has no HTTP API layer.
   succeeds.
 * Updating the direct Calendar Provider reminder path while forgetting the
   permission-missing fallback insert intent path.
+* Opening a new calendar insert intent from detail when `calendarEventId` exists,
+  creating a duplicate instead of opening the managed event.
 * Moving runtime permission checks into helpers that Android lint cannot follow.
 
 ## Scenario: AlarmManager Reminder Restoration

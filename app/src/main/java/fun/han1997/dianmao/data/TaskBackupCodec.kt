@@ -5,7 +5,7 @@ import org.json.JSONObject
 
 object TaskBackupCodec {
     private const val FORMAT = "dianmao.tasks"
-    private const val BACKUP_VERSION = 2
+    private const val BACKUP_VERSION = 3
 
     fun encode(
         tasks: List<TaskEntity>,
@@ -65,6 +65,7 @@ object TaskBackupCodec {
             .putNullable("calendarEventId", task.calendarEventId)
             .put("useAlarm", task.useAlarm)
             .put("repeatRule", task.repeatRule.name)
+            .put("subTasks", subTasksToJson(task.subTasks))
             .put("completionCount", task.completionCount)
             .putNullable("lastCompletedAtMillis", task.lastCompletedAtMillis)
             .put("completed", task.completed)
@@ -86,6 +87,7 @@ object TaskBackupCodec {
             calendarEventId = json.nullableLong("calendarEventId"),
             useAlarm = json.getBoolean("useAlarm"),
             repeatRule = RepeatRule.valueOf(json.getString("repeatRule")),
+            subTasks = subTasksFromJson(json),
             completionCount = json.optInt("completionCount", 0),
             lastCompletedAtMillis = json.nullableLong("lastCompletedAtMillis"),
             completed = json.getBoolean("completed"),
@@ -103,6 +105,32 @@ object TaskBackupCodec {
             .put("taskId", completion.taskId)
             .put("completedAtMillis", completion.completedAtMillis)
             .putNullable("note", completion.note)
+    }
+
+    private fun subTasksToJson(subTasks: List<TaskSubTask>): JSONArray {
+        return JSONArray().apply {
+            subTasks.forEach { item ->
+                put(
+                    JSONObject()
+                        .put("id", item.id)
+                        .put("title", item.title)
+                        .put("completed", item.completed)
+                )
+            }
+        }
+    }
+
+    private fun subTasksFromJson(json: JSONObject): List<TaskSubTask> {
+        if (!json.has("subTasks") || json.isNull("subTasks")) return emptyList()
+        val array = json.getJSONArray("subTasks")
+        return List(array.length()) { index ->
+            val item = array.getJSONObject(index)
+            TaskSubTask(
+                id = item.optLong("id", index + 1L),
+                title = item.getString("title"),
+                completed = item.optBoolean("completed", false)
+            )
+        }
     }
 
     private fun completionFromJson(json: JSONObject): TaskCompletionEntity {

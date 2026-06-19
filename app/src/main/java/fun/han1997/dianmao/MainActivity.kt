@@ -26,6 +26,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
@@ -33,6 +34,7 @@ import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
@@ -100,6 +102,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -159,6 +162,7 @@ import `fun`.han1997.dianmao.data.TaskEntity
 import `fun`.han1997.dianmao.data.TaskFormState
 import `fun`.han1997.dianmao.data.TaskPriority
 import `fun`.han1997.dianmao.data.TaskRepository
+import `fun`.han1997.dianmao.data.TaskSubTask
 import `fun`.han1997.dianmao.data.TaskUiModel
 import `fun`.han1997.dianmao.data.TaskCompletionEntity
 import `fun`.han1997.dianmao.data.DateTimeFormatters
@@ -226,6 +230,16 @@ private val TaskPriority.type: QuadrantType
 private val QuadrantType.priority: TaskPriority
     get() = TaskPriority.valueOf(name)
 
+private val TaskUiModel.completedSubTaskCount: Int
+    get() = subTasks.count { it.completed }
+
+private val TaskUiModel.subTaskProgressLabel: String
+    get() = "${completedSubTaskCount}/${subTasks.size} 子事项"
+
+private fun nextSubTaskId(items: List<TaskSubTask>): Long {
+    return (items.maxOfOrNull { it.id } ?: 0L) + 1L
+}
+
 private fun hasCalendarPermission(context: android.content.Context): Boolean {
     return ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED &&
         ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALENDAR) == PackageManager.PERMISSION_GRANTED
@@ -240,6 +254,12 @@ private fun saveOrOpenCalendarEvent(context: android.content.Context, task: Task
         CalendarWriter.buildInsertIntent(task)?.let { context.startActivity(it) }
     }
     return null
+}
+
+private fun openCalendarReminder(context: android.content.Context, task: TaskUiModel) {
+    CalendarWriter.buildOpenReminderIntent(task)?.let { intent ->
+        runCatching { context.startActivity(intent) }
+    }
 }
 
 private fun deleteCalendarEvent(context: android.content.Context, eventId: Long?) {
@@ -297,6 +317,10 @@ private fun seedTaskEntities(): List<TaskEntity> {
             useCalendar = false,
             useAlarm = false,
             repeatRule = RepeatRule.None,
+            subTasks = listOf(
+                TaskSubTask(id = 1, title = "列出本周必须完成的事项"),
+                TaskSubTask(id = 2, title = "标记今天要先推进的两项")
+            ),
             completed = false,
             completionNote = null,
             archived = false,
@@ -723,6 +747,12 @@ private fun DianMaoApp() {
                         onDelete = { taskForDelete = it; taskForDetail = null },
                         onEditNote = { taskForNote = it },
                         onArchive = archiveTask,
+                        onOpenCalendarReminder = { openCalendarReminder(context, it) },
+                        onToggleSubTask = { subTaskId, completed ->
+                            scope.launch {
+                                repository.updateSubTaskCompleted(task.id, subTaskId, completed)
+                            }
+                        },
                         onDeleteCompletion = { completionId ->
                             scope.launch {
                                 repository.deleteCompletion(completionId)
@@ -1577,6 +1607,13 @@ private fun TaskRow(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
+                if (task.subTasks.isNotEmpty()) {
+                    SubTaskProgressSummary(
+                        completed = task.completedSubTaskCount,
+                        total = task.subTasks.size,
+                        color = task.quadrant.color
+                    )
+                }
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(5.dp)
@@ -1592,6 +1629,9 @@ private fun TaskRow(
                     }
                     if (task.repeatRule != RepeatRule.None) {
                         CompactMeta(icon = Icons.Rounded.Alarm, text = task.repeatRule.label)
+                    }
+                    if (task.subTasks.isNotEmpty()) {
+                        CompactMeta(icon = Icons.Rounded.CheckCircle, text = task.subTaskProgressLabel)
                     }
                     if (task.completionNote != null) {
                         CompactMeta(icon = Icons.AutoMirrored.Rounded.Notes, text = "有心得")
@@ -1686,6 +1726,256 @@ private fun ColorDot(color: Color) {
     )
 }
 
+@Composable
+private fun TaskFormSection(
+    title: String,
+    subtitle: String? = null,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.34f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.22f))
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                if (subtitle != null) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            content()
+        }
+    }
+}
+
+@Composable
+private fun SubTaskProgressSummary(
+    completed: Int,
+    total: Int,
+    color: Color
+) {
+    val progress = if (total == 0) 0f else completed.toFloat() / total.toFloat()
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = "子事项",
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = "$completed/$total",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(4.dp)
+                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(999.dp))
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(progress.coerceIn(0f, 1f))
+                    .height(4.dp)
+                    .background(color.copy(alpha = 0.82f), RoundedCornerShape(999.dp))
+            )
+        }
+    }
+}
+
+@Composable
+private fun SubTaskEditor(
+    subTasks: List<TaskSubTask>,
+    draft: String,
+    onDraftChange: (String) -> Unit,
+    onAdd: () -> Unit,
+    onTitleChange: (Long, String) -> Unit,
+    onCheckedChange: (Long, Boolean) -> Unit,
+    onDelete: (Long) -> Unit
+) {
+    val completed = subTasks.count { it.completed }
+    TaskFormSection(
+        title = "子事项",
+        subtitle = if (subTasks.isEmpty()) "可选" else "$completed/${subTasks.size} 已完成"
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedTextField(
+                value = draft,
+                onValueChange = onDraftChange,
+                modifier = Modifier.weight(1f),
+                placeholder = { Text("添加一个小任务") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { onAdd() }),
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                )
+            )
+            FilledTonalButton(
+                onClick = onAdd,
+                enabled = draft.isNotBlank(),
+                shape = RoundedCornerShape(12.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp)
+            ) {
+                Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(4.dp))
+                Text("添加")
+            }
+        }
+
+        if (subTasks.isEmpty()) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f)
+            ) {
+                Text(
+                    text = "暂无子事项",
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                subTasks.forEach { item ->
+                    SubTaskEditRow(
+                        item = item,
+                        onTitleChange = { onTitleChange(item.id, it) },
+                        onCheckedChange = { onCheckedChange(item.id, it) },
+                        onDelete = { onDelete(item.id) }
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SubTaskEditRow(
+    item: TaskSubTask,
+    onTitleChange: (String) -> Unit,
+    onCheckedChange: (Boolean) -> Unit,
+    onDelete: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Checkbox(
+            checked = item.completed,
+            onCheckedChange = onCheckedChange
+        )
+        OutlinedTextField(
+            value = item.title,
+            onValueChange = onTitleChange,
+            modifier = Modifier.weight(1f),
+            placeholder = { Text("子事项") },
+            singleLine = true,
+            textStyle = MaterialTheme.typography.bodyMedium,
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface
+            )
+        )
+        IconButton(
+            onClick = onDelete,
+            modifier = Modifier.size(40.dp)
+        ) {
+            Icon(
+                Icons.Rounded.Delete,
+                contentDescription = "删除子事项",
+                tint = MaterialTheme.colorScheme.error
+            )
+        }
+    }
+}
+
+@Composable
+private fun SubTaskReadOnlySection(
+    task: TaskUiModel,
+    onToggleSubTask: (Long, Boolean) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = "子事项",
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+            )
+            Text(
+                text = task.subTaskProgressLabel,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Surface(
+            shape = RoundedCornerShape(14.dp),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.46f)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                task.subTasks.forEach { item ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .toggleable(
+                                value = item.completed,
+                                role = Role.Checkbox,
+                                onValueChange = { checked -> onToggleSubTask(item.id, checked) }
+                            )
+                            .padding(vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Checkbox(
+                            checked = item.completed,
+                            onCheckedChange = null
+                        )
+                        Text(
+                            text = item.title,
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (item.completed) {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            },
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun AddTaskPanel(
@@ -1703,6 +1993,8 @@ private fun AddTaskPanel(
     var useCalendar by rememberSaveable { mutableStateOf(false) }
     var useAlarm by rememberSaveable { mutableStateOf(false) }
     var repeatRule by rememberSaveable { mutableStateOf(RepeatRule.None) }
+    var subTasks by remember { mutableStateOf<List<TaskSubTask>>(emptyList()) }
+    var subTaskDraft by rememberSaveable { mutableStateOf("") }
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     val formScrollState = rememberScrollState()
@@ -1717,7 +2009,20 @@ private fun AddTaskPanel(
             useCalendar = editingTask?.useCalendar ?: false
             useAlarm = editingTask?.useAlarm ?: false
             repeatRule = editingTask?.repeatRule ?: RepeatRule.None
+            subTasks = editingTask?.subTasks ?: emptyList()
+            subTaskDraft = ""
         }
+    }
+
+    fun addSubTask() {
+        val trimmed = subTaskDraft.trim()
+        if (trimmed.isBlank()) return
+        subTasks = subTasks + TaskSubTask(
+            id = nextSubTaskId(subTasks),
+            title = trimmed,
+            completed = false
+        )
+        subTaskDraft = ""
     }
 
     AnimatedVisibility(
@@ -1780,6 +2085,10 @@ private fun AddTaskPanel(
                             .verticalScroll(formScrollState),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
+                        TaskFormSection(
+                            title = "事项",
+                            subtitle = if (isEditing) "调整标题和拆分结构" else "先记录要推进的事"
+                        ) {
                         OutlinedTextField(
                             value = title,
                             onValueChange = { title = it },
@@ -1795,6 +2104,26 @@ private fun AddTaskPanel(
                                 focusedContainerColor = MaterialTheme.colorScheme.surface,
                                 unfocusedContainerColor = MaterialTheme.colorScheme.surface
                             )
+                        )
+                        }
+                        SubTaskEditor(
+                            subTasks = subTasks,
+                            draft = subTaskDraft,
+                            onDraftChange = { subTaskDraft = it },
+                            onAdd = { addSubTask() },
+                            onTitleChange = { id, newTitle ->
+                                subTasks = subTasks.map { item ->
+                                    if (item.id == id) item.copy(title = newTitle) else item
+                                }
+                            },
+                            onCheckedChange = { id, checked ->
+                                subTasks = subTasks.map { item ->
+                                    if (item.id == id) item.copy(completed = checked) else item
+                                }
+                            },
+                            onDelete = { id ->
+                                subTasks = subTasks.filterNot { it.id == id }
+                            }
                         )
                         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             Text("象限", style = MaterialTheme.typography.titleMedium)
@@ -1879,7 +2208,8 @@ private fun AddTaskPanel(
                                         dueTimeMinutes = dueTimeMinutes,
                                         useCalendar = useCalendar,
                                         useAlarm = useAlarm,
-                                        repeatRule = repeatRule
+                                        repeatRule = repeatRule,
+                                        subTasks = subTasks
                                     )
                                 )
                                 if (!isEditing) {
@@ -1889,6 +2219,8 @@ private fun AddTaskPanel(
                                     useCalendar = false
                                     useAlarm = false
                                     repeatRule = RepeatRule.None
+                                    subTasks = emptyList()
+                                    subTaskDraft = ""
                                     priority = initialPriority
                                 }
                             }
@@ -2917,6 +3249,8 @@ private fun TaskDetailScreen(
     onDelete: (TaskUiModel) -> Unit,
     onEditNote: (TaskUiModel) -> Unit,
     onArchive: (TaskUiModel) -> Unit,
+    onOpenCalendarReminder: (TaskUiModel) -> Unit,
+    onToggleSubTask: (Long, Boolean) -> Unit,
     onDeleteCompletion: (Long) -> Unit,
     onUpdateCompletionNote: (Long, String?) -> Unit
 ) {
@@ -3014,6 +3348,34 @@ private fun TaskDetailScreen(
                             if (task.completionCount > 0) {
                                 CompactMeta(icon = Icons.Rounded.CheckCircle, text = "已完成 ${task.completionCount} 次")
                             }
+                        }
+                    }
+                }
+
+                if (task.subTasks.isNotEmpty()) {
+                    item {
+                        SubTaskReadOnlySection(
+                            task = task,
+                            onToggleSubTask = onToggleSubTask
+                        )
+                    }
+                }
+
+                if (task.useCalendar && task.dueAtMillis != null) {
+                    item {
+                        FilledTonalButton(
+                            onClick = { onOpenCalendarReminder(task) },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = PaddingValues(vertical = 12.dp)
+                        ) {
+                            Icon(
+                                Icons.Rounded.CalendarMonth,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text("打开系统日历提醒")
                         }
                     }
                 }

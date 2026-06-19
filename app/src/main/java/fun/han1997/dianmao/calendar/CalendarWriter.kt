@@ -113,8 +113,7 @@ object CalendarWriter {
     fun buildInsertIntent(task: TaskUiModel): android.content.Intent? {
         val dueAt = task.dueAtMillis ?: return null
         return android.content.Intent(android.content.Intent.ACTION_INSERT).apply {
-            data = CalendarContract.Events.CONTENT_URI
-            type = "vnd.android.cursor.item/event"
+            setDataAndType(CalendarContract.Events.CONTENT_URI, "vnd.android.cursor.item/event")
             putExtra(CalendarContract.Events.TITLE, task.title)
             putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, dueAt)
             putExtra(CalendarContract.EXTRA_EVENT_END_TIME, dueAt + EVENT_DURATION_MILLIS)
@@ -122,6 +121,20 @@ object CalendarWriter {
             reminderIntentExtras().forEach { (key, value) -> putExtra(key, value) }
             repeatRuleToRRule(task.repeatRule)?.let { putExtra(CalendarContract.Events.RRULE, it) }
         }
+    }
+
+    fun buildOpenReminderIntent(task: TaskUiModel): android.content.Intent? {
+        val eventId = task.calendarEventId
+        if (eventId != null) {
+            return android.content.Intent(android.content.Intent.ACTION_EDIT).apply {
+                setDataAndType(
+                    ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, eventId),
+                    "vnd.android.cursor.item/event"
+                )
+                reminderIntentExtras().forEach { (key, value) -> putExtra(key, value) }
+            }
+        }
+        return buildInsertIntent(task)
     }
 
     private fun findWritableCalendar(resolver: ContentResolver): CalendarCandidate? {

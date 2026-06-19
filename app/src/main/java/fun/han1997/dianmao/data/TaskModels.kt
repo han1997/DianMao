@@ -32,6 +32,12 @@ enum class TaskPriority(val label: String, val shortLabel: String, val descripti
     fun colorInt(): Int = colorHex.toInt()
 }
 
+data class TaskSubTask(
+    val id: Long,
+    val title: String,
+    val completed: Boolean = false
+)
+
 @Entity(tableName = "tasks")
 data class TaskEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -43,6 +49,7 @@ data class TaskEntity(
     val calendarEventId: Long? = null,
     val useAlarm: Boolean,
     val repeatRule: RepeatRule = RepeatRule.None,
+    val subTasks: List<TaskSubTask> = emptyList(),
     val completionCount: Int = 0,
     val lastCompletedAtMillis: Long? = null,
     val completed: Boolean,
@@ -60,7 +67,8 @@ data class TaskFormState(
     val dueTimeMinutes: Int? = null,
     val useCalendar: Boolean = false,
     val useAlarm: Boolean = false,
-    val repeatRule: RepeatRule = RepeatRule.None
+    val repeatRule: RepeatRule = RepeatRule.None,
+    val subTasks: List<TaskSubTask> = emptyList()
 )
 
 data class TaskUiModel(
@@ -73,6 +81,7 @@ data class TaskUiModel(
     val calendarEventId: Long?,
     val useAlarm: Boolean,
     val repeatRule: RepeatRule,
+    val subTasks: List<TaskSubTask>,
     val completionCount: Int,
     val lastCompletedAtMillis: Long?,
     val completed: Boolean,
@@ -91,6 +100,7 @@ fun TaskEntity.toUiModel(): TaskUiModel {
         calendarEventId = calendarEventId,
         useAlarm = useAlarm,
         repeatRule = repeatRule,
+        subTasks = subTasks,
         completionCount = completionCount,
         lastCompletedAtMillis = lastCompletedAtMillis,
         completed = completed,
