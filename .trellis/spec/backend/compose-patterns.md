@@ -357,6 +357,68 @@ Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
 
 ---
 
+## Pattern: Capture-First Task Entry
+
+**Problem**: Task creation and task editing share the same sheet, but they serve
+different workflows. Creation should support rapid consecutive capture. Editing
+should finish the current correction and return the user to the previous
+context. Treating both paths the same makes quick capture slower or makes edits
+feel unfinished.
+
+**Contracts**:
+- The floating add action should be available from the home quadrant board and
+  from a quadrant detail page, unless a task detail overlay is already open.
+- When opened from a quadrant detail page, a new task should default to that
+  quadrant.
+- Saving a new task should keep the add sheet open, clear title/subtasks/time
+  fields, clear calendar/alarm/repeat toggles, and preserve the current
+  quadrant selection for the next capture.
+- Saving an edited task should close the sheet.
+- New-task save should show local confirmation feedback so the user knows the
+  capture succeeded without leaving the flow.
+- Back handling must still close the task panel before the underlying quadrant
+  detail page.
+
+**Good**:
+```kotlin
+FloatingActionButton(
+    onClick = { showAddSheet = true }
+) { /* available on board and quadrant detail */ }
+
+AddTaskPanel(
+    initialPriority = activePriority ?: TaskPriority.ImportantUrgent,
+    onSave = { form ->
+        val previousTask = taskForEdit
+        scope.launch { saveTask(form, previousTask) }
+        if (previousTask != null) {
+            dismissTaskPanel()
+        }
+    }
+)
+```
+
+**Bad**:
+```kotlin
+// Hides add while browsing a quadrant detail page.
+if (activePriority == null) {
+    FloatingActionButton(onClick = { showAddSheet = true }) { ... }
+}
+
+// Closes after every save, including fresh capture.
+onSave(form)
+dismissTaskPanel()
+```
+
+**Manual tests**:
+- Open a quadrant detail page and verify the add action is visible.
+- Create a task from that page and verify the sheet stays open, the saved item
+  appears in the quadrant, and the next draft keeps the same quadrant selected.
+- Edit an existing task and verify saving closes the sheet.
+- Open a quadrant detail page, open add, then press system back; verify the
+  sheet closes first and the detail page remains.
+
+---
+
 ## Pattern: Quiet Daily Task UI
 
 **Problem**: DianMao needs TickTick-like scanning polish without losing its
