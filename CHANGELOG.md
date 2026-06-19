@@ -1,5 +1,9 @@
 # Changelog
 
+- TickTick-inspired visual polish: refine the warm-neutral theme, quieter home
+  header, lighter quadrant board, list-like task rows, compact metadata chips,
+  and more consistent sheet/detail/archive surfaces.
+
 ## 2026-06-15
 
 - 修复二级页面编辑事项时返回行为：BackHandler 现在使用预计算的 backTarget 而非在回调中重复计算，确保返回时优先关闭编辑面板再回到二级页面，避免直接跳回主页面。

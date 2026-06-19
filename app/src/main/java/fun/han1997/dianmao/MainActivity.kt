@@ -374,21 +374,21 @@ private fun seedTaskEntities(): List<TaskEntity> {
 @Composable
 private fun DianMaoTheme(content: @Composable () -> Unit) {
     val colorScheme = androidx.compose.material3.lightColorScheme(
-        primary = Color(0xFFA94332),
-        onPrimary = Color.White,
-        primaryContainer = Color(0xFFF8DED8),
-        onPrimaryContainer = Color(0xFF3A0B05),
-        secondary = Color(0xFF2D6DA8),
-        onSecondary = Color.White,
-        secondaryContainer = Color(0xFFDCE8F5),
-        onSecondaryContainer = Color(0xFF071E34),
-        background = Color(0xFFF7F8F6),
-        onBackground = Color(0xFF1D211F),
-        surface = Color(0xFFFDFDFC),
-        onSurface = Color(0xFF1D211F),
-        surfaceVariant = Color(0xFFECEFED),
-        onSurfaceVariant = Color(0xFF58615D),
-        outline = Color(0xFFD1D7D3)
+        primary = Color(0xFFA84534),
+        onPrimary = Color(0xFFFFFBFA),
+        primaryContainer = Color(0xFFF5DED9),
+        onPrimaryContainer = Color(0xFF3A100A),
+        secondary = Color(0xFF2B6C9F),
+        onSecondary = Color(0xFFF8FCFF),
+        secondaryContainer = Color(0xFFDCEAF4),
+        onSecondaryContainer = Color(0xFF071F31),
+        background = Color(0xFFF8F8F5),
+        onBackground = Color(0xFF1E211F),
+        surface = Color(0xFFFFFCF9),
+        onSurface = Color(0xFF1E211F),
+        surfaceVariant = Color(0xFFEDEEEA),
+        onSurfaceVariant = Color(0xFF5A625E),
+        outline = Color(0xFFD9DDD8)
     )
 
     MaterialTheme(
@@ -398,19 +398,19 @@ private fun DianMaoTheme(content: @Composable () -> Unit) {
                 fontSize = 27.sp,
                 lineHeight = 33.sp,
                 fontWeight = FontWeight.SemiBold,
-                letterSpacing = (-0.3).sp
+                letterSpacing = 0.sp
             ),
             titleLarge = androidx.compose.ui.text.TextStyle(
                 fontSize = 20.sp,
                 lineHeight = 26.sp,
                 fontWeight = FontWeight.SemiBold,
-                letterSpacing = (-0.2).sp
+                letterSpacing = 0.sp
             ),
             titleMedium = androidx.compose.ui.text.TextStyle(
                 fontSize = 16.sp,
                 lineHeight = 22.sp,
                 fontWeight = FontWeight.SemiBold,
-                letterSpacing = (-0.1).sp
+                letterSpacing = 0.sp
             ),
             bodyLarge = androidx.compose.ui.text.TextStyle(
                 fontSize = 16.sp,
@@ -440,6 +440,16 @@ private fun DianMaoTheme(content: @Composable () -> Unit) {
         content = content
     )
 }
+
+@Composable
+private fun quietBorder(alpha: Float = 0.22f): BorderStroke {
+    return BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = alpha))
+}
+
+private val PanelShape = RoundedCornerShape(18.dp)
+private val SheetShape = RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)
+private val RowShape = RoundedCornerShape(12.dp)
+private val ChipShape = RoundedCornerShape(8.dp)
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -961,7 +971,7 @@ private fun AppHeader(
 
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -980,7 +990,7 @@ private fun AppHeader(
                         text = "DianMao",
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.Bold,
-                            letterSpacing = (-0.3).sp
+                            letterSpacing = 0.sp
                         ),
                         color = MaterialTheme.colorScheme.onBackground,
                         maxLines = 1,
@@ -989,7 +999,7 @@ private fun AppHeader(
                     Surface(
                         color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f),
                         contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                        shape = RoundedCornerShape(6.dp)
+                        shape = ChipShape
                     ) {
                         Text(
                             text = "今日",
@@ -1014,45 +1024,45 @@ private fun AppHeader(
             Surface(
                 onClick = onOpenArchived,
                 shape = CircleShape,
-                color = MaterialTheme.colorScheme.surface,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.38f)),
-                modifier = Modifier.size(38.dp)
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.48f),
+                border = quietBorder(0.16f),
+                modifier = Modifier.size(48.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Rounded.Archive,
                         contentDescription = "归档事项",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
             Surface(
                 onClick = onOpenBackup,
                 shape = CircleShape,
-                color = MaterialTheme.colorScheme.surface,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.38f)),
-                modifier = Modifier.size(38.dp)
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.48f),
+                border = quietBorder(0.16f),
+                modifier = Modifier.size(48.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Rounded.Settings,
                         contentDescription = "备份与恢复",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
         }
         Surface(
             color = MaterialTheme.colorScheme.surface,
-            shape = RoundedCornerShape(14.dp),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.28f))
+            shape = RowShape,
+            border = quietBorder(0.16f)
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                    .padding(horizontal = 10.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 SummaryPill(value = openTasks.toString(), label = "未完成", color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f))
@@ -1067,22 +1077,22 @@ private fun AppHeader(
 private fun SummaryPill(value: String, label: String, color: Color, modifier: Modifier = Modifier) {
     Surface(
         modifier = modifier,
-        color = color.copy(alpha = 0.12f),
+        color = color.copy(alpha = 0.09f),
         contentColor = color,
-        shape = RoundedCornerShape(9.dp)
+        shape = ChipShape
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 10.dp, vertical = 8.dp),
+                .padding(horizontal = 9.dp, vertical = 7.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Text(
                 text = value,
-                style = MaterialTheme.typography.headlineSmall.copy(
+                style = MaterialTheme.typography.titleMedium.copy(
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = (-0.3).sp
+                    letterSpacing = 0.sp
                 ),
                 color = color
             )
@@ -1245,9 +1255,9 @@ private fun QuadrantBoard(
         modifier = modifier
             .fillMaxWidth(),
         color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(18.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.28f)),
-        shadowElevation = 0.5.dp
+        shape = PanelShape,
+        border = quietBorder(0.14f),
+        shadowElevation = 0.dp
     ) {
         Column {
             Row(modifier = Modifier.weight(1f)) {
@@ -1292,12 +1302,12 @@ private fun BoardDivider(vertical: Boolean) {
             Modifier
                 .width(1.dp)
                 .fillMaxHeight()
-                .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.24f))
+                .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.14f))
         } else {
             Modifier
                 .height(1.dp)
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.24f))
+                .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.14f))
         }
     )
 }
@@ -1310,10 +1320,10 @@ private fun QuadrantPane(
     modifier: Modifier = Modifier,
     onSelected: (TaskPriority) -> Unit
 ) {
-    val visibleTasks = tasks.take(4)
+    val visibleTasks = tasks.take(5)
     val openCount = tasks.count { !it.completed }
     val paneColor by animateColorAsState(
-        targetValue = quadrant.color.copy(alpha = 0.06f),
+        targetValue = quadrant.color.copy(alpha = 0.045f),
         animationSpec = tween(durationMillis = 200),
         label = "quadrantPaneColor"
     )
@@ -1324,8 +1334,8 @@ private fun QuadrantPane(
             .background(paneColor, shape = RoundedCornerShape(18.dp))
             .clickable { onSelected(quadrant) }
             .verticalScroll(rememberScrollState())
-            .padding(10.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+            .padding(9.dp),
+        verticalArrangement = Arrangement.spacedBy(5.dp)
     ) {
         Row(verticalAlignment = Alignment.Top) {
             Column(
@@ -1360,7 +1370,7 @@ private fun QuadrantPane(
                 text = openCount.toString(),
                 style = MaterialTheme.typography.headlineSmall.copy(
                     fontWeight = FontWeight.Bold,
-                    letterSpacing = (-0.3).sp
+                    letterSpacing = 0.sp
                 ),
                 color = quadrant.color.copy(alpha = 0.95f)
             )
@@ -1392,8 +1402,8 @@ private fun EmptyQuadrantHint(quadrant: TaskPriority) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.58f), RoundedCornerShape(9.dp))
-            .padding(horizontal = 12.dp, vertical = 9.dp),
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.38f), ChipShape)
+            .padding(horizontal = 10.dp, vertical = 8.dp),
         contentAlignment = Alignment.CenterStart
     ) {
         Text(
@@ -1416,12 +1426,13 @@ private fun CompactQuadrantTask(
             .fillMaxWidth()
             .background(
                 if (task.completed) {
-                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.46f)
                 } else {
-                    MaterialTheme.colorScheme.surface.copy(alpha = 0.88f)
+                    MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)
                 },
-                RoundedCornerShape(7.dp)
+                ChipShape
             )
+            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.10f), ChipShape)
             .padding(horizontal = 8.dp, vertical = 5.dp),
         verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -1476,7 +1487,7 @@ private fun CompletionMark(completed: Boolean, color: Color, modifier: Modifier 
             Icon(
                 imageVector = Icons.Rounded.Check,
                 contentDescription = null,
-                tint = Color.White,
+                tint = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier.size(12.dp)
             )
         }
@@ -1489,21 +1500,24 @@ private fun CompactMeta(
     text: String
 ) {
     Row(
+        modifier = Modifier
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.34f), ChipShape)
+            .padding(horizontal = 7.dp, vertical = 3.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.85f),
-            modifier = Modifier.size(13.dp)
+            tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.74f),
+            modifier = Modifier.size(12.dp)
         )
         Text(
             text = text,
             style = MaterialTheme.typography.labelMedium.copy(
-                letterSpacing = 0.05.sp
+                letterSpacing = 0.sp
             ),
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f),
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.82f),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -1556,23 +1570,26 @@ private fun TaskRow(
             .fillMaxWidth()
             .scale(scale),
         colors = CardDefaults.cardColors(
-            containerColor = if (task.completed) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
+            containerColor = if (task.completed) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.38f) else MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (task.completed) 0.35f else 0.55f))
+        shape = RowShape,
+        border = quietBorder(if (task.completed) 0.12f else 0.18f)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.Top
         ) {
             CompletionMark(
                 completed = task.completed,
                 color = task.quadrant.color,
                 modifier = Modifier
-                    .clickable(role = Role.Checkbox) { onToggleComplete(task) }
+                    .clickable(
+                        enabled = canComplete || task.completed,
+                        role = Role.Checkbox
+                    ) { onToggleComplete(task) }
                     .semantics {
                         contentDescription = if (task.completed) "标记为未完成" else "标记为完成"
                     }
@@ -1585,23 +1602,14 @@ private fun TaskRow(
                     .semantics {
                         contentDescription = "查看事项详情：${task.title}"
                     },
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+                verticalArrangement = Arrangement.spacedBy(7.dp)
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    ColorDot(task.quadrant.color)
-                    Spacer(Modifier.width(6.dp))
-                    Text(
-                        text = task.quadrant.title,
-                        style = MaterialTheme.typography.labelLarge,
-                        color = task.quadrant.color
-                    )
-                }
                 Text(
                     text = task.title,
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Medium,
-                        fontSize = 14.sp,
-                        letterSpacing = (-0.1).sp
+                        fontSize = 15.sp,
+                        letterSpacing = 0.sp
                     ),
                     color = if (task.completed) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
@@ -1615,9 +1623,10 @@ private fun TaskRow(
                     )
                 }
                 FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
+                    CompactMeta(icon = Icons.Rounded.Inventory2, text = task.quadrant.shortTitle)
                     task.dueLabel?.let {
                         CompactMeta(icon = Icons.Rounded.Schedule, text = it)
                     }
@@ -1644,7 +1653,7 @@ private fun TaskRow(
             ) {
                 IconButton(
                     onClick = { onEditNote(task) },
-                    modifier = Modifier.size(36.dp)
+                    modifier = Modifier.size(48.dp)
                 ) {
                     Icon(
                         imageVector = if (task.completed) Icons.Rounded.EditNote else Icons.Rounded.DoneAll,
@@ -1655,7 +1664,7 @@ private fun TaskRow(
                 Box {
                     IconButton(
                         onClick = { actionsExpanded = true },
-                        modifier = Modifier.size(36.dp)
+                        modifier = Modifier.size(48.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Rounded.MoreVert,
@@ -1722,7 +1731,7 @@ private fun ColorDot(color: Color) {
         modifier = Modifier
             .size(10.dp)
             .background(color, CircleShape)
-            .border(1.2.dp, Color.White.copy(alpha = if (color.luminance() < 0.5f) 0.28f else 0.65f), CircleShape)
+            .border(1.2.dp, MaterialTheme.colorScheme.surface.copy(alpha = if (color.luminance() < 0.5f) 0.38f else 0.72f), CircleShape)
     )
 }
 
@@ -1734,17 +1743,17 @@ private fun TaskFormSection(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.34f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.22f))
+        shape = PanelShape,
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.26f),
+        border = quietBorder(0.14f)
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp),
+            verticalArrangement = Arrangement.spacedBy(9.dp)
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(
-                    text = title,
+                text = title,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                     color = MaterialTheme.colorScheme.onSurface
                 )
@@ -1847,7 +1856,8 @@ private fun SubTaskEditor(
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f)
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.78f),
+                border = quietBorder(0.10f)
             ) {
                 Text(
                     text = "暂无子事项",
@@ -1901,7 +1911,7 @@ private fun SubTaskEditRow(
         )
         IconButton(
             onClick = onDelete,
-            modifier = Modifier.size(40.dp)
+            modifier = Modifier.size(48.dp)
         ) {
             Icon(
                 Icons.Rounded.Delete,
@@ -2033,7 +2043,7 @@ private fun AddTaskPanel(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.18f))
+                .background(Color(0xFF211815).copy(alpha = 0.16f))
                 .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() },
@@ -2045,22 +2055,22 @@ private fun AddTaskPanel(
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .fillMaxHeight(0.92f)
+                    .fillMaxHeight(0.90f)
                     .clickable(
                         indication = null,
                         interactionSource = remember { MutableInteractionSource() },
                         onClick = {}
                     ),
-                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                shape = SheetShape,
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .windowInsetsPadding(WindowInsets.safeDrawing)
-                        .padding(horizontal = 16.dp, vertical = 14.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                        .padding(horizontal = 18.dp, vertical = 14.dp),
+                    verticalArrangement = Arrangement.spacedBy(9.dp)
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(modifier = Modifier.weight(1f)) {
@@ -2083,7 +2093,7 @@ private fun AddTaskPanel(
                             .fillMaxWidth()
                             .weight(1f)
                             .verticalScroll(formScrollState),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                        verticalArrangement = Arrangement.spacedBy(9.dp)
                     ) {
                         TaskFormSection(
                             title = "事项",
@@ -2227,7 +2237,7 @@ private fun AddTaskPanel(
                         },
                         enabled = title.isNotBlank(),
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp),
+                        shape = RowShape,
                         contentPadding = PaddingValues(vertical = 13.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
@@ -2275,7 +2285,7 @@ private fun BackupPanel(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.18f))
+                .background(Color(0xFF211815).copy(alpha = 0.16f))
                 .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() },
@@ -2293,9 +2303,9 @@ private fun BackupPanel(
                         interactionSource = remember { MutableInteractionSource() },
                         onClick = {}
                     ),
-                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                shape = SheetShape,
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
             ) {
                 Column(
                     modifier = Modifier
@@ -2452,7 +2462,7 @@ private fun ArchivedPanel(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.18f))
+                .background(Color(0xFF211815).copy(alpha = 0.16f))
                 .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() },
@@ -2471,13 +2481,13 @@ private fun ArchivedPanel(
                         onClick = {}
                     ),
                 color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 4.dp,
-                shape = RoundedCornerShape(20.dp)
+                tonalElevation = 2.dp,
+                shape = PanelShape
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 22.dp, vertical = 20.dp)
+                        .padding(horizontal = 20.dp, vertical = 18.dp)
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -2497,7 +2507,7 @@ private fun ArchivedPanel(
                             )
                         }
                     }
-                    Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(12.dp))
 
                     if (tasks.isEmpty()) {
                         Box(
@@ -2526,7 +2536,7 @@ private fun ArchivedPanel(
                     } else {
                         LazyColumn(
                             modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             items(tasks, key = { it.id }) { task ->
                                 ArchivedTaskItem(
@@ -2548,13 +2558,14 @@ private fun ArchivedTaskItem(
     onUnarchive: () -> Unit
 ) {
     Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-        shape = RoundedCornerShape(12.dp)
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.34f),
+        shape = RowShape,
+        border = quietBorder(0.12f)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
+                .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(
@@ -3267,7 +3278,8 @@ private fun TaskDetailScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 8.dp, end = 8.dp, top = 8.dp),
+                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.72f))
+                    .padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 4.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(onClick = onBack) {
@@ -3297,9 +3309,9 @@ private fun TaskDetailScreen(
                 state = listState,
                 modifier = Modifier
                     .weight(1f)
-                    .padding(horizontal = 20.dp),
-                contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                    .padding(horizontal = 18.dp),
+                contentPadding = PaddingValues(top = 10.dp, bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 // Task title
                 item {
@@ -3390,8 +3402,9 @@ private fun TaskDetailScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                                shape = RowShape,
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f),
+                                border = quietBorder(0.12f)
                             ) {
                                 Text(
                                     text = note,
@@ -3407,9 +3420,10 @@ private fun TaskDetailScreen(
                 // Stats row
                 if (task.repeatRule != RepeatRule.None || completions.isNotEmpty()) {
                     item {
-                        Row(
+                        FlowRow(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(24.dp)
+                            horizontalArrangement = Arrangement.spacedBy(18.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             Column {
                                 Text(
@@ -3509,7 +3523,7 @@ private fun TaskDetailScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 14.dp),
+                        .padding(horizontal = 18.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     FilledTonalButton(
