@@ -758,3 +758,36 @@ Added compact TimeFocusLane between AppHeader and QuadrantBoard on home screen. 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 23: Fix recurring focus lane date
+
+**Date**: 2026-06-24
+**Task**: Fix recurring focus lane date
+**Branch**: `master`
+
+### Summary
+
+Fixed the home time-focus lane so recurring tasks display and sort by the current repeat cycle occurrence, with regression tests and updated specs.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `f9d9d49` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
