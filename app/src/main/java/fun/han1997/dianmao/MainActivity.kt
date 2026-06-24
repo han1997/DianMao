@@ -157,6 +157,7 @@ import `fun`.han1997.dianmao.backup.WebDavBackupClient
 import `fun`.han1997.dianmao.backup.WebDavSettings
 import `fun`.han1997.dianmao.calendar.CalendarWriter
 import `fun`.han1997.dianmao.data.QuadrantType
+import `fun`.han1997.dianmao.data.RepeatReminderCalculator
 import `fun`.han1997.dianmao.data.RepeatRule
 import `fun`.han1997.dianmao.data.TaskEntity
 import `fun`.han1997.dianmao.data.TaskFormState
@@ -206,7 +207,9 @@ internal enum class TimeFocusKind {
 
 internal data class TimeFocusItem(
     val task: TaskUiModel,
-    val kind: TimeFocusKind
+    val kind: TimeFocusKind,
+    val dueAtMillis: Long,
+    val dueLabel: String?
 )
 
 internal fun buildTimeFocusItems(
@@ -219,18 +222,37 @@ internal fun buildTimeFocusItems(
     val tomorrowStartMillis = today.plusDays(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
 
     return tasks.mapNotNull { task ->
-        val dueAt = task.dueAtMillis ?: return@mapNotNull null
+        val storedDueAt = task.dueAtMillis ?: return@mapNotNull null
         if (task.completed || task.archived) return@mapNotNull null
+        val dueAt = RepeatReminderCalculator.currentCycleDueAt(
+            currentMillis = storedDueAt,
+            repeatRule = task.repeatRule,
+            nowMillis = nowMillis,
+            zoneId = zoneId
+        )
         val kind = when {
             dueAt < nowMillis -> TimeFocusKind.Overdue
             dueAt < tomorrowStartMillis -> TimeFocusKind.Today
             else -> TimeFocusKind.Upcoming
         }
-        TimeFocusItem(task = task, kind = kind)
+        val calculatedDueLabel = DateTimeFormatters.labelFor(
+            dateMillis = midnightMillis(dueAt, zoneId),
+            minutesOfDay = minutesOfDay(dueAt, zoneId)
+        )
+        TimeFocusItem(
+            task = task,
+            kind = kind,
+            dueAtMillis = dueAt,
+            dueLabel = if (task.repeatRule.isCycleBased()) {
+                calculatedDueLabel
+            } else {
+                task.dueLabel ?: calculatedDueLabel
+            }
+        )
     }.sortedWith(
         compareBy<TimeFocusItem>(
             { it.kind.rank },
-            { it.task.dueAtMillis ?: Long.MAX_VALUE }
+            { it.dueAtMillis }
         )
     ).take(limit)
 }
@@ -1267,7 +1289,7 @@ private fun TimeFocusRow(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                item.task.dueLabel?.let {
+                item.dueLabel?.let {
                     CompactMeta(icon = Icons.Rounded.Schedule, text = it)
                 }
                 CompactMeta(icon = Icons.Rounded.Inventory2, text = item.task.quadrant.shortTitle)
@@ -2982,18 +3004,18 @@ private fun showDatePicker(
     ).show()
 }
 
-private fun midnightMillis(timestamp: Long): Long {
+private fun midnightMillis(timestamp: Long, zoneId: ZoneId = ZoneId.systemDefault()): Long {
     return Instant.ofEpochMilli(timestamp)
-        .atZone(ZoneId.systemDefault())
+        .atZone(zoneId)
         .toLocalDate()
-        .atStartOfDay(ZoneId.systemDefault())
+        .atStartOfDay(zoneId)
         .toInstant()
         .toEpochMilli()
 }
 
-private fun minutesOfDay(timestamp: Long): Int {
+private fun minutesOfDay(timestamp: Long, zoneId: ZoneId = ZoneId.systemDefault()): Int {
     val time = Instant.ofEpochMilli(timestamp)
-        .atZone(ZoneId.systemDefault())
+        .atZone(zoneId)
         .toLocalTime()
     return time.hour * 60 + time.minute
 }

@@ -1,5 +1,8 @@
 # Changelog
 
+- Fixed recurring tasks in the home time-focus lane so their displayed reminder
+  date/time uses the current repeat cycle instead of the original stored date.
+
 - Added a compact home time-focus lane that surfaces up to three unfinished
   overdue, today, or nearest upcoming timed tasks above the quadrant board.
 

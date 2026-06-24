@@ -40,6 +40,46 @@ class RepeatReminderCalculatorTest {
         assertEquals(current, next)
     }
 
+    @Test
+    fun currentCycleDueAtUsesTodayOccurrenceBeforeDailyReminderTime() {
+        val current = millisAt(2026, 6, 1, 18, 0)
+        val now = millisAt(2026, 6, 15, 10, 0)
+
+        val dueAt = RepeatReminderCalculator.currentCycleDueAt(current, RepeatRule.Daily, now, zone)
+
+        assertEquals(millisAt(2026, 6, 15, 18, 0), dueAt)
+    }
+
+    @Test
+    fun currentCycleDueAtUsesTodayOccurrenceAfterDailyReminderTime() {
+        val current = millisAt(2026, 6, 1, 9, 0)
+        val now = millisAt(2026, 6, 15, 10, 0)
+
+        val dueAt = RepeatReminderCalculator.currentCycleDueAt(current, RepeatRule.Daily, now, zone)
+
+        assertEquals(millisAt(2026, 6, 15, 9, 0), dueAt)
+    }
+
+    @Test
+    fun currentCycleDueAtUsesCurrentIsoWeekForWeeklyRepeat() {
+        val current = millisAt(2026, 6, 1, 9, 0)
+        val now = millisAt(2026, 6, 15, 8, 0)
+
+        val dueAt = RepeatReminderCalculator.currentCycleDueAt(current, RepeatRule.Weekly, now, zone)
+
+        assertEquals(millisAt(2026, 6, 15, 9, 0), dueAt)
+    }
+
+    @Test
+    fun currentCycleDueAtUsesCurrentMonthForMonthlyRepeat() {
+        val current = millisAt(2026, 1, 31, 9, 0)
+        val now = millisAt(2026, 3, 20, 10, 0)
+
+        val dueAt = RepeatReminderCalculator.currentCycleDueAt(current, RepeatRule.Monthly, now, zone)
+
+        assertEquals(millisAt(2026, 3, 28, 9, 0), dueAt)
+    }
+
     private fun millisAt(year: Int, month: Int, day: Int, hour: Int, minute: Int): Long {
         return LocalDateTime.of(year, month, day, hour, minute)
             .atZone(zone)

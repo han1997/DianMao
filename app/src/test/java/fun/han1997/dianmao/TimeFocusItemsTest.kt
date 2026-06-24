@@ -6,6 +6,7 @@ import `fun`.han1997.dianmao.data.TaskUiModel
 import java.time.LocalDate
 import java.time.ZoneId
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Test
 
 class TimeFocusItemsTest {
@@ -74,6 +75,54 @@ class TimeFocusItemsTest {
         assertEquals(listOf(3L, 2L), items.map { it.task.id })
     }
 
+    @Test
+    fun dailyRepeatUsesTodayOccurrenceWhenReminderIsLaterToday() {
+        val today = LocalDate.of(2026, 6, 19)
+        val now = millis(today, hour = 10)
+        val originalDueAt = millis(today.minusDays(3), hour = 18)
+
+        val items = buildTimeFocusItems(
+            tasks = listOf(
+                task(
+                    id = 1,
+                    dueAtMillis = originalDueAt,
+                    repeatRule = RepeatRule.Daily,
+                    dueLabel = "stale"
+                )
+            ),
+            nowMillis = now,
+            zoneId = zoneId
+        )
+
+        assertEquals(TimeFocusKind.Today, items.single().kind)
+        assertEquals(millis(today, hour = 18), items.single().dueAtMillis)
+        assertNotEquals("stale", items.single().dueLabel)
+    }
+
+    @Test
+    fun dailyRepeatUsesTodayOccurrenceWhenReminderIsAlreadyPast() {
+        val today = LocalDate.of(2026, 6, 19)
+        val now = millis(today, hour = 10)
+        val originalDueAt = millis(today.minusDays(3), hour = 8)
+
+        val items = buildTimeFocusItems(
+            tasks = listOf(
+                task(
+                    id = 1,
+                    dueAtMillis = originalDueAt,
+                    repeatRule = RepeatRule.Daily,
+                    dueLabel = "stale"
+                )
+            ),
+            nowMillis = now,
+            zoneId = zoneId
+        )
+
+        assertEquals(TimeFocusKind.Overdue, items.single().kind)
+        assertEquals(millis(today, hour = 8), items.single().dueAtMillis)
+        assertNotEquals("stale", items.single().dueLabel)
+    }
+
     private fun millis(date: LocalDate, hour: Int): Long {
         return date.atTime(hour, 0).atZone(zoneId).toInstant().toEpochMilli()
     }
@@ -81,6 +130,8 @@ class TimeFocusItemsTest {
     private fun task(
         id: Long,
         dueAtMillis: Long?,
+        repeatRule: RepeatRule = RepeatRule.None,
+        dueLabel: String? = dueAtMillis?.toString(),
         completed: Boolean = false,
         archived: Boolean = false
     ): TaskUiModel {
@@ -88,12 +139,12 @@ class TimeFocusItemsTest {
             id = id,
             title = "Task $id",
             quadrant = TaskPriority.ImportantUrgent,
-            dueLabel = dueAtMillis?.toString(),
+            dueLabel = dueLabel,
             dueAtMillis = dueAtMillis,
             useCalendar = false,
             calendarEventId = null,
             useAlarm = dueAtMillis != null,
-            repeatRule = RepeatRule.None,
+            repeatRule = repeatRule,
             subTasks = emptyList(),
             completionCount = 0,
             lastCompletedAtMillis = null,

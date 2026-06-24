@@ -516,9 +516,16 @@ four-quadrant model.
 - Build the lane from a pure helper with this shape:
   `buildTimeFocusItems(tasks, nowMillis, zoneId, limit)`.
 - Exclude tasks that are completed, archived, or missing `dueAtMillis`.
-- Classify timed tasks as `Overdue` when `dueAtMillis < nowMillis`, `Today`
-  when due before the next local midnight, and `Upcoming` otherwise.
+- For cycle-based recurring tasks, compute an effective due time for the current
+  repeat cycle before classification. Do not mutate the persisted task from this
+  helper.
+- Classify timed tasks as `Overdue` when the effective due time is before
+  `nowMillis`, `Today` when due before the next local midnight, and `Upcoming`
+  otherwise.
 - Sort by focus kind rank (`Overdue`, `Today`, `Upcoming`) and then by due time.
+- Render recurring task due metadata from the effective due time so stale stored
+  creation dates do not appear in the lane. Non-recurring tasks may keep their
+  stored `dueLabel`.
 - Limit the lane to a small number of rows; the home default is three.
 - Hide the lane entirely when no focus items exist.
 - Place the lane between `AppHeader` and `QuadrantBoard`; keep the quadrant
@@ -547,15 +554,21 @@ internal fun buildTimeFocusItems(
         .toEpochMilli()
 
     return tasks.mapNotNull { task ->
-        val dueAt = task.dueAtMillis ?: return@mapNotNull null
+        val storedDueAt = task.dueAtMillis ?: return@mapNotNull null
         if (task.completed || task.archived) return@mapNotNull null
+        val dueAt = RepeatReminderCalculator.currentCycleDueAt(
+            currentMillis = storedDueAt,
+            repeatRule = task.repeatRule,
+            nowMillis = nowMillis,
+            zoneId = zoneId
+        )
         val kind = when {
             dueAt < nowMillis -> TimeFocusKind.Overdue
             dueAt < tomorrowStartMillis -> TimeFocusKind.Today
             else -> TimeFocusKind.Upcoming
         }
-        TimeFocusItem(task = task, kind = kind)
-    }.sortedWith(compareBy({ it.kind.rank }, { it.task.dueAtMillis }))
+        TimeFocusItem(task = task, kind = kind, dueAtMillis = dueAt)
+    }.sortedWith(compareBy({ it.kind.rank }, { it.dueAtMillis }))
         .take(limit)
 }
 ```
@@ -572,6 +585,8 @@ TodayDashboard(
 **Tests Required**:
 - Unit tests for the pure helper must cover overdue/today/upcoming ordering,
   completed/archived/unscheduled exclusion, and the row limit after sorting.
+- Recurring-date regression tests must cover both later-today and already-past
+  today occurrences so stale stored dates cannot reappear.
 - Compose or build verification must still prove the home screen and task
   detail click path compile after the lane is inserted.
 
