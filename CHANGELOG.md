@@ -1,5 +1,9 @@
 # Changelog
 
+- Added TickTick-style home smart views for four-quadrant browsing, today,
+  upcoming, and unscheduled inbox tasks, with search over task and subtask
+  titles.
+
 - Fixed recurring tasks in the home time-focus lane so their displayed reminder
   date/time uses the current repeat cycle instead of the original stored date.
 

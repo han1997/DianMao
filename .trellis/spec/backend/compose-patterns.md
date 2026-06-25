@@ -506,6 +506,87 @@ density.
 
 ---
 
+## Pattern: Home Smart Views
+
+**Problem**: TickTick-style daily browsing needs Today, Upcoming, and Inbox
+surfaces, but DianMao's persisted model should remain the four-quadrant task
+model unless tags/lists or another durable organization feature is explicitly
+scoped.
+
+**Solution**: Build home smart views as a pure projection over active
+`TaskUiModel` data, then reuse existing task row/detail workflows for display
+and interaction.
+
+**Signatures**:
+```kotlin
+internal enum class HomeSmartView {
+    Quadrants,
+    Today,
+    Upcoming,
+    Inbox
+}
+
+internal fun buildHomeSmartTaskItems(
+    tasks: List<TaskUiModel>,
+    view: HomeSmartView,
+    query: String,
+    nowMillis: Long,
+    zoneId: ZoneId
+): List<HomeSmartTaskItem>
+```
+
+**Contracts**:
+- Exclude completed and archived tasks from every smart view.
+- `Quadrants` returns open tasks in repository order and feeds the existing
+  `QuadrantBoard`; it must not replace the four-quadrant model.
+- `Today` includes overdue tasks and timed tasks before the next local midnight.
+- `Upcoming` includes timed tasks from the next local day through the next 7
+  local days, excluding today and excluding the day-7 boundary.
+- `Inbox` includes open tasks with no `dueAtMillis`; do not infer inbox state
+  from quadrant or title.
+- Search matches task title and subtask title with case-insensitive containment.
+- Timed views must use `RepeatReminderCalculator.currentCycleDueAt(...)` so
+  repeating tasks are classified by the current cycle, not stale stored dates.
+- Smart-list rows that display due metadata should use the computed smart-item
+  due label, not `task.dueLabel`, so repeating tasks do not show stale labels.
+
+**Good**:
+```kotlin
+val homeSmartItems = buildHomeSmartTaskItems(
+    tasks = activeTasks,
+    view = homeSmartView,
+    query = homeSearchQuery,
+    nowMillis = nowMillis,
+    zoneId = zoneId
+)
+
+TaskRow(
+    task = smartItem.task,
+    dueLabelOverride = smartItem.dueLabel
+)
+```
+
+**Bad**:
+```kotlin
+// Adds a second durable planner model for what is only a view concern.
+data class TaskEntity(
+    val smartView: String
+)
+
+// Uses stale stored labels after classifying recurring tasks by current cycle.
+TaskRow(task = smartItem.task)
+```
+
+**Tests Required**:
+- Unit tests for `buildHomeSmartTaskItems` must cover Today, Upcoming, Inbox,
+  completed/archived exclusion, and search over task plus subtask title.
+- Recurring-date tests must assert smart views classify and label the current
+  repeat cycle instead of using stale stored due metadata.
+- Compose or build verification must pass after wiring the views into the home
+  screen.
+
+---
+
 ## Pattern: Home Time Focus Lane
 
 **Problem**: Time-sensitive tasks can be buried inside quadrants, but a full

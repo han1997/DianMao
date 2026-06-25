@@ -95,6 +95,7 @@ import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
@@ -212,6 +213,19 @@ internal data class TimeFocusItem(
     val dueLabel: String?
 )
 
+internal enum class HomeSmartView(val label: String) {
+    Quadrants("四象限"),
+    Today("今天"),
+    Upcoming("近期"),
+    Inbox("收集箱")
+}
+
+internal data class HomeSmartTaskItem(
+    val task: TaskUiModel,
+    val dueAtMillis: Long?,
+    val dueLabel: String?
+)
+
 internal fun buildTimeFocusItems(
     tasks: List<TaskUiModel>,
     nowMillis: Long = System.currentTimeMillis(),
@@ -222,32 +236,18 @@ internal fun buildTimeFocusItems(
     val tomorrowStartMillis = today.plusDays(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
 
     return tasks.mapNotNull { task ->
-        val storedDueAt = task.dueAtMillis ?: return@mapNotNull null
-        if (task.completed || task.archived) return@mapNotNull null
-        val dueAt = RepeatReminderCalculator.currentCycleDueAt(
-            currentMillis = storedDueAt,
-            repeatRule = task.repeatRule,
-            nowMillis = nowMillis,
-            zoneId = zoneId
-        )
+        if (!task.isOpenTask()) return@mapNotNull null
+        val dueAt = effectiveDueAtMillis(task, nowMillis, zoneId) ?: return@mapNotNull null
         val kind = when {
             dueAt < nowMillis -> TimeFocusKind.Overdue
             dueAt < tomorrowStartMillis -> TimeFocusKind.Today
             else -> TimeFocusKind.Upcoming
         }
-        val calculatedDueLabel = DateTimeFormatters.labelFor(
-            dateMillis = midnightMillis(dueAt, zoneId),
-            minutesOfDay = minutesOfDay(dueAt, zoneId)
-        )
         TimeFocusItem(
             task = task,
             kind = kind,
             dueAtMillis = dueAt,
-            dueLabel = if (task.repeatRule.isCycleBased()) {
-                calculatedDueLabel
-            } else {
-                task.dueLabel ?: calculatedDueLabel
-            }
+            dueLabel = task.displayDueLabel(dueAt, zoneId)
         )
     }.sortedWith(
         compareBy<TimeFocusItem>(
@@ -255,6 +255,89 @@ internal fun buildTimeFocusItems(
             { it.dueAtMillis }
         )
     ).take(limit)
+}
+
+internal fun buildHomeSmartTaskItems(
+    tasks: List<TaskUiModel>,
+    view: HomeSmartView,
+    query: String,
+    nowMillis: Long = System.currentTimeMillis(),
+    zoneId: ZoneId = ZoneId.systemDefault()
+): List<HomeSmartTaskItem> {
+    val today = Instant.ofEpochMilli(nowMillis).atZone(zoneId).toLocalDate()
+    val tomorrowStartMillis = today.plusDays(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+    val upcomingEndMillis = today.plusDays(7).atStartOfDay(zoneId).toInstant().toEpochMilli()
+    val normalizedQuery = query.trim()
+
+    val indexedItems = tasks.mapIndexedNotNull { index, task ->
+        if (!task.isOpenTask() || !task.matchesHomeSmartQuery(normalizedQuery)) {
+            return@mapIndexedNotNull null
+        }
+        val dueAt = effectiveDueAtMillis(task, nowMillis, zoneId)
+        val included = when (view) {
+            HomeSmartView.Quadrants -> true
+            HomeSmartView.Today -> dueAt != null && dueAt < tomorrowStartMillis
+            HomeSmartView.Upcoming -> dueAt != null &&
+                dueAt >= tomorrowStartMillis &&
+                dueAt < upcomingEndMillis
+            HomeSmartView.Inbox -> task.dueAtMillis == null
+        }
+        if (!included) {
+            null
+        } else {
+            index to HomeSmartTaskItem(
+                task = task,
+                dueAtMillis = dueAt,
+                dueLabel = dueAt?.let { task.displayDueLabel(it, zoneId) }
+            )
+        }
+    }
+
+    return when (view) {
+        HomeSmartView.Today,
+        HomeSmartView.Upcoming -> indexedItems.sortedWith(
+            compareBy<Pair<Int, HomeSmartTaskItem>>(
+                { it.second.dueAtMillis ?: Long.MAX_VALUE },
+                { it.second.task.id }
+            )
+        )
+        HomeSmartView.Quadrants,
+        HomeSmartView.Inbox -> indexedItems.sortedBy { it.first }
+    }.map { it.second }
+}
+
+private fun TaskUiModel.isOpenTask(): Boolean = !completed && !archived
+
+private fun effectiveDueAtMillis(
+    task: TaskUiModel,
+    nowMillis: Long,
+    zoneId: ZoneId
+): Long? {
+    val storedDueAt = task.dueAtMillis ?: return null
+    return RepeatReminderCalculator.currentCycleDueAt(
+        currentMillis = storedDueAt,
+        repeatRule = task.repeatRule,
+        nowMillis = nowMillis,
+        zoneId = zoneId
+    )
+}
+
+private fun TaskUiModel.displayDueLabel(dueAtMillis: Long, zoneId: ZoneId): String {
+    val calculatedDueLabel = DateTimeFormatters.labelFor(
+        dateMillis = midnightMillis(dueAtMillis, zoneId),
+        minutesOfDay = minutesOfDay(dueAtMillis, zoneId)
+    )
+    return if (repeatRule.isCycleBased()) {
+        calculatedDueLabel
+    } else {
+        dueLabel ?: calculatedDueLabel
+    }
+}
+
+private fun TaskUiModel.matchesHomeSmartQuery(query: String): Boolean {
+    if (query.isBlank()) return true
+    return title.contains(query, ignoreCase = true) ||
+        subTasks.any { it.title.contains(query, ignoreCase = true) }
 }
 
 private val TimeFocusKind.rank: Int
@@ -554,6 +637,16 @@ private fun DianMaoApp() {
     var taskForUncompletion by remember { mutableStateOf<TaskUiModel?>(null) }
     var taskForDetail by remember { mutableStateOf<TaskUiModel?>(null) }
     var backupStatus by rememberSaveable { mutableStateOf<String?>(null) }
+    var homeSmartView by rememberSaveable { mutableStateOf(HomeSmartView.Quadrants) }
+    var homeSearchQuery by rememberSaveable { mutableStateOf("") }
+    val homeSmartItems = remember(activeTasks, homeSmartView, homeSearchQuery) {
+        buildHomeSmartTaskItems(
+            tasks = activeTasks,
+            view = homeSmartView,
+            query = homeSearchQuery
+        )
+    }
+    val homeVisibleTasks = remember(homeSmartItems) { homeSmartItems.map { it.task } }
 
     // Refresh taskForDetail when the task data changes (after edit, complete, etc.)
     LaunchedEffect(activeTasks, archivedTasks, taskForDetail?.id) {
@@ -708,15 +801,38 @@ private fun DianMaoApp() {
                                 showArchivedPanel = true
                             }
                         )
-                        TimeFocusLane(
-                            tasks = activeTasks,
-                            onTaskSelected = { taskForDetail = it }
+                        HomeSmartControls(
+                            selectedView = homeSmartView,
+                            query = homeSearchQuery,
+                            resultCount = homeSmartItems.size,
+                            onViewSelected = { homeSmartView = it },
+                            onQueryChanged = { homeSearchQuery = it }
                         )
-                        QuadrantBoard(
-                            tasks = activeTasks,
-                            modifier = Modifier.weight(1f),
-                            onSelected = { priority -> activePriority = priority }
-                        )
+                        if (homeSmartView == HomeSmartView.Quadrants) {
+                            TimeFocusLane(
+                                tasks = homeVisibleTasks,
+                                onTaskSelected = { taskForDetail = it }
+                            )
+                            QuadrantBoard(
+                                tasks = homeVisibleTasks,
+                                modifier = Modifier.weight(1f),
+                                onSelected = { priority -> activePriority = priority }
+                            )
+                        } else {
+                            HomeSmartTaskList(
+                                smartItems = homeSmartItems,
+                                selectedView = homeSmartView,
+                                query = homeSearchQuery,
+                                repository = repository,
+                                onToggleComplete = toggleComplete,
+                                onEditTask = { taskForEdit = it },
+                                onDeleteTask = { taskForDelete = it },
+                                onEditNote = { taskForNote = it },
+                                onArchiveTask = archiveTask,
+                                onViewDetail = { taskForDetail = it },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
                 } else {
                     val listState = rememberLazyListState()
@@ -1191,6 +1307,91 @@ private fun SummaryPill(value: String, label: String, color: Color, modifier: Mo
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun HomeSmartControls(
+    selectedView: HomeSmartView,
+    query: String,
+    resultCount: Int,
+    onViewSelected: (HomeSmartView) -> Unit,
+    onQueryChanged: (String) -> Unit
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surface,
+        shape = RowShape,
+        border = quietBorder(0.14f)
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(9.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "视图",
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 0.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "$resultCount 项",
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 0.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.76f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                HomeSmartView.entries.forEach { view ->
+                    FilterChip(
+                        selected = selectedView == view,
+                        onClick = { onViewSelected(view) },
+                        label = {
+                            Text(
+                                text = view.label,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    )
+                }
+            }
+            OutlinedTextField(
+                value = query,
+                onValueChange = onQueryChanged,
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                textStyle = MaterialTheme.typography.bodyMedium.copy(letterSpacing = 0.sp),
+                placeholder = {
+                    Text(
+                        text = "搜索当前视图",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Rounded.Search,
+                        contentDescription = null
+                    )
+                },
+                keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
+                colors = quietTextFieldColors(),
+                shape = RowShape
+            )
+        }
+    }
+}
+
 @Composable
 private fun TimeFocusLane(
     tasks: List<TaskUiModel>,
@@ -1294,6 +1495,107 @@ private fun TimeFocusRow(
                 }
                 CompactMeta(icon = Icons.Rounded.Inventory2, text = item.task.quadrant.shortTitle)
             }
+        }
+    }
+}
+
+@Composable
+private fun HomeSmartTaskList(
+    smartItems: List<HomeSmartTaskItem>,
+    selectedView: HomeSmartView,
+    query: String,
+    repository: TaskRepository,
+    onToggleComplete: (TaskUiModel) -> Unit,
+    onEditTask: (TaskUiModel) -> Unit,
+    onDeleteTask: (TaskUiModel) -> Unit,
+    onEditNote: (TaskUiModel) -> Unit,
+    onArchiveTask: (TaskUiModel) -> Unit,
+    onViewDetail: (TaskUiModel) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LazyColumn(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        contentPadding = PaddingValues(bottom = 96.dp)
+    ) {
+        if (smartItems.isEmpty()) {
+            item {
+                HomeSmartEmptyState(
+                    selectedView = selectedView,
+                    query = query
+                )
+            }
+        } else {
+            items(
+                items = smartItems,
+                key = { it.task.id }
+            ) { smartItem ->
+                TaskRow(
+                    task = smartItem.task,
+                    repository = repository,
+                    onToggleComplete = onToggleComplete,
+                    onEditTask = onEditTask,
+                    onDeleteTask = onDeleteTask,
+                    onEditNote = onEditNote,
+                    onArchiveTask = onArchiveTask,
+                    onViewDetail = onViewDetail,
+                    showQuadrantMeta = true,
+                    dueLabelOverride = smartItem.dueLabel
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun HomeSmartEmptyState(
+    selectedView: HomeSmartView,
+    query: String
+) {
+    val title = if (query.isBlank()) {
+        when (selectedView) {
+            HomeSmartView.Today -> "今天没有待处理事项"
+            HomeSmartView.Upcoming -> "未来 7 天没有已安排事项"
+            HomeSmartView.Inbox -> "收集箱是空的"
+            HomeSmartView.Quadrants -> "没有待处理事项"
+        }
+    } else {
+        "没有匹配事项"
+    }
+    val subtitle = if (query.isBlank()) {
+        when (selectedView) {
+            HomeSmartView.Today -> "过期和今天的定时事项会显示在这里。"
+            HomeSmartView.Upcoming -> "明天起 7 天内的定时事项会显示在这里。"
+            HomeSmartView.Inbox -> "未设置时间的事项会显示在这里，方便稍后规划。"
+            HomeSmartView.Quadrants -> "点击右下角新增事项，先记录，再整理。"
+        }
+    } else {
+        "换个关键词，或回到四象限继续浏览。"
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surface,
+        shape = RowShape,
+        border = quietBorder(0.14f)
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
+            verticalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 0.sp
+                ),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodyMedium.copy(letterSpacing = 0.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f)
+            )
         }
     }
 }
@@ -1742,10 +2044,12 @@ private fun TaskRow(
     onViewDetail: (TaskUiModel) -> Unit = {},
     onArchiveTask: (TaskUiModel) -> Unit = {},
     showQuadrantMeta: Boolean = true,
+    dueLabelOverride: String? = null,
     modifier: Modifier = Modifier
 ) {
     var canComplete by remember { mutableStateOf(true) }
     var actionsExpanded by remember { mutableStateOf(false) }
+    val displayedDueLabel = dueLabelOverride ?: task.dueLabel
     val scale by animateFloatAsState(
         targetValue = if (task.completed) 0.985f else 1f,
         animationSpec = tween(durationMillis = 180),
@@ -1820,7 +2124,7 @@ private fun TaskRow(
                     if (showQuadrantMeta) {
                         CompactMeta(icon = Icons.Rounded.Inventory2, text = task.quadrant.shortTitle)
                     }
-                    task.dueLabel?.let {
+                    displayedDueLabel?.let {
                         CompactMeta(icon = Icons.Rounded.Schedule, text = it)
                     }
                     if (task.useCalendar) {
