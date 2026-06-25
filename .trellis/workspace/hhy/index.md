@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 23
-- **Last Active**: 2026-06-24
+- **Total Sessions**: 24
+- **Last Active**: 2026-06-25
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~793 | Active |
+| `journal-1.md` | ~826 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 24 | 2026-06-25 | Home smart task views | `35e8a61` | `master` |
 | 23 | 2026-06-24 | Fix recurring focus lane date | `f9d9d49` | `master` |
 | 22 | 2026-06-19 | Add today time focus lane | `f044f6f`, `8a804e5` | `master` |
 | 21 | 2026-06-19 | Improve capture-first task entry | `9ae0962`, `d2eeb58` | `master` |

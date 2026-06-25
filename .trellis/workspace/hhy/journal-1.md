@@ -791,3 +791,36 @@ Fixed the home time-focus lane so recurring tasks display and sort by the curren
 ### Next Steps
 
 - None - task complete
+
+
+## Session 24: Home smart task views
+
+**Date**: 2026-06-25
+**Task**: Home smart task views
+**Branch**: `master`
+
+### Summary
+
+Added TickTick-style home smart views for quadrants, today, upcoming, and inbox tasks with search, tests, changelog, and Compose spec guidance.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `35e8a61` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
