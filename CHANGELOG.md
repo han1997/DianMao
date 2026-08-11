@@ -1,5 +1,10 @@
 # Changelog
 
+- Polished the home/list browsing hierarchy: the header now anchors the page
+  without another heavy card, smart view controls read more like navigation and
+  filtering, the time-focus lane uses calendar-blue timing emphasis, and
+  quadrant/list rows are quieter while preserving existing task behaviors.
+
 - Further refined the add/edit task sheet around capture-first entry, making the
   primary task field more prominent while keeping quadrant, time, calendar,
   alarm, and repeat controls visually secondary and behaviorally unchanged.

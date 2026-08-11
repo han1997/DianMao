@@ -1295,7 +1295,7 @@ private fun AppHeader(
 
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -1322,12 +1322,12 @@ private fun AppHeader(
                         overflow = TextOverflow.Ellipsis
                     )
                     Surface(
-                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f),
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
+                        contentColor = MaterialTheme.colorScheme.primary,
                         shape = ChipShape
                     ) {
                         Text(
-                            text = "今日",
+                            text = "主页",
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontWeight = FontWeight.Medium,
@@ -1337,7 +1337,7 @@ private fun AppHeader(
                     }
                 }
                 Text(
-                    text = "$today · 快速记录，稍后整理",
+                    text = "$today · 捕获在前，按时间和象限扫读",
                     style = MaterialTheme.typography.bodySmall.copy(
                         letterSpacing = 0.05.sp
                     ),
@@ -1357,57 +1357,48 @@ private fun AppHeader(
                 onClick = onOpenBackup
             )
         }
-        Surface(
-            color = MaterialTheme.colorScheme.surface,
-            shape = RowShape,
-            border = quietBorder(0.16f)
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(7.dp)
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 10.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                SummaryPill(value = openTasks.toString(), label = "未完成", color = MaterialTheme.colorScheme.primary, modifier = Modifier.weight(1f))
-                SummaryPill(value = timedTasks.toString(), label = "有提醒", color = MaterialTheme.colorScheme.secondary, modifier = Modifier.weight(1f))
-                SummaryPill(value = completedTasks.toString(), label = "已复盘", color = TaskPriority.NotImportantNotUrgent.color, modifier = Modifier.weight(1f))
-            }
+            SummaryPill(value = openTasks.toString(), label = "未完成", color = MaterialTheme.colorScheme.primary)
+            SummaryPill(value = timedTasks.toString(), label = "定时", color = MaterialTheme.colorScheme.secondary)
+            SummaryPill(value = completedTasks.toString(), label = "已复盘", color = TaskPriority.NotImportantNotUrgent.color)
         }
     }
 }
 
 @Composable
 private fun SummaryPill(value: String, label: String, color: Color, modifier: Modifier = Modifier) {
-    Surface(
-        modifier = modifier,
-        color = color.copy(alpha = 0.09f),
-        contentColor = color,
-        shape = ChipShape
+    Row(
+        modifier = modifier
+            .background(color.copy(alpha = 0.08f), ChipShape)
+            .padding(horizontal = 9.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(5.dp)
     ) {
-        Row(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 9.dp, vertical = 7.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Text(
-                text = value,
-                style = MaterialTheme.typography.titleMedium.copy(
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.sp
-                ),
-                color = color
-            )
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium.copy(
-                    fontWeight = FontWeight.Medium,
-                    letterSpacing = 0.sp
-                ),
-                color = color.copy(alpha = 0.78f)
-            )
-        }
+                .size(6.dp)
+                .background(color.copy(alpha = 0.78f), CircleShape)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.labelLarge.copy(
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.sp
+            ),
+            color = color
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium.copy(
+                fontWeight = FontWeight.Medium,
+                letterSpacing = 0.sp
+            ),
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.76f)
+        )
     }
 }
 
@@ -1422,13 +1413,13 @@ private fun HomeSmartControls(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surface,
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.24f),
         shape = RowShape,
-        border = quietBorder(0.14f)
+        border = quietBorder(0.08f)
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalArrangement = Arrangement.spacedBy(9.dp)
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -1436,7 +1427,7 @@ private fun HomeSmartControls(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
-                    text = "视图",
+                    text = "浏览",
                     style = MaterialTheme.typography.titleSmall.copy(
                         fontWeight = FontWeight.SemiBold,
                         letterSpacing = 0.sp
@@ -1478,7 +1469,7 @@ private fun HomeSmartControls(
                 textStyle = MaterialTheme.typography.bodyMedium.copy(letterSpacing = 0.sp),
                 placeholder = {
                     Text(
-                        text = "搜索当前视图",
+                        text = "筛选当前视图",
                         style = MaterialTheme.typography.bodyMedium
                     )
                 },
@@ -1506,25 +1497,50 @@ private fun TimeFocusLane(
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surface,
+        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.07f),
         shape = RowShape,
-        border = quietBorder(0.14f)
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.16f))
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 11.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "今日关注",
-                    modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.onSurface
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                IconTile(
+                    icon = Icons.Rounded.Schedule,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.secondary,
+                    containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.10f),
+                    iconSize = 15.dp
                 )
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(1.dp)
+                ) {
+                    Text(
+                        text = "时间关注",
+                        style = MaterialTheme.typography.titleSmall.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = 0.sp
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "过期、今天和最近安排",
+                        style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 0.sp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
                 Text(
                     text = "${focusItems.size} 项",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f)
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
+                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.82f)
                 )
             }
             Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
@@ -1547,7 +1563,7 @@ private fun TimeFocusRow(
 ) {
     val color = when (item.kind) {
         TimeFocusKind.Overdue -> MaterialTheme.colorScheme.error
-        TimeFocusKind.Today -> MaterialTheme.colorScheme.primary
+        TimeFocusKind.Today -> MaterialTheme.colorScheme.secondary
         TimeFocusKind.Upcoming -> MaterialTheme.colorScheme.secondary
     }
     val label = when (item.kind) {
@@ -1560,7 +1576,7 @@ private fun TimeFocusRow(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 48.dp)
-            .background(color.copy(alpha = 0.07f), RowShape)
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.76f), RowShape)
             .border(1.dp, color.copy(alpha = 0.12f), RowShape)
             .clickable(onClick = onClick, role = Role.Button)
             .padding(horizontal = 10.dp, vertical = 8.dp),
@@ -1568,7 +1584,7 @@ private fun TimeFocusRow(
         horizontalArrangement = Arrangement.spacedBy(9.dp)
     ) {
         Surface(
-            color = color.copy(alpha = 0.12f),
+            color = color.copy(alpha = 0.10f),
             contentColor = color,
             shape = ChipShape
         ) {
@@ -1850,9 +1866,9 @@ private fun QuadrantBoard(
     Surface(
         modifier = modifier
             .fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surface,
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.20f),
         shape = PanelShape,
-        border = quietBorder(0.14f),
+        border = quietBorder(0.10f),
         shadowElevation = 0.dp
     ) {
         Column {
@@ -1930,8 +1946,8 @@ private fun QuadrantPane(
             .background(paneColor, shape = RoundedCornerShape(18.dp))
             .clickable { onSelected(quadrant) }
             .verticalScroll(rememberScrollState())
-            .padding(9.dp),
-        verticalArrangement = Arrangement.spacedBy(5.dp)
+            .padding(10.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         Row(verticalAlignment = Alignment.Top) {
             Column(
@@ -1962,14 +1978,21 @@ private fun QuadrantPane(
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            Text(
-                text = openCount.toString(),
-                style = MaterialTheme.typography.headlineSmall.copy(
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.sp
-                ),
-                color = quadrant.color.copy(alpha = 0.95f)
-            )
+            Surface(
+                color = quadrant.color.copy(alpha = 0.10f),
+                contentColor = quadrant.color,
+                shape = ChipShape
+            ) {
+                Text(
+                    text = "$openCount 项",
+                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.sp
+                    ),
+                    maxLines = 1
+                )
+            }
         }
         if (visibleTasks.isEmpty()) {
             EmptyQuadrantHint(quadrant)
@@ -1979,7 +2002,7 @@ private fun QuadrantPane(
             }
             if (tasks.size > visibleTasks.size) {
                 Text(
-                    text = "+${tasks.size - visibleTasks.size}",
+                    text = "另有 ${tasks.size - visibleTasks.size} 项，点开查看",
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.Medium,
                         letterSpacing = 0.sp
@@ -1998,7 +2021,8 @@ private fun EmptyQuadrantHint(quadrant: TaskPriority) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.38f), ChipShape)
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.50f), ChipShape)
+            .border(1.dp, quadrant.color.copy(alpha = 0.08f), ChipShape)
             .padding(horizontal = 10.dp, vertical = 8.dp),
         contentAlignment = Alignment.CenterStart
     ) {
@@ -2020,15 +2044,8 @@ private fun CompactQuadrantTask(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(
-                if (task.completed) {
-                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.46f)
-                } else {
-                    MaterialTheme.colorScheme.surface.copy(alpha = 0.92f)
-                },
-                ChipShape
-            )
-            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.10f), ChipShape)
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = if (task.completed) 0.54f else 0.78f), ChipShape)
+            .border(1.dp, task.quadrant.color.copy(alpha = if (task.completed) 0.06f else 0.10f), ChipShape)
             .padding(horizontal = 8.dp, vertical = 5.dp),
         verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -2056,7 +2073,7 @@ private fun CompactQuadrantTask(
                 imageVector = Icons.Rounded.Schedule,
                 contentDescription = "有提醒",
                 modifier = Modifier.size(14.dp),
-                tint = task.quadrant.color.copy(alpha = 0.6f)
+                tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.68f)
             )
         }
     }
@@ -2156,6 +2173,11 @@ private fun TaskRow(
     var canComplete by remember { mutableStateOf(true) }
     var actionsExpanded by remember { mutableStateOf(false) }
     val displayedDueLabel = dueLabelOverride ?: task.dueLabel
+    val rowAccent = if (task.completed) {
+        MaterialTheme.colorScheme.outline.copy(alpha = 0.30f)
+    } else {
+        task.quadrant.color.copy(alpha = 0.78f)
+    }
     val scale by animateFloatAsState(
         targetValue = if (task.completed) 0.985f else 1f,
         animationSpec = tween(durationMillis = 180),
@@ -2171,11 +2193,11 @@ private fun TaskRow(
             .fillMaxWidth()
             .scale(scale),
         colors = CardDefaults.cardColors(
-            containerColor = if (task.completed) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.38f) else MaterialTheme.colorScheme.surface
+            containerColor = if (task.completed) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.30f) else MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         shape = RowShape,
-        border = quietBorder(if (task.completed) 0.12f else 0.18f)
+        border = quietBorder(if (task.completed) 0.10f else 0.14f)
     ) {
         Row(
             modifier = Modifier
@@ -2183,23 +2205,35 @@ private fun TaskRow(
                 .padding(horizontal = 14.dp, vertical = 10.dp),
             verticalAlignment = Alignment.Top
         ) {
-            CompletionMark(
-                completed = task.completed,
-                color = task.quadrant.color,
+            Box(
                 modifier = Modifier
+                    .padding(top = 4.dp, end = 9.dp)
+                    .width(3.dp)
+                    .height(38.dp)
+                    .background(rowAccent, RoundedCornerShape(999.dp))
+            )
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
                     .clickable(
                         enabled = canComplete || task.completed,
                         role = Role.Checkbox
                     ) { onToggleComplete(task) }
                     .semantics {
                         contentDescription = if (task.completed) "标记为未完成" else "标记为完成"
-                    }
-            )
-            Spacer(Modifier.width(10.dp))
+                    },
+                contentAlignment = Alignment.TopCenter
+            ) {
+                CompletionMark(
+                    completed = task.completed,
+                    color = task.quadrant.color
+                )
+            }
+            Spacer(Modifier.width(2.dp))
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .clickable { onViewDetail(task) }
+                    .clickable(role = Role.Button) { onViewDetail(task) }
                     .semantics {
                         contentDescription = "查看事项详情：${task.title}"
                     },
@@ -2262,10 +2296,12 @@ private fun TaskRow(
                     onClick = { onEditNote(task) },
                     modifier = Modifier.size(48.dp)
                 ) {
-                    Icon(
-                        imageVector = if (task.completed) Icons.Rounded.EditNote else Icons.Rounded.DoneAll,
+                    IconTile(
+                        icon = if (task.completed) Icons.Rounded.EditNote else Icons.Rounded.DoneAll,
                         contentDescription = if (task.completed) "编辑完成备注" else "完成并写备注",
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = MaterialTheme.colorScheme.primary,
+                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
+                        iconSize = 18.dp
                     )
                 }
                 Box {
@@ -2273,10 +2309,12 @@ private fun TaskRow(
                         onClick = { actionsExpanded = true },
                         modifier = Modifier.size(48.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Rounded.MoreVert,
+                        IconTile(
+                            icon = Icons.Rounded.MoreVert,
                             contentDescription = "更多事项操作",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.50f),
+                            iconSize = 18.dp
                         )
                     }
                     DropdownMenu(
