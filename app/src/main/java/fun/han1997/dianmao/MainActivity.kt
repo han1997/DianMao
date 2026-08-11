@@ -125,7 +125,6 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -2349,17 +2348,29 @@ private fun TaskFormSection(
     subtitle: String? = null,
     icon: ImageVector? = null,
     iconTint: Color = MaterialTheme.colorScheme.primary,
+    emphasized: Boolean = false,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = PanelShape,
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.26f),
-        border = quietBorder(0.14f)
+        shape = if (emphasized) RoundedCornerShape(20.dp) else PanelShape,
+        color = if (emphasized) {
+            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.32f)
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.26f)
+        },
+        border = if (emphasized) {
+            BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.18f))
+        } else {
+            quietBorder(0.14f)
+        }
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp),
-            verticalArrangement = Arrangement.spacedBy(9.dp)
+            modifier = Modifier.padding(
+                horizontal = if (emphasized) 16.dp else 14.dp,
+                vertical = if (emphasized) 14.dp else 11.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(if (emphasized) 12.dp else 9.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -2713,6 +2724,15 @@ private fun AddTaskPanel(
     val focusManager = LocalFocusManager.current
     val formScrollState = rememberScrollState()
     val isEditing = editingTask != null
+    val panelTitle = if (isEditing) "编辑事项" else "先记录一件事"
+    val panelSubtitle = if (isEditing) {
+        "修正内容后保存，面板会自动关闭"
+    } else {
+        "先把任务写清楚；象限、时间和提醒可以稍后整理"
+    }
+    val primarySectionTitle = if (isEditing) "事项内容" else "今天要捕获什么？"
+    val primarySectionSubtitle = if (isEditing) "标题是主要内容，其他设置保持原有行为" else "唯一必填。写完即可保存并继续记录下一条"
+    val saveButtonText = if (isEditing) "保存修改并关闭" else "保存并继续记录"
 
     LaunchedEffect(visible, editingTask?.id, initialPriority) {
         if (visible) {
@@ -2804,14 +2824,16 @@ private fun AddTaskPanel(
                         )
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                if (isEditing) "编辑事项" else "快速记录",
+                                panelTitle,
                                 style = MaterialTheme.typography.titleLarge,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                if (isEditing) "调整内容、象限、时间和提醒" else "先写下来，稍后再整理",
+                                panelSubtitle,
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                         HeaderActionButton(
@@ -2828,20 +2850,23 @@ private fun AddTaskPanel(
                         verticalArrangement = Arrangement.spacedBy(9.dp)
                     ) {
                         TaskFormSection(
-                            title = "事项",
-                            subtitle = if (isEditing) "调整标题和拆分结构" else "这是唯一必填项",
+                            title = primarySectionTitle,
+                            subtitle = primarySectionSubtitle,
                             icon = Icons.Rounded.EditNote,
-                            iconTint = MaterialTheme.colorScheme.primary
+                            iconTint = MaterialTheme.colorScheme.primary,
+                            emphasized = true
                         ) {
                             OutlinedTextField(
                                 value = title,
                                 onValueChange = { title = it },
-                                modifier = Modifier.fillMaxWidth(),
-                                label = { Text("事项内容") },
-                                placeholder = { Text("例如：确认明天下午会议材料") },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = 118.dp),
+                                label = { Text(if (isEditing) "事项标题" else "快速输入") },
+                                placeholder = { Text(if (isEditing) "更新事项内容" else "例如：确认明天下午会议材料") },
                                 singleLine = false,
-                                minLines = 3,
-                                maxLines = 5,
+                                minLines = 4,
+                                maxLines = 6,
                                 shape = RowShape,
                                 textStyle = MaterialTheme.typography.titleMedium.copy(
                                     fontWeight = FontWeight.Medium,
@@ -2852,6 +2877,11 @@ private fun AddTaskPanel(
                                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                                 keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
                                 colors = quietTextFieldColors()
+                            )
+                            Text(
+                                text = if (isEditing) "保存后会回到上一层上下文。" else "保存后保留当前象限，清空内容、子事项、时间、日历、响铃和重复规则。",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         SubTaskEditor(
@@ -2875,7 +2905,7 @@ private fun AddTaskPanel(
                         )
                         FormSettingBlock(
                             title = "象限",
-                            subtitle = "先给它一个大方向",
+                            subtitle = if (isEditing) "调整归属象限" else "可先使用默认象限，稍后再整理",
                             icon = Icons.Rounded.Inventory2,
                             iconTint = priority.color
                         ) {
@@ -3022,7 +3052,7 @@ private fun AddTaskPanel(
                             containerColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.12f)
                         )
                         Spacer(Modifier.width(8.dp))
-                        Text(if (isEditing) "保存修改" else "保存事项")
+                        Text(saveButtonText)
                     }
                 }
             }

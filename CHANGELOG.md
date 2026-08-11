@@ -1,5 +1,9 @@
 # Changelog
 
+- Further refined the add/edit task sheet around capture-first entry, making the
+  primary task field more prominent while keeping quadrant, time, calendar,
+  alarm, and repeat controls visually secondary and behaviorally unchanged.
+
 - Polished the shared add/edit task sheet with a stronger capture-first header,
   clearer primary task input, section icons, quieter date/repeat controls, and
   consistent save feedback/action icon treatment.
