@@ -891,3 +891,36 @@ Polished the add/edit task sheet around capture-first entry, clarified add versu
 ### Next Steps
 
 - None - task complete
+
+
+## Session 27: Polish home list hierarchy
+
+**Date**: 2026-08-12
+**Task**: Polish home list hierarchy
+**Branch**: `master`
+
+### Summary
+
+Polished the home/list browsing hierarchy across header, smart controls, time focus lane, quadrant board, compact quadrant tasks, and task rows; kept behavior intact, updated changelog, and verified unit tests, lint, assemble, and diff checks.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `284c0cb` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
