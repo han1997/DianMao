@@ -2347,6 +2347,8 @@ private fun ColorDot(color: Color) {
 private fun TaskFormSection(
     title: String,
     subtitle: String? = null,
+    icon: ImageVector? = null,
+    iconTint: Color = MaterialTheme.colorScheme.primary,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Surface(
@@ -2359,18 +2361,35 @@ private fun TaskFormSection(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 11.dp),
             verticalArrangement = Arrangement.spacedBy(9.dp)
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                text = title,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                if (subtitle != null) {
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (icon != null) {
+                    IconTile(
+                        icon = icon,
+                        contentDescription = null,
+                        tint = iconTint,
+                        containerColor = iconTint.copy(alpha = 0.10f),
+                        iconSize = 16.dp
                     )
+                }
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    if (subtitle != null) {
+                        Text(
+                            text = subtitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
             content()
@@ -2383,6 +2402,8 @@ private fun FormSettingBlock(
     title: String,
     subtitle: String? = null,
     enabled: Boolean = true,
+    icon: ImageVector? = null,
+    iconTint: Color = MaterialTheme.colorScheme.primary,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Surface(
@@ -2395,19 +2416,38 @@ private fun FormSettingBlock(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            subtitle?.let {
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (enabled) 0.82f else 0.58f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (icon != null) {
+                    IconTile(
+                        icon = icon,
+                        contentDescription = null,
+                        tint = if (enabled) iconTint else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.58f),
+                        containerColor = if (enabled) iconTint.copy(alpha = 0.10f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.20f),
+                        iconSize = 15.dp
+                    )
+                }
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                        color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    subtitle?.let {
+                        Text(
+                            text = it,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (enabled) 0.82f else 0.58f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
             }
             content()
         }
@@ -2464,7 +2504,9 @@ private fun SubTaskEditor(
     val completed = subTasks.count { it.completed }
     TaskFormSection(
         title = "子事项",
-        subtitle = if (subTasks.isEmpty()) "可选" else "$completed/${subTasks.size} 已完成"
+        subtitle = if (subTasks.isEmpty()) "可选" else "$completed/${subTasks.size} 已完成",
+        icon = Icons.Rounded.CheckCircle,
+        iconTint = MaterialTheme.colorScheme.primary
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -2492,7 +2534,11 @@ private fun SubTaskEditor(
                 shape = RowShape,
                 contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp)
             ) {
-                Icon(Icons.Rounded.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                InlineButtonIcon(
+                    icon = Icons.Rounded.Add,
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    containerColor = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.10f)
+                )
                 Spacer(Modifier.width(4.dp))
                 Text("添加")
             }
@@ -2745,21 +2791,34 @@ private fun AddTaskPanel(
                             .height(4.dp)
                             .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.34f), CircleShape)
                     )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        IconTile(
+                            icon = if (isEditing) Icons.Rounded.Edit else Icons.Rounded.Add,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.62f),
+                            iconSize = 20.dp
+                        )
                         Column(modifier = Modifier.weight(1f)) {
-                            Text(if (isEditing) "编辑事项" else "新增事项", style = MaterialTheme.typography.titleLarge)
                             Text(
-                                if (isEditing) "调整内容、象限、时间和提醒" else "先记录，再补象限和时间",
+                                if (isEditing) "编辑事项" else "快速记录",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                if (isEditing) "调整内容、象限、时间和提醒" else "先写下来，稍后再整理",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        IconButton(onClick = onDismiss) {
-                            Icon(
-                                Icons.Rounded.Close,
-                                contentDescription = if (isEditing) "关闭编辑面板" else "关闭新增面板"
-                            )
-                        }
+                        HeaderActionButton(
+                            icon = Icons.Rounded.Close,
+                            contentDescription = if (isEditing) "关闭编辑面板" else "关闭新增面板",
+                            onClick = onDismiss
+                        )
                     }
                     Column(
                         modifier = Modifier
@@ -2770,26 +2829,30 @@ private fun AddTaskPanel(
                     ) {
                         TaskFormSection(
                             title = "事项",
-                            subtitle = if (isEditing) "调整标题和拆分结构" else "先记录要推进的事"
+                            subtitle = if (isEditing) "调整标题和拆分结构" else "这是唯一必填项",
+                            icon = Icons.Rounded.EditNote,
+                            iconTint = MaterialTheme.colorScheme.primary
                         ) {
-                        OutlinedTextField(
-                            value = title,
-                            onValueChange = { title = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text("事项内容") },
-                            placeholder = { Text("例如：确认明天下午会议材料") },
-                            singleLine = false,
-                            minLines = 2,
-                            maxLines = 4,
-                            shape = RowShape,
-                            textStyle = MaterialTheme.typography.titleMedium.copy(
-                                fontWeight = FontWeight.Medium,
-                                fontSize = 17.sp
-                            ),
-                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                            keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                            colors = quietTextFieldColors()
-                        )
+                            OutlinedTextField(
+                                value = title,
+                                onValueChange = { title = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("事项内容") },
+                                placeholder = { Text("例如：确认明天下午会议材料") },
+                                singleLine = false,
+                                minLines = 3,
+                                maxLines = 5,
+                                shape = RowShape,
+                                textStyle = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Medium,
+                                    fontSize = 18.sp,
+                                    lineHeight = 25.sp,
+                                    letterSpacing = 0.sp
+                                ),
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                                keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
+                                colors = quietTextFieldColors()
+                            )
                         }
                         SubTaskEditor(
                             subTasks = subTasks,
@@ -2810,7 +2873,12 @@ private fun AddTaskPanel(
                                 subTasks = subTasks.filterNot { it.id == id }
                             }
                         )
-                        FormSettingBlock(title = "象限") {
+                        FormSettingBlock(
+                            title = "象限",
+                            subtitle = "先给它一个大方向",
+                            icon = Icons.Rounded.Inventory2,
+                            iconTint = priority.color
+                        ) {
                             FlowRow(
                                 horizontalArrangement = Arrangement.spacedBy(7.dp),
                                 verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -2897,10 +2965,12 @@ private fun AddTaskPanel(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Icon(
-                                    Icons.Rounded.Check,
+                                IconTile(
+                                    icon = Icons.Rounded.Check,
                                     contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    containerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.10f),
+                                    iconSize = 14.dp
                                 )
                                 Text(
                                     text = saveFeedback.orEmpty(),
@@ -2946,7 +3016,11 @@ private fun AddTaskPanel(
                         contentPadding = PaddingValues(vertical = 13.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
-                        Icon(Icons.Rounded.Check, contentDescription = null)
+                        InlineButtonIcon(
+                            icon = Icons.Rounded.Check,
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            containerColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.12f)
+                        )
                         Spacer(Modifier.width(8.dp))
                         Text(if (isEditing) "保存修改" else "保存事项")
                     }
@@ -3363,7 +3437,10 @@ private fun RepeatRulePicker(
 ) {
     FormSettingBlock(
         title = "重复规则",
-        enabled = enabled
+        subtitle = "用于周期性事项",
+        enabled = enabled,
+        icon = Icons.Rounded.Repeat,
+        iconTint = MaterialTheme.colorScheme.secondary
     ) {
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(7.dp),
@@ -3408,7 +3485,9 @@ private fun DateTimePickerRow(
 
     FormSettingBlock(
         title = "时间",
-        subtitle = label
+        subtitle = label,
+        icon = Icons.Rounded.Schedule,
+        iconTint = MaterialTheme.colorScheme.secondary
     ) {
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(7.dp),
@@ -3419,7 +3498,10 @@ private fun DateTimePickerRow(
                 shape = RowShape,
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
             ) {
-                Icon(Icons.Rounded.CalendarMonth, contentDescription = null)
+                InlineButtonIcon(
+                    icon = Icons.Rounded.CalendarMonth,
+                    tint = MaterialTheme.colorScheme.primary
+                )
                 Spacer(Modifier.width(6.dp))
                 Text(if (dueDateMillis == null) "选择日期" else "更改日期")
             }
@@ -3429,7 +3511,10 @@ private fun DateTimePickerRow(
                 shape = RowShape,
                 contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
             ) {
-                Icon(Icons.Rounded.Schedule, contentDescription = null)
+                InlineButtonIcon(
+                    icon = Icons.Rounded.Schedule,
+                    tint = if (dueDateMillis != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.58f)
+                )
                 Spacer(Modifier.width(6.dp))
                 Text(if (dueTimeMinutes == null) "选择时间" else "更改时间")
             }

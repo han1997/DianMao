@@ -1,5 +1,9 @@
 # Changelog
 
+- Polished the shared add/edit task sheet with a stronger capture-first header,
+  clearer primary task input, section icons, quieter date/repeat controls, and
+  consistent save feedback/action icon treatment.
+
 - Continued UI polish across backup, archive, and task-detail surfaces: headers,
   form fields, status messages, empty states, and bottom actions now use the
   same quiet icon container and rounded-control language as the home screen.
