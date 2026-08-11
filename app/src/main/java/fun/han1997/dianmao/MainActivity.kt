@@ -681,7 +681,9 @@ private fun IconTile(
 private fun HeaderActionButton(
     icon: ImageVector,
     contentDescription: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    tint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.50f)
 ) {
     IconButton(
         onClick = onClick,
@@ -690,12 +692,27 @@ private fun HeaderActionButton(
         IconTile(
             icon = icon,
             contentDescription = contentDescription,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.50f),
+            tint = tint,
+            containerColor = containerColor,
             iconSize = 20.dp,
             modifier = Modifier.size(34.dp)
         )
     }
+}
+
+@Composable
+private fun InlineButtonIcon(
+    icon: ImageVector,
+    tint: Color,
+    containerColor: Color = tint.copy(alpha = 0.12f)
+) {
+    IconTile(
+        icon = icon,
+        contentDescription = null,
+        tint = tint,
+        containerColor = containerColor,
+        iconSize = 15.dp
+    )
 }
 
 @Composable
@@ -3002,45 +3019,71 @@ private fun BackupPanel(
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        IconTile(
+                            icon = Icons.Rounded.Settings,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.62f),
+                            iconSize = 20.dp
+                        )
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("备份与恢复", style = MaterialTheme.typography.titleLarge)
+                            Text(
+                                "备份与恢复",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                "本地文件与 WebDAV 同步",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
-                        IconButton(onClick = onDismiss) {
-                            Icon(Icons.Rounded.Close, contentDescription = "关闭备份面板")
-                        }
+                        HeaderActionButton(
+                            icon = Icons.Rounded.Close,
+                            contentDescription = "关闭备份面板",
+                            onClick = onDismiss
+                        )
                     }
 
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("本地备份", style = MaterialTheme.typography.titleMedium)
+                    FormSettingBlock(title = "本地备份", subtitle = "导出当前数据，或从文件恢复") {
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             Button(
                                 onClick = onLocalExport,
                                 modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(14.dp),
+                                shape = RowShape,
                                 contentPadding = PaddingValues(vertical = 11.dp)
                             ) {
-                                Icon(Icons.Rounded.FileUpload, contentDescription = null)
+                                InlineButtonIcon(
+                                    icon = Icons.Rounded.FileUpload,
+                                    tint = MaterialTheme.colorScheme.onPrimary,
+                                    containerColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.12f)
+                                )
                                 Spacer(Modifier.width(6.dp))
                                 Text("导出本地")
                             }
                             OutlinedButton(
                                 onClick = onLocalImport,
                                 modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(14.dp),
+                                shape = RowShape,
                                 contentPadding = PaddingValues(vertical = 11.dp)
                             ) {
-                                Icon(Icons.Rounded.FileDownload, contentDescription = null)
+                                InlineButtonIcon(
+                                    icon = Icons.Rounded.FileDownload,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
                                 Spacer(Modifier.width(6.dp))
                                 Text("本地恢复")
                             }
                         }
                     }
 
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("WebDAV", style = MaterialTheme.typography.titleMedium)
+                    FormSettingBlock(title = "WebDAV", subtitle = "保存地址后可手动上传或下载恢复") {
                         OutlinedTextField(
                             value = url,
                             onValueChange = { url = it },
@@ -3048,10 +3091,8 @@ private fun BackupPanel(
                             label = { Text("备份文件 URL") },
                             placeholder = { Text("https:// 或局域网 http://192.168.x.x/backup.json") },
                             singleLine = true,
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                                unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                            )
+                            shape = RowShape,
+                            colors = quietTextFieldColors()
                         )
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             OutlinedTextField(
@@ -3060,10 +3101,8 @@ private fun BackupPanel(
                                 modifier = Modifier.weight(1f),
                                 label = { Text("用户名") },
                                 singleLine = true,
-                                colors = TextFieldDefaults.colors(
-                                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                                )
+                                shape = RowShape,
+                                colors = quietTextFieldColors()
                             )
                             OutlinedTextField(
                                 value = password,
@@ -3072,20 +3111,21 @@ private fun BackupPanel(
                                 label = { Text("密码") },
                                 singleLine = true,
                                 visualTransformation = PasswordVisualTransformation(),
-                                colors = TextFieldDefaults.colors(
-                                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                                )
+                                shape = RowShape,
+                                colors = quietTextFieldColors()
                             )
                         }
                         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                             OutlinedButton(
                                 onClick = { onSaveWebDav(webDavSettings) },
                                 modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(14.dp),
+                                shape = RowShape,
                                 contentPadding = PaddingValues(vertical = 11.dp)
                             ) {
-                                Icon(Icons.Rounded.Save, contentDescription = null)
+                                InlineButtonIcon(
+                                    icon = Icons.Rounded.Save,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
                                 Spacer(Modifier.width(6.dp))
                                 Text("保存设置")
                             }
@@ -3093,10 +3133,14 @@ private fun BackupPanel(
                                 onClick = { onUploadWebDav(webDavSettings) },
                                 enabled = webDavReady,
                                 modifier = Modifier.weight(1f),
-                                shape = RoundedCornerShape(14.dp),
+                                shape = RowShape,
                                 contentPadding = PaddingValues(vertical = 11.dp)
                             ) {
-                                Icon(Icons.Rounded.CloudUpload, contentDescription = null)
+                                InlineButtonIcon(
+                                    icon = Icons.Rounded.CloudUpload,
+                                    tint = MaterialTheme.colorScheme.onPrimary,
+                                    containerColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.12f)
+                                )
                                 Spacer(Modifier.width(6.dp))
                                 Text("上传备份")
                             }
@@ -3105,10 +3149,13 @@ private fun BackupPanel(
                             onClick = { onRestoreWebDav(webDavSettings) },
                             enabled = webDavReady,
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(14.dp),
+                            shape = RowShape,
                             contentPadding = PaddingValues(vertical = 11.dp)
                         ) {
-                            Icon(Icons.Rounded.CloudDownload, contentDescription = null)
+                            InlineButtonIcon(
+                                icon = Icons.Rounded.CloudDownload,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
                             Spacer(Modifier.width(6.dp))
                             Text("下载恢复")
                         }
@@ -3118,15 +3165,28 @@ private fun BackupPanel(
                         Surface(
                             color = MaterialTheme.colorScheme.secondaryContainer,
                             contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RowShape,
+                            border = quietBorder(0.08f)
                         ) {
-                            Text(
-                                text = status,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
-                                style = MaterialTheme.typography.bodyMedium,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 9.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                IconTile(
+                                    icon = Icons.Rounded.CloudUpload,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    containerColor = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.10f),
+                                    iconSize = 14.dp
+                                )
+                                Text(
+                                    text = status,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
                         }
                     }
                 }
@@ -3179,21 +3239,27 @@ private fun ArchivedPanel(
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
+                        IconTile(
+                            icon = Icons.Rounded.Archive,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.62f),
+                            iconSize = 20.dp
+                        )
                         Text(
                             text = "归档事项",
                             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
                             color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.weight(1f)
                         )
-                        IconButton(onClick = onDismiss) {
-                            Icon(
-                                Icons.Rounded.Close,
-                                contentDescription = "关闭",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        HeaderActionButton(
+                            icon = Icons.Rounded.Close,
+                            contentDescription = "关闭",
+                            onClick = onDismiss
+                        )
                     }
                     Spacer(Modifier.height(12.dp))
 
@@ -3208,11 +3274,13 @@ private fun ArchivedPanel(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                Icon(
-                                    Icons.Rounded.Inventory2,
+                                IconTile(
+                                    icon = Icons.Rounded.Inventory2,
                                     contentDescription = null,
-                                    modifier = Modifier.size(56.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.48f),
+                                    iconSize = 24.dp,
+                                    modifier = Modifier.size(48.dp)
                                 )
                                 Text(
                                     text = "暂无归档事项",
@@ -3275,13 +3343,13 @@ private fun ArchivedTaskItem(
                     )
                 }
             }
-            IconButton(onClick = onUnarchive) {
-                Icon(
-                    Icons.Rounded.Unarchive,
-                    contentDescription = "取消归档",
-                    tint = MaterialTheme.colorScheme.primary
-                )
-            }
+            HeaderActionButton(
+                icon = Icons.Rounded.Unarchive,
+                contentDescription = "取消归档",
+                onClick = onUnarchive,
+                tint = MaterialTheme.colorScheme.primary,
+                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.50f)
+            )
         }
     }
 }
@@ -3973,30 +4041,29 @@ private fun TaskDetailScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.72f))
-                    .padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 4.dp),
+                    .padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        Icons.AutoMirrored.Rounded.ArrowBack,
-                        contentDescription = "返回",
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-                Spacer(Modifier.width(4.dp))
+                HeaderActionButton(
+                    icon = Icons.AutoMirrored.Rounded.ArrowBack,
+                    contentDescription = "返回",
+                    onClick = onBack
+                )
                 Text(
                     text = "事项详情",
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.weight(1f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-                Spacer(Modifier.weight(1f))
-                IconButton(onClick = onEdit) {
-                    Icon(
-                        Icons.Rounded.Edit,
-                        contentDescription = "编辑",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
+                HeaderActionButton(
+                    icon = Icons.Rounded.Edit,
+                    contentDescription = "编辑",
+                    onClick = onEdit,
+                    tint = MaterialTheme.colorScheme.primary,
+                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.50f)
+                )
             }
 
             LazyColumn(
@@ -4021,20 +4088,11 @@ private fun TaskDetailScreen(
                 // Meta section
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Box(
-                                modifier = Modifier
-                                    .size(12.dp)
-                                    .background(task.quadrant.color, CircleShape)
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                text = task.quadrant.label,
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = task.quadrant.color,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
+                        CompactMeta(
+                            icon = Icons.Rounded.Inventory2,
+                            text = task.quadrant.label,
+                            tint = task.quadrant.color
+                        )
                         FlowRow(
                             horizontalArrangement = Arrangement.spacedBy(10.dp),
                             verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -4072,13 +4130,13 @@ private fun TaskDetailScreen(
                         FilledTonalButton(
                             onClick = { onOpenCalendarReminder(task) },
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(12.dp),
+                            shape = RowShape,
                             contentPadding = PaddingValues(vertical = 12.dp)
                         ) {
-                            Icon(
-                                Icons.Rounded.CalendarMonth,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
+                            InlineButtonIcon(
+                                icon = Icons.Rounded.CalendarMonth,
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                containerColor = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.10f)
                             )
                             Spacer(Modifier.width(8.dp))
                             Text("打开系统日历提醒")
@@ -4183,11 +4241,13 @@ private fun TaskDetailScreen(
                             modifier = Modifier.padding(vertical = 24.dp),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Icon(
-                                Icons.Rounded.History,
+                            IconTile(
+                                icon = Icons.Rounded.History,
                                 contentDescription = null,
-                                modifier = Modifier.size(40.dp),
-                                tint = MaterialTheme.colorScheme.outline
+                                modifier = Modifier.size(44.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.64f),
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f),
+                                iconSize = 22.dp
                             )
                             Spacer(Modifier.height(8.dp))
                             Text(
@@ -4222,12 +4282,13 @@ private fun TaskDetailScreen(
                 ) {
                     FilledTonalButton(
                         onClick = { onToggleComplete(task) },
-                        modifier = Modifier.weight(1f)
+                        modifier = Modifier.weight(1f),
+                        shape = RowShape
                     ) {
-                        Icon(
-                            imageVector = if (task.completed) Icons.Rounded.Replay else Icons.Rounded.DoneAll,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
+                        InlineButtonIcon(
+                            icon = if (task.completed) Icons.Rounded.Replay else Icons.Rounded.DoneAll,
+                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                            containerColor = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.10f)
                         )
                         Spacer(Modifier.width(6.dp))
                         Text(if (task.completed) "标为未完成" else "完成")
@@ -4236,15 +4297,16 @@ private fun TaskDetailScreen(
                         FilledTonalButton(
                             onClick = { onArchive(task) },
                             modifier = Modifier.weight(1f),
+                            shape = RowShape,
                             colors = ButtonDefaults.filledTonalButtonColors(
                                 containerColor = MaterialTheme.colorScheme.secondaryContainer,
                                 contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                             )
                         ) {
-                            Icon(
-                                Icons.Rounded.Archive,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
+                            InlineButtonIcon(
+                                icon = Icons.Rounded.Archive,
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                containerColor = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.10f)
                             )
                             Spacer(Modifier.width(6.dp))
                             Text("归档")
@@ -4252,18 +4314,15 @@ private fun TaskDetailScreen(
                     }
                     IconButton(
                         onClick = { onDelete(task) },
-                        modifier = Modifier
-                            .size(48.dp)
-                            .background(
-                                MaterialTheme.colorScheme.errorContainer,
-                                CircleShape
-                            )
+                        modifier = Modifier.size(48.dp)
                     ) {
-                        Icon(
-                            Icons.Rounded.Delete,
+                        IconTile(
+                            icon = Icons.Rounded.Delete,
                             contentDescription = "删除",
                             tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(20.dp)
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            iconSize = 20.dp,
+                            modifier = Modifier.size(34.dp)
                         )
                     }
                 }

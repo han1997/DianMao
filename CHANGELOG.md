@@ -1,5 +1,9 @@
 # Changelog
 
+- Continued UI polish across backup, archive, and task-detail surfaces: headers,
+  form fields, status messages, empty states, and bottom actions now use the
+  same quiet icon container and rounded-control language as the home screen.
+
 - Redesigned the in-app icon treatment and launcher icon around a four-quadrant
   compass mark, with quieter icon containers for header actions, metadata chips,
   quadrant detail headers, and reminder/calendar controls.
