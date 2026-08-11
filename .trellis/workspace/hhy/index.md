@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 25
+- **Total Sessions**: 26
 - **Last Active**: 2026-08-11
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~860 | Active |
+| `journal-1.md` | ~893 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 26 | 2026-08-11 | Polish add task capture flow | `3992e2f` | `master` |
 | 25 | 2026-08-11 | UI polish and icon redesign | `d7efdde`, `c59d9a4` | `master` |
 | 24 | 2026-06-25 | Home smart task views | `35e8a61` | `master` |
 | 23 | 2026-06-24 | Fix recurring focus lane date | `f9d9d49` | `master` |

@@ -858,3 +858,36 @@ Unified DianMao's in-app icon treatment, redesigned the launcher icon around a f
 ### Next Steps
 
 - None - task complete
+
+
+## Session 26: Polish add task capture flow
+
+**Date**: 2026-08-11
+**Task**: Polish add task capture flow
+**Branch**: `master`
+
+### Summary
+
+Polished the add/edit task sheet around capture-first entry, clarified add versus edit copy, kept organization controls secondary, updated changelog, and verified unit tests, lint, assemble, and diff checks.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `3992e2f` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
