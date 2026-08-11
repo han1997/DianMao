@@ -138,6 +138,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.Role
@@ -596,6 +597,108 @@ private fun quietBorder(alpha: Float = 0.22f): BorderStroke {
 }
 
 @Composable
+private fun AppCompassMark(
+    modifier: Modifier = Modifier,
+    compact: Boolean = false
+) {
+    val size = if (compact) 32.dp else 42.dp
+    Surface(
+        modifier = modifier.size(size),
+        shape = IconTileShape,
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.72f),
+        contentColor = MaterialTheme.colorScheme.primary,
+        border = quietBorder(0.12f)
+    ) {
+        Box(
+            modifier = Modifier.padding(if (compact) 7.dp else 8.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(3.dp)
+            ) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(3.dp)
+                ) {
+                    CompassCell(TaskPriority.ImportantUrgent.color, Modifier.weight(1f))
+                    CompassCell(TaskPriority.ImportantNotUrgent.color, Modifier.weight(1f))
+                }
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(3.dp)
+                ) {
+                    CompassCell(TaskPriority.NotImportantUrgent.color, Modifier.weight(1f))
+                    CompassCell(TaskPriority.NotImportantNotUrgent.color, Modifier.weight(1f))
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .size(if (compact) 8.dp else 10.dp)
+                    .background(MaterialTheme.colorScheme.surface, CircleShape)
+                    .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.44f), CircleShape)
+            )
+        }
+    }
+}
+
+@Composable
+private fun CompassCell(color: Color, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxHeight()
+            .background(color.copy(alpha = 0.82f), RoundedCornerShape(4.dp))
+    )
+}
+
+@Composable
+private fun IconTile(
+    icon: ImageVector,
+    contentDescription: String?,
+    tint: Color,
+    modifier: Modifier = Modifier,
+    containerColor: Color = tint.copy(alpha = 0.10f),
+    iconSize: androidx.compose.ui.unit.Dp = 18.dp
+) {
+    Surface(
+        modifier = modifier.size(if (iconSize <= 14.dp) 20.dp else 30.dp),
+        shape = if (iconSize <= 14.dp) ChipShape else IconTileShape,
+        color = containerColor,
+        contentColor = tint
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                tint = tint,
+                modifier = Modifier.size(iconSize)
+            )
+        }
+    }
+}
+
+@Composable
+private fun HeaderActionButton(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit
+) {
+    IconButton(
+        onClick = onClick,
+        modifier = Modifier.size(48.dp)
+    ) {
+        IconTile(
+            icon = icon,
+            contentDescription = contentDescription,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.50f),
+            iconSize = 20.dp,
+            modifier = Modifier.size(34.dp)
+        )
+    }
+}
+
+@Composable
 private fun quietTextFieldColors() = TextFieldDefaults.colors(
     focusedContainerColor = MaterialTheme.colorScheme.surface,
     unfocusedContainerColor = MaterialTheme.colorScheme.surface,
@@ -609,6 +712,7 @@ private val PanelShape = RoundedCornerShape(18.dp)
 private val SheetShape = RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)
 private val RowShape = RoundedCornerShape(12.dp)
 private val ChipShape = RoundedCornerShape(8.dp)
+private val IconTileShape = RoundedCornerShape(14.dp)
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -771,9 +875,14 @@ private fun DianMaoApp() {
                     FloatingActionButton(
                         onClick = { showAddSheet = true },
                         containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        shape = IconTileShape
                     ) {
-                        Icon(Icons.Rounded.Add, contentDescription = "新增事项")
+                        Icon(
+                            Icons.Rounded.Add,
+                            contentDescription = "新增事项",
+                            modifier = Modifier.size(24.dp)
+                        )
                     }
                 }
             }
@@ -1177,6 +1286,7 @@ private fun AppHeader(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            AppCompassMark()
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(3.dp)
@@ -1220,38 +1330,16 @@ private fun AppHeader(
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            Surface(
-                onClick = onOpenArchived,
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.48f),
-                border = quietBorder(0.16f),
-                modifier = Modifier.size(48.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Rounded.Archive,
-                        contentDescription = "归档事项",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
-            Surface(
-                onClick = onOpenBackup,
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.48f),
-                border = quietBorder(0.16f),
-                modifier = Modifier.size(48.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Rounded.Settings,
-                        contentDescription = "备份与恢复",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
+            HeaderActionButton(
+                icon = Icons.Rounded.Archive,
+                contentDescription = "归档事项",
+                onClick = onOpenArchived
+            )
+            HeaderActionButton(
+                icon = Icons.Rounded.Settings,
+                contentDescription = "备份与恢复",
+                onClick = onOpenBackup
+            )
         }
         Surface(
             color = MaterialTheme.colorScheme.surface,
@@ -1493,7 +1581,11 @@ private fun TimeFocusRow(
                 item.dueLabel?.let {
                     CompactMeta(icon = Icons.Rounded.Schedule, text = it)
                 }
-                CompactMeta(icon = Icons.Rounded.Inventory2, text = item.task.quadrant.shortTitle)
+                CompactMeta(
+                    icon = Icons.Rounded.Inventory2,
+                    text = item.task.quadrant.shortTitle,
+                    tint = item.task.quadrant.color
+                )
             }
         }
     }
@@ -1614,24 +1706,16 @@ private fun QuadrantDetailHeader(
     Surface(
         color = quadrant.color.copy(alpha = 0.08f),
         shape = RoundedCornerShape(14.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
+        border = quietBorder(0.16f)
     ) {
         Column(
-            modifier = Modifier.padding(start = 14.dp, end = 14.dp, bottom = 14.dp),
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Accent strip
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(3.dp)
-                    .background(quadrant.color, RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp))
-            )
-            // Title row with inline back
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 IconButton(
                     onClick = onBack,
@@ -1644,7 +1728,13 @@ private fun QuadrantDetailHeader(
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                ColorDot(quadrant.color)
+                IconTile(
+                    icon = Icons.Rounded.Inventory2,
+                    contentDescription = null,
+                    tint = quadrant.color,
+                    containerColor = quadrant.color.copy(alpha = 0.10f),
+                    iconSize = 18.dp
+                )
                 Text(
                     modifier = Modifier.weight(1f),
                     text = quadrant.title,
@@ -1654,7 +1744,6 @@ private fun QuadrantDetailHeader(
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            // Description
             Text(
                 text = quadrant.description,
                 style = MaterialTheme.typography.bodyMedium,
@@ -1662,7 +1751,6 @@ private fun QuadrantDetailHeader(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            // Inline stats
             FlowRow(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -1702,26 +1790,26 @@ private fun InlineStatDot(count: Int, label: String, color: Color) {
 private fun QuadrantDetailEmptyState(quadrant: TaskPriority) {
     Surface(
         color = quadrant.color.copy(alpha = 0.07f),
-        shape = RoundedCornerShape(14.dp)
+        shape = RoundedCornerShape(14.dp),
+        border = quietBorder(0.12f)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 14.dp, end = 14.dp, bottom = 14.dp),
+                .padding(horizontal = 14.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            // Accent strip matching header
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(3.dp)
-                    .background(quadrant.color, RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp))
-            )
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                ColorDot(quadrant.color)
+                IconTile(
+                    icon = Icons.Rounded.Inventory2,
+                    contentDescription = null,
+                    tint = quadrant.color,
+                    containerColor = quadrant.color.copy(alpha = 0.10f),
+                    iconSize = 18.dp
+                )
                 Text(
                     text = "这个象限还没有事项",
                     style = MaterialTheme.typography.titleMedium,
@@ -1988,21 +2076,23 @@ private fun CompletionMark(completed: Boolean, color: Color, modifier: Modifier 
 
 @Composable
 private fun CompactMeta(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    text: String
+    icon: ImageVector,
+    text: String,
+    tint: Color = MaterialTheme.colorScheme.secondary
 ) {
     Row(
         modifier = Modifier
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.34f), ChipShape)
-            .padding(horizontal = 7.dp, vertical = 3.dp),
+            .padding(start = 3.dp, top = 3.dp, end = 7.dp, bottom = 3.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Icon(
-            imageVector = icon,
+        IconTile(
+            icon = icon,
             contentDescription = null,
-            tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.74f),
-            modifier = Modifier.size(12.dp)
+            tint = tint.copy(alpha = 0.82f),
+            containerColor = tint.copy(alpha = 0.10f),
+            iconSize = 12.dp
         )
         Text(
             text = text,
@@ -2122,7 +2212,11 @@ private fun TaskRow(
                     verticalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
                     if (showQuadrantMeta) {
-                        CompactMeta(icon = Icons.Rounded.Inventory2, text = task.quadrant.shortTitle)
+                        CompactMeta(
+                            icon = Icons.Rounded.Inventory2,
+                            text = task.quadrant.shortTitle,
+                            tint = task.quadrant.color
+                        )
                     }
                     displayedDueLabel?.let {
                         CompactMeta(icon = Icons.Rounded.Schedule, text = it)
@@ -2134,7 +2228,7 @@ private fun TaskRow(
                         CompactMeta(icon = Icons.Rounded.Alarm, text = "响铃")
                     }
                     if (task.repeatRule != RepeatRule.None) {
-                        CompactMeta(icon = Icons.Rounded.Alarm, text = task.repeatRule.label)
+                        CompactMeta(icon = Icons.Rounded.Repeat, text = task.repeatRule.label)
                     }
                     if (task.subTasks.isNotEmpty()) {
                         CompactMeta(icon = Icons.Rounded.CheckCircle, text = task.subTaskProgressLabel)
@@ -3415,7 +3509,7 @@ private fun UncompleteRecurringTaskDialog(
 
 @Composable
 private fun ToggleRow(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     title: String,
     subtitle: String,
     checked: Boolean,
@@ -3435,11 +3529,16 @@ private fun ToggleRow(
             verticalAlignment = Alignment.CenterVertically
         ) {
             val contentColor = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
-            Icon(
-                icon,
+            IconTile(
+                icon = icon,
                 contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = if (enabled) MaterialTheme.colorScheme.secondary else contentColor.copy(alpha = 0.62f)
+                tint = if (enabled) MaterialTheme.colorScheme.secondary else contentColor.copy(alpha = 0.62f),
+                containerColor = if (enabled) {
+                    MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.52f)
+                } else {
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.26f)
+                },
+                iconSize = 18.dp
             )
             Spacer(Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {

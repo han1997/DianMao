@@ -1,5 +1,9 @@
 # Changelog
 
+- Redesigned the in-app icon treatment and launcher icon around a four-quadrant
+  compass mark, with quieter icon containers for header actions, metadata chips,
+  quadrant detail headers, and reminder/calendar controls.
+
 - Added TickTick-style home smart views for four-quadrant browsing, today,
   upcoming, and unscheduled inbox tasks, with search over task and subtask
   titles.

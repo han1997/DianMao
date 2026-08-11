@@ -3,13 +3,33 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Main seal dot: ink-stamp circle centered at (54,52), radius 22 -->
-    <!-- Slightly irregular to feel like a brush press -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M76,52 C76,64.15 66.15,74 54,74 C41.85,74 32,64.15 32,52 C32,39.85 41.85,30 54,30 C66.15,30 76,39.85 76,52 Z" />
-    <!-- Tiny ink drip accent: bottom-right of the main dot -->
+        android:fillColor="#FFFCF9"
+        android:pathData="M26,24h56v60h-56z" />
     <path
-        android:fillColor="#E0C8B8"
-        android:pathData="M69,70 C69,72.21 67.21,74 65,74 C62.79,74 61,72.21 61,70 C61,67.79 62.79,66 65,66 C67.21,66 69,67.79 69,70 Z" />
+        android:fillColor="#A94332"
+        android:pathData="M32,30h18v18h-18z" />
+    <path
+        android:fillColor="#795C16"
+        android:pathData="M58,30h18v18h-18z" />
+    <path
+        android:fillColor="#2D6DA8"
+        android:pathData="M32,56h18v18h-18z" />
+    <path
+        android:fillColor="#4E6D68"
+        android:pathData="M58,56h18v18h-18z" />
+    <path
+        android:fillColor="#1E211F"
+        android:fillAlpha="0.10"
+        android:pathData="M53,30h2v44h-2z" />
+    <path
+        android:fillColor="#1E211F"
+        android:fillAlpha="0.10"
+        android:pathData="M32,53h44v2h-44z" />
+    <path
+        android:fillColor="#FFFCF9"
+        android:pathData="M61,52 C61,55.87 57.87,59 54,59 C50.13,59 47,55.87 47,52 C47,48.13 50.13,45 54,45 C57.87,45 61,48.13 61,52 Z" />
+    <path
+        android:fillColor="#A84534"
+        android:pathData="M58,52 C58,54.21 56.21,56 54,56 C51.79,56 50,54.21 50,52 C50,49.79 51.79,48 54,48 C56.21,48 58,49.79 58,52 Z" />
 </vector>

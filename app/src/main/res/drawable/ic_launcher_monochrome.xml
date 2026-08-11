@@ -3,9 +3,22 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Monochrome layer for Android 13+ themed icons -->
-    <!-- Single circle outline representing the "seal dot" -->
     <path
         android:fillColor="#000000"
-        android:pathData="M76,52 C76,64.15 66.15,74 54,74 C41.85,74 32,64.15 32,52 C32,39.85 41.85,30 54,30 C66.15,30 76,39.85 76,52 Z" />
+        android:pathData="M26,24h56v60h-56z" />
+    <path
+        android:fillColor="#000000"
+        android:pathData="M32,30h18v18h-18z" />
+    <path
+        android:fillColor="#000000"
+        android:pathData="M58,30h18v18h-18z" />
+    <path
+        android:fillColor="#000000"
+        android:pathData="M32,56h18v18h-18z" />
+    <path
+        android:fillColor="#000000"
+        android:pathData="M58,56h18v18h-18z" />
+    <path
+        android:fillColor="#000000"
+        android:pathData="M58,52 C58,54.21 56.21,56 54,56 C51.79,56 50,54.21 50,52 C50,49.79 51.79,48 54,48 C56.21,48 58,49.79 58,52 Z" />
 </vector>

@@ -443,11 +443,17 @@ use.
   field styling when they are outside the daily task workflow.
 - Letter spacing should stay `0.sp` in refreshed UI. Do not use negative
   tracking to fake density.
+- Functional icons should use a consistent low-noise treatment instead of
+  scattering default Material glyphs at unrelated sizes. Keep the accessible
+  action target at `48.dp` with `IconButton`, and place the visible glyph inside
+  a small tonal container such as `IconTile` when it appears in headers,
+  metadata chips, or setting rows.
 
 **Good**:
 ```kotlin
 private val RowShape = RoundedCornerShape(12.dp)
 private val ChipShape = RoundedCornerShape(8.dp)
+private val IconTileShape = RoundedCornerShape(14.dp)
 
 @Composable
 private fun quietBorder(alpha: Float = 0.22f): BorderStroke {
@@ -461,6 +467,21 @@ private fun quietTextFieldColors() = TextFieldDefaults.colors(
     focusedIndicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.45f),
     unfocusedIndicatorColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f)
 )
+
+@Composable
+private fun HeaderActionButton(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit
+) {
+    IconButton(onClick = onClick, modifier = Modifier.size(48.dp)) {
+        IconTile(
+            icon = icon,
+            contentDescription = contentDescription,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
 
 Surface(
     color = MaterialTheme.colorScheme.surface,
@@ -486,12 +507,18 @@ Card(
         Text(task.title, letterSpacing = (-0.1).sp)
     }
 }
+
+Icon(
+    imageVector = Icons.Rounded.Settings,
+    contentDescription = "Settings",
+    modifier = Modifier.size(20.dp)
+)
 ```
 
 **Why**: The good pattern keeps rows scannable and native while preserving
 touch targets and accessibility. The bad pattern spends too much vertical space
-on classification, uses heavy borders, and relies on negative letter spacing for
-density.
+on classification, uses heavy borders, relies on negative letter spacing for
+density, and leaves unrelated default icons without a shared visual system.
 
 **Reference implementation**:
 - `app/src/main/java/fun/han1997/dianmao/MainActivity.kt`
