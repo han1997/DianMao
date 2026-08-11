@@ -824,3 +824,37 @@ Added TickTick-style home smart views for quadrants, today, upcoming, and inbox 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 25: UI polish and icon redesign
+
+**Date**: 2026-08-11
+**Task**: UI polish and icon redesign
+**Branch**: `master`
+
+### Summary
+
+Unified DianMao's in-app icon treatment, redesigned the launcher icon around a four-quadrant compass mark, and polished backup, archive, and task-detail surfaces with consistent quiet controls.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `d7efdde` | (see git log) |
+| `c59d9a4` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
