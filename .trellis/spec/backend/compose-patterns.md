@@ -782,6 +782,112 @@ correct shadow per DESIGN.md's Sheet (6dp) elevation vocabulary.
 
 ---
 
+## Pattern: Button-Triggered Floating Search
+
+**Problem**: An always-visible search text field in a compact home screen
+consumes significant vertical space (~56dp) even when the user is not
+searching. On screens where vertical real estate is critical (e.g., the home
+quadrant board), this reduces the primary content area unnecessarily.
+
+**Contracts**:
+- The search input should be hidden by default, replaced by a search toggle
+  button in the controls header row.
+- The toggle button must use `HeaderActionButton` (or equivalent 48dp
+  `IconButton` + `IconTile`) to preserve accessibility and touch target size.
+- When toggled open, a floating search panel appears using `AnimatedVisibility`
+  with the standard sheet motion vocabulary: `fadeIn(150ms) +
+  slideInVertically(220ms, 1/4 travel)` for enter; `fadeOut(120ms) +
+  slideOutVertically(180ms, 1/4 travel)` for exit.
+- The search panel must not occupy fixed space in the column flow when closed —
+  `AnimatedVisibility` collapses it entirely.
+- When opened, the search text field must auto-focus via `FocusRequester` +
+  `LaunchedEffect`.
+- When closed, the search query must be cleared so stale filters don't
+  persist invisibly.
+- The search panel should use `Surface` with `RowShape`, `quietBorder`, and
+  `quietTextFieldColors()` to match the quiet daily UI pattern.
+- A trailing clear button may appear inside the search field when the query is
+  non-empty.
+
+**Good**:
+```kotlin
+var searchVisible by rememberSaveable { mutableStateOf(false) }
+val focusRequester = remember { FocusRequester() }
+
+HeaderActionButton(
+    icon = if (searchVisible) Icons.Rounded.Close else Icons.Rounded.Search,
+    contentDescription = if (searchVisible) "关闭搜索" else "搜索",
+    onClick = {
+        searchVisible = !searchVisible
+        if (!searchVisible) onQueryChanged("")
+    }
+)
+
+AnimatedVisibility(
+    visible = searchVisible,
+    enter = fadeIn(tween(150)) + slideInVertically(tween(220)) { it / 4 },
+    exit = fadeOut(tween(120)) + slideOutVertically(tween(180)) { it / 4 }
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RowShape,
+        color = MaterialTheme.colorScheme.surface,
+        border = quietBorder(0.10f)
+    ) {
+        OutlinedTextField(
+            value = query,
+            onValueChange = onQueryChanged,
+            modifier = Modifier
+                .fillMaxWidth()
+                .focusRequester(focusRequester),
+            // ...
+            colors = quietTextFieldColors(),
+            shape = RowShape
+        )
+    }
+}
+
+LaunchedEffect(searchVisible) {
+    if (searchVisible) focusRequester.requestFocus()
+}
+```
+
+**Bad**:
+```kotlin
+// Always-visible search field wastes ~56dp even when not searching
+OutlinedTextField(
+    value = query,
+    onValueChange = onQueryChanged,
+    modifier = Modifier.fillMaxWidth(),
+    // ...
+)
+
+// Toggle button too small, no IconTile, no accessibility semantics
+Box(
+    modifier = Modifier.size(36.dp).clickable(onClick = { searchVisible = !searchVisible })
+) {
+    Icon(Icons.Rounded.Search, contentDescription = "Search")
+}
+```
+
+**Why**: The floating search pattern frees vertical space for primary content
+(the quadrant board) while keeping search accessible. The motion vocabulary
+ensures the panel feels like a state change (appearing/disappearing), not
+decorative animation. Clearing the query on close prevents invisible stale
+filters.
+
+**Reference implementation**:
+- `app/src/main/java/fun/han1997/dianmao/MainActivity.kt`
+- `HomeSmartControls`, `DianMaoApp`
+
+**Verification**:
+- Verify the quadrant board has more vertical space than before.
+- Verify search toggle opens a focused text field, typing filters tasks.
+- Verify closing search clears the query and collapses the panel.
+- Verify the toggle button is 48dp with an `IconTile` container.
+
+---
+
 ## Related Specs
 
 - [Overlay Navigation Thinking Guide](../guides/overlay-navigation-thinking-guide.md) - Checklist for back navigation design
