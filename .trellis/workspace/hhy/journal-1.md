@@ -992,3 +992,36 @@ Compressed AppHeader summary pills, reduced home top padding (8dp→4dp) and sec
 ### Next Steps
 
 - None - task complete
+
+
+## Session 30: Remove home smart controls, move search to app header
+
+**Date**: 2026-08-16
+**Task**: Remove home smart controls, move search to app header
+**Branch**: `master`
+
+### Summary
+
+Removed HomeSmartControls from home layout, moved search button and floating search panel into AppHeader, reduced top padding to 0dp so DianMao title sits close to status bar. QuadrantBoard now gets maximum vertical space. homeSmartView stays default Quadrants with no UI switching. All checks passed: testDebugUnitTest, lintDebug, assembleDebug, git diff --check.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `9a022cd` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
