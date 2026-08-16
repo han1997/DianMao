@@ -958,3 +958,37 @@ Polished TaskDetailScreen (top bar, meta section, completion note, stats, bottom
 ### Next Steps
 
 - None - task complete
+
+
+## Session 29: Optimize home screen space for quadrant board
+
+**Date**: 2026-08-16
+**Task**: Optimize home screen space for quadrant board
+**Branch**: `master`
+
+### Summary
+
+Compressed AppHeader summary pills, reduced home top padding (8dp→4dp) and section spacing (16dp→12dp), replaced always-visible search field with button-triggered floating search panel using AnimatedVisibility. Added button-triggered floating search spec to compose-patterns.md.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `83a1585` | (see git log) |
+| `840ec24` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

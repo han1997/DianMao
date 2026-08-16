@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 28
+- **Total Sessions**: 29
 - **Last Active**: 2026-08-16
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~960 | Active |
+| `journal-1.md` | ~994 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 29 | 2026-08-16 | Optimize home screen space for quadrant board | `83a1585`, `840ec24` | `master` |
 | 28 | 2026-08-16 | Polish detail, form, quadrant detail, and secondary panels | `bdd3ae1`, `9470592` | `master` |
 | 27 | 2026-08-12 | Polish home list hierarchy | `284c0cb` | `master` |
 | 26 | 2026-08-11 | Polish add task capture flow | `3992e2f` | `master` |
