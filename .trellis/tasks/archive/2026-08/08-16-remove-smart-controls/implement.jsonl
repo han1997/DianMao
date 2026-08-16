@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend spec index — required quality checks"}
+{"file": ".trellis/spec/backend/compose-patterns.md", "reason": "Compose UI contracts: quiet daily UI, accessible header actions, button-triggered floating search"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Required verification commands, Compose quality rules"}
+{"file": "DESIGN.md", "reason": "Design system: colors, typography, elevation, spacing, component specs"}
