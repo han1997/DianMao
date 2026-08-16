@@ -1,5 +1,10 @@
 # Changelog
 
+- Freed vertical space for the home quadrant board: the app header summary pills
+  are now more compact, the home column uses tighter top padding and section
+  spacing, and the always-visible search field is replaced by a search button
+  that expands a floating search panel with auto-focus and a clear action.
+
 - Polished the task detail, add/edit, quadrant detail, archive, and backup
   surfaces to match the home screen's quiet visual language: the detail top bar
   now has a surface anchor, meta info and completion notes sit inside form

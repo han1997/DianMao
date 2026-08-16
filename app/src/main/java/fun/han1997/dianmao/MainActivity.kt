@@ -135,6 +135,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -759,6 +761,7 @@ private fun DianMaoApp() {
     var backupStatus by rememberSaveable { mutableStateOf<String?>(null) }
     var homeSmartView by rememberSaveable { mutableStateOf(HomeSmartView.Quadrants) }
     var homeSearchQuery by rememberSaveable { mutableStateOf("") }
+    var homeSearchVisible by rememberSaveable { mutableStateOf(false) }
     val homeSmartItems = remember(activeTasks, homeSmartView, homeSearchQuery) {
         buildHomeSmartTaskItems(
             tasks = activeTasks,
@@ -913,8 +916,8 @@ private fun DianMaoApp() {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(start = 18.dp, top = 8.dp, end = 18.dp, bottom = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                            .padding(start = 18.dp, top = 4.dp, end = 18.dp, bottom = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         AppHeader(
                             tasks = activeTasks,
@@ -930,8 +933,15 @@ private fun DianMaoApp() {
                             selectedView = homeSmartView,
                             query = homeSearchQuery,
                             resultCount = homeSmartItems.size,
+                            searchVisible = homeSearchVisible,
                             onViewSelected = { homeSmartView = it },
-                            onQueryChanged = { homeSearchQuery = it }
+                            onQueryChanged = { homeSearchQuery = it },
+                            onSearchToggle = {
+                                if (homeSearchVisible) {
+                                    homeSearchQuery = ""
+                                }
+                                homeSearchVisible = !homeSearchVisible
+                            }
                         )
                         if (homeSmartView == HomeSmartView.Quadrants) {
                             TimeFocusLane(
@@ -1295,12 +1305,12 @@ private fun AppHeader(
 
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(7.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             AppCompassMark()
             Column(
@@ -1359,8 +1369,8 @@ private fun AppHeader(
         }
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalArrangement = Arrangement.spacedBy(7.dp)
+            horizontalArrangement = Arrangement.spacedBy(7.dp),
+            verticalArrangement = Arrangement.spacedBy(5.dp)
         ) {
             SummaryPill(value = openTasks.toString(), label = "未完成", color = MaterialTheme.colorScheme.primary)
             SummaryPill(value = timedTasks.toString(), label = "定时", color = MaterialTheme.colorScheme.secondary)
@@ -1374,9 +1384,9 @@ private fun SummaryPill(value: String, label: String, color: Color, modifier: Mo
     Row(
         modifier = modifier
             .background(color.copy(alpha = 0.08f), ChipShape)
-            .padding(horizontal = 9.dp, vertical = 6.dp),
+            .padding(horizontal = 7.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(5.dp)
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Box(
             modifier = Modifier
@@ -1385,7 +1395,7 @@ private fun SummaryPill(value: String, label: String, color: Color, modifier: Mo
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.labelLarge.copy(
+            style = MaterialTheme.typography.labelMedium.copy(
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 0.sp
             ),
@@ -1393,7 +1403,7 @@ private fun SummaryPill(value: String, label: String, color: Color, modifier: Mo
         )
         Text(
             text = label,
-            style = MaterialTheme.typography.labelMedium.copy(
+            style = MaterialTheme.typography.labelSmall.copy(
                 fontWeight = FontWeight.Medium,
                 letterSpacing = 0.sp
             ),
@@ -1408,8 +1418,10 @@ private fun HomeSmartControls(
     selectedView: HomeSmartView,
     query: String,
     resultCount: Int,
+    searchVisible: Boolean,
     onViewSelected: (HomeSmartView) -> Unit,
-    onQueryChanged: (String) -> Unit
+    onQueryChanged: (String) -> Unit,
+    onSearchToggle: () -> Unit
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -1442,6 +1454,11 @@ private fun HomeSmartControls(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+                HeaderActionButton(
+                    icon = if (searchVisible) Icons.Rounded.Close else Icons.Rounded.Search,
+                    contentDescription = if (searchVisible) "关闭搜索" else "搜索",
+                    onClick = onSearchToggle
+                )
             }
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -1461,28 +1478,60 @@ private fun HomeSmartControls(
                     )
                 }
             }
-            OutlinedTextField(
-                value = query,
-                onValueChange = onQueryChanged,
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                textStyle = MaterialTheme.typography.bodyMedium.copy(letterSpacing = 0.sp),
-                placeholder = {
-                    Text(
-                        text = "筛选当前视图",
-                        style = MaterialTheme.typography.bodyMedium
+            AnimatedVisibility(
+                visible = searchVisible,
+                enter = fadeIn(animationSpec = tween(150)) +
+                    slideInVertically(
+                        animationSpec = tween(220),
+                        initialOffsetY = { it / 4 }
+                    ),
+                exit = fadeOut(animationSpec = tween(120)) +
+                    slideOutVertically(
+                        animationSpec = tween(180),
+                        targetOffsetY = { it / 4 }
                     )
-                },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Rounded.Search,
-                        contentDescription = null
-                    )
-                },
-                keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
-                colors = quietTextFieldColors(),
-                shape = RowShape
-            )
+            ) {
+                val focusRequester = remember { FocusRequester() }
+                LaunchedEffect(searchVisible) {
+                    if (searchVisible) {
+                        focusRequester.requestFocus()
+                    }
+                }
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = onQueryChanged,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(focusRequester),
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(letterSpacing = 0.sp),
+                    placeholder = {
+                        Text(
+                            text = "筛选当前视图",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Rounded.Search,
+                            contentDescription = null
+                        )
+                    },
+                    trailingIcon = {
+                        if (query.isNotEmpty()) {
+                            IconButton(onClick = { onQueryChanged("") }) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Close,
+                                    contentDescription = "清除"
+                                )
+                            }
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
+                    colors = quietTextFieldColors(),
+                    shape = RowShape
+                )
+            }
         }
     }
 }
