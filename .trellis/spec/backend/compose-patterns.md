@@ -700,6 +700,88 @@ TodayDashboard(
 
 ---
 
+## Pattern: Overlay Panel Visual Consistency
+
+**Problem**: DianMao has three overlay panels (`AddTaskPanel`, `BackupPanel`,
+`ArchivedPanel`) that appear as full-height or near-full-height sheets over the
+main content. If each panel uses a different shape, elevation, and drag-handle
+treatment, the app feels inconsistent and some panels look heavier or lighter
+than others for no semantic reason.
+
+**Contracts**:
+- All three overlay panels must use `Card` with `SheetShape` (22dp top corners)
+  and `cardElevation(6.dp)` — not `Surface` with `PanelShape` or
+  `tonalElevation`.
+- All three must include a 38×4dp drag handle in `outline` at 0.34 alpha,
+  centered at the top of the card content.
+- All three must use `windowInsetsPadding(WindowInsets.safeDrawing)` inside the
+  card so content is not clipped by status bar or navigation bar.
+- Panel heights may differ by purpose: `AddTaskPanel` 90%, `BackupPanel` 88%,
+  `ArchivedPanel` 75% (centered rather than bottom-docked).
+- Scrim background must be `Color(0xFF211815).copy(alpha = 0.16f)` — the warm
+  scrim color from DESIGN.md, not pure black.
+- Enter/exit animation must use the shared spec: `fadeIn(150ms) +
+  slideInVertically(220ms, 1/4 travel)` for enter; `fadeOut(120ms) +
+  slideOutVertically(180ms, 1/4 travel)` for exit.
+
+**Good**:
+```kotlin
+Card(
+    modifier = Modifier.fillMaxWidth().fillMaxHeight(0.88f),
+    shape = SheetShape,
+    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.safeDrawing)
+            .padding(horizontal = 18.dp, vertical = 14.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .width(38.dp)
+                .height(4.dp)
+                .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.34f), CircleShape)
+        )
+        // ... panel content
+    }
+}
+```
+
+**Bad**:
+```kotlin
+// Uses Surface + PanelShape + tonalElevation — inconsistent with other panels
+Surface(
+    modifier = Modifier.fillMaxWidth(0.92f).fillMaxHeight(0.75f),
+    color = MaterialTheme.colorScheme.surface,
+    tonalElevation = 2.dp,
+    shape = PanelShape
+) {
+    // No drag handle, no safeDrawing padding
+    Column(modifier = Modifier.padding(20.dp)) { ... }
+}
+```
+
+**Why**: Visual consistency across overlay panels. When all three panels share
+the same shape, elevation, drag handle, and scrim, the user perceives them as
+the same kind of surface — a sheet that slides over the main content — rather
+than three unrelated dialogs. The `Card` + `cardElevation` also produces the
+correct shadow per DESIGN.md's Sheet (6dp) elevation vocabulary.
+
+**Reference implementation**:
+- `app/src/main/java/fun/han1997/dianmao/MainActivity.kt`
+- `AddTaskPanel`, `BackupPanel`, `ArchivedPanel`
+
+**Verification**:
+- Open each panel and verify they share the same top-corner radius, shadow
+  depth, and drag handle.
+- Verify scrim color is warm (not pure black) on all three.
+- Verify content is not clipped under the status bar or navigation bar.
+
+---
+
 ## Related Specs
 
 - [Overlay Navigation Thinking Guide](../guides/overlay-navigation-thinking-guide.md) - Checklist for back navigation design
