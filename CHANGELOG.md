@@ -1,5 +1,14 @@
 # Changelog
 
+- Polished the task detail, add/edit, quadrant detail, archive, and backup
+  surfaces to match the home screen's quiet visual language: the detail top bar
+  now has a surface anchor, meta info and completion notes sit inside form
+  sections, stats use quiet inline dots, and the primary complete action uses
+  the terracotta accent. The archive panel now shares the same sheet shape,
+  elevation, and drag handle as the add and backup panels, archived items keep
+  their quadrant color dot, backup status switches icons by operation type, and
+  the uncomplete-recurring dialog uses a replay glyph.
+
 - Polished the home/list browsing hierarchy: the header now anchors the page
   without another heavy card, smart view controls read more like navigation and
   filtering, the time-focus lane uses calendar-blue timing emphasis, and

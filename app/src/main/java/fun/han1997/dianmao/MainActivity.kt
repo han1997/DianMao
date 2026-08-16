@@ -1749,17 +1749,11 @@ private fun QuadrantDetailHeader(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                IconButton(
-                    onClick = onBack,
-                    modifier = Modifier.size(48.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Rounded.ArrowBack,
-                        contentDescription = "返回四象限",
-                        modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
+                HeaderActionButton(
+                    icon = Icons.AutoMirrored.Rounded.ArrowBack,
+                    contentDescription = "返回四象限",
+                    onClick = onBack
+                )
                 IconTile(
                     icon = Icons.Rounded.Inventory2,
                     contentDescription = null,
@@ -2594,19 +2588,11 @@ private fun SubTaskEditor(
         }
 
         if (subTasks.isEmpty()) {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RowShape,
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f),
-                border = quietBorder(0.10f)
-            ) {
-                Text(
-                    text = "暂无子事项",
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            Text(
+                text = "还没有子事项，可在上方添加",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.62f)
+            )
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 subTasks.forEach { item ->
@@ -2840,7 +2826,7 @@ private fun AddTaskPanel(
                         .fillMaxSize()
                         .windowInsetsPadding(WindowInsets.safeDrawing)
                         .padding(horizontal = 18.dp, vertical = 14.dp),
-                    verticalArrangement = Arrangement.spacedBy(9.dp)
+                    verticalArrangement = Arrangement.spacedBy(11.dp)
                 ) {
                     Box(
                         modifier = Modifier
@@ -2885,7 +2871,7 @@ private fun AddTaskPanel(
                             .fillMaxWidth()
                             .weight(1f)
                             .verticalScroll(formScrollState),
-                        verticalArrangement = Arrangement.spacedBy(9.dp)
+                        verticalArrangement = Arrangement.spacedBy(11.dp)
                     ) {
                         TaskFormSection(
                             title = primarySectionTitle,
@@ -3304,9 +3290,31 @@ private fun BackupPanel(
                     }
 
                     if (!status.isNullOrBlank()) {
+                        val isError = status.contains("失败")
+                        val isUpload = status.contains("上传")
+                        val isDownload = status.contains("下载") || status.contains("从 WebDAV 恢复") || status.contains("从本地备份恢复")
+                        val isExport = status.contains("导出")
+                        val isSave = status.contains("设置已保存")
+                        val statusIcon = when {
+                            isError -> Icons.Rounded.Close
+                            isUpload -> Icons.Rounded.CloudUpload
+                            isDownload -> Icons.Rounded.CloudDownload
+                            isExport -> Icons.Rounded.FileUpload
+                            isSave -> Icons.Rounded.Save
+                            else -> Icons.Rounded.CloudUpload
+                        }
+                        val statusTint = if (isError) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.onSecondaryContainer
+                        }
                         Surface(
-                            color = MaterialTheme.colorScheme.secondaryContainer,
-                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            color = if (isError) {
+                                MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.62f)
+                            } else {
+                                MaterialTheme.colorScheme.secondaryContainer
+                            },
+                            contentColor = statusTint,
                             shape = RowShape,
                             border = quietBorder(0.08f)
                         ) {
@@ -3316,10 +3324,10 @@ private fun BackupPanel(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 IconTile(
-                                    icon = Icons.Rounded.CloudUpload,
+                                    icon = statusIcon,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                    containerColor = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.10f),
+                                    tint = statusTint,
+                                    containerColor = statusTint.copy(alpha = 0.10f),
                                     iconSize = 14.dp
                                 )
                                 Text(
@@ -3361,7 +3369,7 @@ private fun ArchivedPanel(
                 .imePadding(),
             contentAlignment = Alignment.Center
         ) {
-            Surface(
+            Card(
                 modifier = Modifier
                     .fillMaxWidth(0.92f)
                     .fillMaxHeight(0.75f)
@@ -3370,15 +3378,24 @@ private fun ArchivedPanel(
                         interactionSource = remember { MutableInteractionSource() },
                         onClick = {}
                     ),
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 2.dp,
-                shape = PanelShape
+                shape = SheetShape,
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 20.dp, vertical = 18.dp)
+                        .windowInsetsPadding(WindowInsets.safeDrawing)
+                        .padding(horizontal = 20.dp, vertical = 14.dp)
                 ) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .width(38.dp)
+                            .height(4.dp)
+                            .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.34f), CircleShape)
+                    )
+                    Spacer(Modifier.height(10.dp))
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -3464,8 +3481,10 @@ private fun ArchivedTaskItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 14.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            ColorDot(task.quadrant.color)
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -3703,7 +3722,7 @@ private fun UncompleteRecurringTaskDialog(
         onDismissRequest = onDismiss,
         icon = {
             Icon(
-                imageVector = Icons.Rounded.Alarm,
+                imageVector = Icons.Rounded.Replay,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary
             )
@@ -4190,33 +4209,37 @@ private fun TaskDetailScreen(
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             // Top bar
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.72f))
-                    .padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 6.dp),
-                verticalAlignment = Alignment.CenterVertically
+            Surface(
+                color = MaterialTheme.colorScheme.surface,
+                border = quietBorder(0.10f)
             ) {
-                HeaderActionButton(
-                    icon = Icons.AutoMirrored.Rounded.ArrowBack,
-                    contentDescription = "返回",
-                    onClick = onBack
-                )
-                Text(
-                    text = "事项详情",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.weight(1f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                HeaderActionButton(
-                    icon = Icons.Rounded.Edit,
-                    contentDescription = "编辑",
-                    onClick = onEdit,
-                    tint = MaterialTheme.colorScheme.primary,
-                    containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.50f)
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    HeaderActionButton(
+                        icon = Icons.AutoMirrored.Rounded.ArrowBack,
+                        contentDescription = "返回",
+                        onClick = onBack
+                    )
+                    Text(
+                        text = "事项详情",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.weight(1f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    HeaderActionButton(
+                        icon = Icons.Rounded.Edit,
+                        contentDescription = "编辑",
+                        onClick = onEdit,
+                        tint = MaterialTheme.colorScheme.primary,
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.50f)
+                    )
+                }
             }
 
             LazyColumn(
@@ -4224,8 +4247,8 @@ private fun TaskDetailScreen(
                 modifier = Modifier
                     .weight(1f)
                     .padding(horizontal = 18.dp),
-                contentPadding = PaddingValues(top = 10.dp, bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                contentPadding = PaddingValues(top = 12.dp, bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(11.dp)
             ) {
                 // Task title
                 item {
@@ -4238,18 +4261,24 @@ private fun TaskDetailScreen(
                     )
                 }
 
+                item { Spacer(Modifier.height(2.dp)) }
+
                 // Meta section
                 item {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        CompactMeta(
-                            icon = Icons.Rounded.Inventory2,
-                            text = task.quadrant.label,
-                            tint = task.quadrant.color
-                        )
+                    TaskFormSection(
+                        title = "事项信息",
+                        icon = Icons.Rounded.Inventory2,
+                        iconTint = task.quadrant.color
+                    ) {
                         FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
+                            CompactMeta(
+                                icon = Icons.Rounded.Inventory2,
+                                text = task.quadrant.label,
+                                tint = task.quadrant.color
+                            )
                             task.dueLabel?.let {
                                 CompactMeta(icon = Icons.Rounded.Schedule, text = it)
                             }
@@ -4280,16 +4309,15 @@ private fun TaskDetailScreen(
 
                 if (task.useCalendar && task.dueAtMillis != null) {
                     item {
-                        FilledTonalButton(
+                        OutlinedButton(
                             onClick = { onOpenCalendarReminder(task) },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RowShape,
-                            contentPadding = PaddingValues(vertical = 12.dp)
+                            contentPadding = PaddingValues(vertical = 11.dp)
                         ) {
                             InlineButtonIcon(
                                 icon = Icons.Rounded.CalendarMonth,
-                                tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                containerColor = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.10f)
+                                tint = MaterialTheme.colorScheme.secondary
                             )
                             Spacer(Modifier.width(8.dp))
                             Text("打开系统日历提醒")
@@ -4300,24 +4328,16 @@ private fun TaskDetailScreen(
                 // Completion note (if exists)
                 task.completionNote?.takeIf { it.isNotBlank() }?.let { note ->
                     item {
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        TaskFormSection(
+                            title = "完成心得",
+                            icon = Icons.Rounded.EditNote,
+                            iconTint = MaterialTheme.colorScheme.primary
+                        ) {
                             Text(
-                                text = "完成心得",
-                                style = MaterialTheme.typography.labelLarge,
+                                text = note,
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            Surface(
-                                shape = RowShape,
-                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f),
-                                border = quietBorder(0.12f)
-                            ) {
-                                Text(
-                                    text = note,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    modifier = Modifier.padding(14.dp),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
                         }
                     }
                 }
@@ -4327,56 +4347,47 @@ private fun TaskDetailScreen(
                     item {
                         FlowRow(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(18.dp),
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                            horizontalArrangement = Arrangement.spacedBy(14.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Column {
-                                Text(
-                                    text = "${task.completionCount}",
-                                    style = MaterialTheme.typography.headlineMedium.copy(
-                                        fontWeight = FontWeight.Bold
-                                    ),
-                                    color = task.quadrant.color
-                                )
-                                Text(
-                                    text = "总完成次数",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Column {
-                                Text(
-                                    text = "${completions.size}",
-                                    style = MaterialTheme.typography.headlineMedium.copy(
-                                        fontWeight = FontWeight.Bold
-                                    ),
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    text = "历史记录",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+                            InlineStatDot(
+                                count = task.completionCount,
+                                label = "总完成次数",
+                                color = task.quadrant.color
+                            )
+                            InlineStatDot(
+                                count = completions.size,
+                                label = "历史记录",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                             task.lastCompletedAtMillis?.let {
-                                Column {
-                                    Text(
-                                        text = DateTimeFormatters.formatTimestamp(it),
-                                        style = MaterialTheme.typography.titleSmall.copy(
-                                            fontWeight = FontWeight.Medium
-                                        ),
-                                        color = MaterialTheme.colorScheme.onSurface
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(6.dp)
+                                            .background(
+                                                MaterialTheme.colorScheme.secondary,
+                                                CircleShape
+                                            )
                                     )
                                     Text(
-                                        text = "上次完成",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        text = "${DateTimeFormatters.formatTimestamp(it)} 上次完成",
+                                        style = MaterialTheme.typography.labelMedium.copy(
+                                            fontWeight = FontWeight.Medium,
+                                            letterSpacing = 0.sp
+                                        ),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f)
                                     )
                                 }
                             }
                         }
                     }
                 }
+
+                item { Spacer(Modifier.height(2.dp)) }
 
                 // Completion history
                 item {
@@ -4390,24 +4401,31 @@ private fun TaskDetailScreen(
 
                 if (completions.isEmpty()) {
                     item {
-                        Column(
-                            modifier = Modifier.padding(vertical = 24.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                        Surface(
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.20f),
+                            shape = RowShape,
+                            border = quietBorder(0.10f)
                         ) {
-                            IconTile(
-                                icon = Icons.Rounded.History,
-                                contentDescription = null,
-                                modifier = Modifier.size(44.dp),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.64f),
-                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f),
-                                iconSize = 22.dp
-                            )
-                            Spacer(Modifier.height(8.dp))
-                            Text(
-                                text = if (task.repeatRule != RepeatRule.None) "完成循环事项后这里会记录每次完成" else "暂无完成记录",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                IconTile(
+                                    icon = Icons.Rounded.History,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.64f),
+                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f),
+                                    iconSize = 16.dp
+                                )
+                                Text(
+                                    text = if (task.repeatRule != RepeatRule.None) "完成循环事项后这里会记录每次完成" else "暂无完成记录",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                         }
                     }
                 } else {
@@ -4431,17 +4449,23 @@ private fun TaskDetailScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 18.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    FilledTonalButton(
+                    Button(
                         onClick = { onToggleComplete(task) },
                         modifier = Modifier.weight(1f),
-                        shape = RowShape
+                        shape = RowShape,
+                        contentPadding = PaddingValues(vertical = 12.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        )
                     ) {
                         InlineButtonIcon(
                             icon = if (task.completed) Icons.Rounded.Replay else Icons.Rounded.DoneAll,
-                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                            containerColor = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.10f)
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            containerColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.12f)
                         )
                         Spacer(Modifier.width(6.dp))
                         Text(if (task.completed) "标为未完成" else "完成")
