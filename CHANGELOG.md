@@ -1,5 +1,13 @@
 # Changelog
 
+- Simplified the home screen layout by removing the browse module (browse title,
+  result count, and view-switching filter chips) and moving the search button into
+  the app header title row. The floating search panel now expands from the header
+  with auto-focus and clear-on-close, the quadrant board gains maximum vertical
+  space, and the DianMao title sits closer to the status bar with reduced top
+  padding. Today/Upcoming/Inbox smart views are no longer reachable from the home
+  screen; the four-quadrant model remains the primary home surface.
+
 - Freed vertical space for the home quadrant board: the app header summary pills
   are now more compact, the home column uses tighter top padding and section
   spacing, and the always-visible search field is replaced by a search button

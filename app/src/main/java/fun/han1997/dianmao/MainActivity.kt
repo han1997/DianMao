@@ -916,11 +916,20 @@ private fun DianMaoApp() {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(start = 18.dp, top = 4.dp, end = 18.dp, bottom = 16.dp),
+                            .padding(start = 18.dp, top = 0.dp, end = 18.dp, bottom = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         AppHeader(
                             tasks = activeTasks,
+                            searchVisible = homeSearchVisible,
+                            query = homeSearchQuery,
+                            onSearchToggle = {
+                                if (homeSearchVisible) {
+                                    homeSearchQuery = ""
+                                }
+                                homeSearchVisible = !homeSearchVisible
+                            },
+                            onQueryChanged = { homeSearchQuery = it },
                             onOpenBackup = {
                                 backupStatus = null
                                 showBackupPanel = true
@@ -929,45 +938,15 @@ private fun DianMaoApp() {
                                 showArchivedPanel = true
                             }
                         )
-                        HomeSmartControls(
-                            selectedView = homeSmartView,
-                            query = homeSearchQuery,
-                            resultCount = homeSmartItems.size,
-                            searchVisible = homeSearchVisible,
-                            onViewSelected = { homeSmartView = it },
-                            onQueryChanged = { homeSearchQuery = it },
-                            onSearchToggle = {
-                                if (homeSearchVisible) {
-                                    homeSearchQuery = ""
-                                }
-                                homeSearchVisible = !homeSearchVisible
-                            }
+                        TimeFocusLane(
+                            tasks = homeVisibleTasks,
+                            onTaskSelected = { taskForDetail = it }
                         )
-                        if (homeSmartView == HomeSmartView.Quadrants) {
-                            TimeFocusLane(
-                                tasks = homeVisibleTasks,
-                                onTaskSelected = { taskForDetail = it }
-                            )
-                            QuadrantBoard(
-                                tasks = homeVisibleTasks,
-                                modifier = Modifier.weight(1f),
-                                onSelected = { priority -> activePriority = priority }
-                            )
-                        } else {
-                            HomeSmartTaskList(
-                                smartItems = homeSmartItems,
-                                selectedView = homeSmartView,
-                                query = homeSearchQuery,
-                                repository = repository,
-                                onToggleComplete = toggleComplete,
-                                onEditTask = { taskForEdit = it },
-                                onDeleteTask = { taskForDelete = it },
-                                onEditNote = { taskForNote = it },
-                                onArchiveTask = archiveTask,
-                                onViewDetail = { taskForDetail = it },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
+                        QuadrantBoard(
+                            tasks = homeVisibleTasks,
+                            modifier = Modifier.weight(1f),
+                            onSelected = { priority -> activePriority = priority }
+                        )
                     }
                 } else {
                     val listState = rememberLazyListState()
@@ -1295,6 +1274,10 @@ private fun DianMaoApp() {
 @OptIn(ExperimentalLayoutApi::class)
 private fun AppHeader(
     tasks: List<TaskUiModel>,
+    searchVisible: Boolean,
+    query: String,
+    onSearchToggle: () -> Unit,
+    onQueryChanged: (String) -> Unit,
     onOpenBackup: () -> Unit,
     onOpenArchived: () -> Unit
 ) {
@@ -1302,6 +1285,13 @@ private fun AppHeader(
     val timedTasks = tasks.count { !it.completed && (it.useAlarm || it.useCalendar) }
     val completedTasks = tasks.count { it.completed }
     val today = LocalDate.now().format(DateTimeFormatter.ofPattern("M月d日"))
+    val focusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(searchVisible) {
+        if (searchVisible) {
+            focusRequester.requestFocus()
+        }
+    }
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -1357,6 +1347,11 @@ private fun AppHeader(
                 )
             }
             HeaderActionButton(
+                icon = if (searchVisible) Icons.Rounded.Close else Icons.Rounded.Search,
+                contentDescription = if (searchVisible) "关闭搜索" else "搜索",
+                onClick = onSearchToggle
+            )
+            HeaderActionButton(
                 icon = Icons.Rounded.Archive,
                 contentDescription = "归档事项",
                 onClick = onOpenArchived
@@ -1375,6 +1370,61 @@ private fun AppHeader(
             SummaryPill(value = openTasks.toString(), label = "未完成", color = MaterialTheme.colorScheme.primary)
             SummaryPill(value = timedTasks.toString(), label = "定时", color = MaterialTheme.colorScheme.secondary)
             SummaryPill(value = completedTasks.toString(), label = "已复盘", color = TaskPriority.NotImportantNotUrgent.color)
+        }
+        AnimatedVisibility(
+            visible = searchVisible,
+            enter = fadeIn(animationSpec = tween(150)) +
+                slideInVertically(
+                    animationSpec = tween(220),
+                    initialOffsetY = { it / 4 }
+                ),
+            exit = fadeOut(animationSpec = tween(120)) +
+                slideOutVertically(
+                    animationSpec = tween(180),
+                    targetOffsetY = { it / 4 }
+                )
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RowShape,
+                color = MaterialTheme.colorScheme.surface,
+                border = quietBorder(0.10f)
+            ) {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = onQueryChanged,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(focusRequester),
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(letterSpacing = 0.sp),
+                    placeholder = {
+                        Text(
+                            text = "筛选当前视图",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Rounded.Search,
+                            contentDescription = null
+                        )
+                    },
+                    trailingIcon = {
+                        if (query.isNotEmpty()) {
+                            IconButton(onClick = { onQueryChanged("") }) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Close,
+                                    contentDescription = "清除"
+                                )
+                            }
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
+                    colors = quietTextFieldColors(),
+                    shape = RowShape
+                )
+            }
         }
     }
 }
