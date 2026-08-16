@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 27
-- **Last Active**: 2026-08-12
+- **Total Sessions**: 28
+- **Last Active**: 2026-08-16
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~926 | Active |
+| `journal-1.md` | ~960 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 28 | 2026-08-16 | Polish detail, form, quadrant detail, and secondary panels | `bdd3ae1`, `9470592` | `master` |
 | 27 | 2026-08-12 | Polish home list hierarchy | `284c0cb` | `master` |
 | 26 | 2026-08-11 | Polish add task capture flow | `3992e2f` | `master` |
 | 25 | 2026-08-11 | UI polish and icon redesign | `d7efdde`, `c59d9a4` | `master` |

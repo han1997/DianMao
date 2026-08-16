@@ -924,3 +924,37 @@ Polished the home/list browsing hierarchy across header, smart controls, time fo
 ### Next Steps
 
 - None - task complete
+
+
+## Session 28: Polish detail, form, quadrant detail, and secondary panels
+
+**Date**: 2026-08-16
+**Task**: Polish detail, form, quadrant detail, and secondary panels
+**Branch**: `master`
+
+### Summary
+
+Polished TaskDetailScreen (top bar, meta section, completion note, stats, bottom action bar, calendar button, empty state), AddTaskPanel (form spacing, subtask empty state), QuadrantDetailHeader (back button), ArchivedPanel (sheet consistency, drag handle, quadrant color dot), BackupPanel (status icon switching), and UncompleteRecurringTaskDialog (icon fix). Added overlay panel visual consistency spec to compose-patterns.md.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `bdd3ae1` | (see git log) |
+| `9470592` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
