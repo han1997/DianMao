@@ -1058,3 +1058,36 @@ Removed HomeSmartControls from home layout, moved search button and floating sea
 ### Next Steps
 
 - None - task complete
+
+
+## Session 32: 继续完善核心任务体验
+
+**Date**: 2026-08-19
+**Task**: 继续完善核心任务体验
+**Branch**: `master`
+
+### Summary
+
+继续完善 DianMao 核心任务流程：统一日期、日历、响铃和重复规则的状态约束，为完成、子事项、归档、恢复、删除和完成记录操作补齐反馈，修复编辑完成心得重复累计历史的问题，并新增时间设置归一化测试。单元测试、lint、debug 构建和 diff 检查全部通过。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `83fbe25` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
