@@ -1025,3 +1025,36 @@ Removed HomeSmartControls from home layout, moved search button and floating sea
 ### Next Steps
 
 - None - task complete
+
+
+## Session 31: UI 与业务逻辑进一步优化
+
+**Date**: 2026-08-19
+**Task**: UI 与业务逻辑进一步优化
+**Branch**: `master`
+
+### Summary
+
+完成 DianMao 核心任务流程 UI 优化，改善主页搜索无结果、任务行与详情布局、新增编辑保存反馈，并修复协程取消误报保存失败的问题。通过单元测试、lint、debug 构建和 diff 检查；更新错误处理规范并归档任务。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `a9ada80` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
