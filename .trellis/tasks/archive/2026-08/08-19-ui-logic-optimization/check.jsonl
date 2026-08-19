@@ -1,0 +1,6 @@
+{"file":".trellis/spec/backend/index.md","reason":"Single-module Android project guideline index and required checks."}
+{"file":".trellis/spec/backend/compose-patterns.md","reason":"Review Compose state, accessibility, overlay navigation, and responsive layout compliance."}
+{"file":".trellis/spec/backend/error-handling.md","reason":"Review permission-gated and asynchronous task operation feedback."}
+{"file":".trellis/spec/backend/quality-guidelines.md","reason":"Required lint, test, assemble, and cross-flow review guidance."}
+{"file":".trellis/spec/guides/overlay-navigation-thinking-guide.md","reason":"Verify stacked UI back precedence and state capture."}
+{"file":".trellis/spec/guides/code-reuse-thinking-guide.md","reason":"Check that shared UI patterns are reused without unnecessary duplication."}
