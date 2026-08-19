@@ -1,5 +1,11 @@
 # Changelog
 
+- Continued core task workflow hardening: date, calendar, alarm, and repeat
+  settings now normalize into valid combinations; completion, subtask,
+  archive, delete, and completion-history actions show success or failure
+  feedback while keeping local saves separate from reminder rescheduling
+  failures.
+
 - Improved the main task workflow for narrow screens and failure recovery:
   search with no matches now shows a clear board-level empty state, task rows
   keep one compact overflow action instead of two permanent trailing buttons,

@@ -259,6 +259,9 @@ fun observeCompletions(taskId: Long): Flow<List<TaskCompletionEntity>>
 - Store `completedAtMillis` and optional `note`
 - Increment `completionCount` on parent task
 - Update `lastCompletedAtMillis` on parent task
+- When an already completed task is reopened only to edit its note, update the
+  parent `completionNote` without inserting another history row or incrementing
+  `completionCount`.
 
 **Cycle Enforcement:**
 - Check `canCompleteInCurrentCycle()` before allowing completion
@@ -285,6 +288,14 @@ fun observeCompletions(taskId: Long): Flow<List<TaskCompletionEntity>>
 - Not observing `completions` Flow → history list doesn't update
 - Not using `LaunchedEffect` on task state → stale cycle check
 
+**Time Setting Normalization:**
+- A `TaskFormState` without `dueDateMillis` must clear `dueTimeMinutes`,
+  `useCalendar`, `useAlarm`, and `repeatRule` before persistence.
+- `repeatRule` is valid only when both a due date and `useAlarm` are enabled;
+  otherwise it must be normalized to `RepeatRule.None`.
+- Apply the same normalization in both add and update repository paths so UI
+  state cannot bypass the persistence contract.
+
 ### 5. Good/Base/Bad Cases
 
 **Good:**
@@ -308,6 +319,10 @@ suspend fun saveCompletionNote(taskId: Long, note: String) {
     )
     dao.update(updated)
 }
+
+// Form normalization: persist only executable time settings.
+val normalized = form.normalizedTimeSettings()
+```
 
 // UI: Check cycle before enabling button
 LaunchedEffect(task.id, task.lastCompletedAtMillis, task.completed) {
@@ -333,6 +348,20 @@ IconButton(
     onClick = { onComplete(task) },
     enabled = !task.completed  // ❌ Allows duplicate completions
 )
+```
+
+**Good: Edit an existing completion note without creating duplicate history**
+```kotlin
+if (existing.completed) {
+    dao.update(existing.copy(completionNote = trimmedNote))
+    return@withTransaction
+}
+```
+
+**Bad: Treat note editing as a new completion**
+```kotlin
+completionDao.insert(TaskCompletionEntity(taskId, now, trimmedNote))
+// This inflates completionCount and history when the task was already complete.
 ```
 
 ### 6. Tests Required

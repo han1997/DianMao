@@ -31,17 +31,18 @@ class TaskRepository(context: Context) {
     }
 
     suspend fun addTask(form: TaskFormState): TaskUiModel {
+        val normalizedForm = form.normalizedTimeSettings()
         val now = System.currentTimeMillis()
-        val dueAtMillis = dueAtMillis(form)
+        val dueAtMillis = dueAtMillis(normalizedForm)
         val entity = TaskEntity(
-            title = form.title.trim(),
-            quadrant = form.quadrant,
-            dueLabel = form.dueDateMillis?.let { DateTimeFormatters.labelFor(it, form.dueTimeMinutes) },
+            title = normalizedForm.title.trim(),
+            quadrant = normalizedForm.quadrant,
+            dueLabel = normalizedForm.dueDateMillis?.let { DateTimeFormatters.labelFor(it, normalizedForm.dueTimeMinutes) },
             dueAtMillis = dueAtMillis,
-            useCalendar = form.useCalendar && dueAtMillis != null,
-            useAlarm = form.useAlarm && dueAtMillis != null,
-            repeatRule = form.repeatRule,
-            subTasks = normalizedSubTasks(form.subTasks),
+            useCalendar = normalizedForm.useCalendar && dueAtMillis != null,
+            useAlarm = normalizedForm.useAlarm && dueAtMillis != null,
+            repeatRule = normalizedForm.repeatRule,
+            subTasks = normalizedSubTasks(normalizedForm.subTasks),
             completed = false,
             completionNote = null,
             createdAtMillis = now,
@@ -53,16 +54,17 @@ class TaskRepository(context: Context) {
 
     suspend fun updateTask(taskId: Long, form: TaskFormState): TaskUiModel? {
         val existing = dao.findById(taskId) ?: return null
-        val dueAtMillis = dueAtMillis(form)
+        val normalizedForm = form.normalizedTimeSettings()
+        val dueAtMillis = dueAtMillis(normalizedForm)
         val updated = existing.copy(
-            title = form.title.trim(),
-            quadrant = form.quadrant,
-            dueLabel = form.dueDateMillis?.let { DateTimeFormatters.labelFor(it, form.dueTimeMinutes) },
+            title = normalizedForm.title.trim(),
+            quadrant = normalizedForm.quadrant,
+            dueLabel = normalizedForm.dueDateMillis?.let { DateTimeFormatters.labelFor(it, normalizedForm.dueTimeMinutes) },
             dueAtMillis = dueAtMillis,
-            useCalendar = form.useCalendar && dueAtMillis != null,
-            useAlarm = form.useAlarm && dueAtMillis != null,
-            repeatRule = form.repeatRule,
-            subTasks = normalizedSubTasks(form.subTasks),
+            useCalendar = normalizedForm.useCalendar && dueAtMillis != null,
+            useAlarm = normalizedForm.useAlarm && dueAtMillis != null,
+            repeatRule = normalizedForm.repeatRule,
+            subTasks = normalizedSubTasks(normalizedForm.subTasks),
             updatedAtMillis = System.currentTimeMillis()
         )
         dao.update(updated)
@@ -159,6 +161,18 @@ class TaskRepository(context: Context) {
             val existing = dao.findById(taskId) ?: return@withTransaction
             val now = System.currentTimeMillis()
             val trimmedNote = note.trim().ifBlank { null }
+
+            // An already completed task uses this dialog to edit its existing
+            // note. Do not create another history row or increment its count.
+            if (existing.completed) {
+                val updated = existing.copy(
+                    completionNote = trimmedNote,
+                    updatedAtMillis = now
+                )
+                dao.update(updated)
+                result = updated
+                return@withTransaction
+            }
 
             // Create completion record for all recurring tasks
             if (existing.repeatRule != RepeatRule.None) {

@@ -71,6 +71,17 @@ data class TaskFormState(
     val subTasks: List<TaskSubTask> = emptyList()
 )
 
+fun TaskFormState.normalizedTimeSettings(): TaskFormState {
+    val hasDueDate = dueDateMillis != null
+    val normalizedAlarm = useAlarm && hasDueDate
+    return copy(
+        dueTimeMinutes = if (hasDueDate) dueTimeMinutes else null,
+        useCalendar = useCalendar && hasDueDate,
+        useAlarm = normalizedAlarm,
+        repeatRule = if (normalizedAlarm) repeatRule else RepeatRule.None
+    )
+}
+
 data class TaskUiModel(
     val id: Long,
     val title: String,

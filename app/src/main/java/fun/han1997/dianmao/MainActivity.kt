@@ -172,6 +172,7 @@ import `fun`.han1997.dianmao.data.TaskSubTask
 import `fun`.han1997.dianmao.data.TaskUiModel
 import `fun`.han1997.dianmao.data.TaskCompletionEntity
 import `fun`.han1997.dianmao.data.DateTimeFormatters
+import `fun`.han1997.dianmao.data.normalizedTimeSettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -421,10 +422,10 @@ private fun openCalendarReminder(context: android.content.Context, task: TaskUiM
     }
 }
 
-private fun deleteCalendarEvent(context: android.content.Context, eventId: Long?) {
-    if (eventId != null && hasCalendarPermission(context)) {
-        CalendarWriter.deleteEvent(context, eventId)
-    }
+private fun deleteCalendarEvent(context: android.content.Context, eventId: Long?): Boolean {
+    if (eventId == null) return true
+    if (!hasCalendarPermission(context)) return false
+    return CalendarWriter.deleteEvent(context, eventId)
 }
 
 private fun defaultBackupFileName(): String {
@@ -855,7 +856,16 @@ private fun DianMaoApp() {
                 taskForUncompletion = target
             } else {
                 scope.launch {
-                    repository.toggleCompleted(target, false)
+                    try {
+                        repository.toggleCompleted(target, false)
+                        if (target.useAlarm && target.dueAtMillis != null && target.repeatRule != RepeatRule.Count) {
+                            scheduler.schedule(target.copy(completed = false))
+                        }
+                        snackbarHostState.showSnackbar("事项已标为未完成")
+                    } catch (error: Exception) {
+                        if (error is CancellationException) throw error
+                        snackbarHostState.showSnackbar("标记失败：${error.message ?: "请稍后重试"}")
+                    }
                 }
             }
         } else {
@@ -864,11 +874,27 @@ private fun DianMaoApp() {
     }
 
     val archiveTask: (TaskUiModel) -> Unit = { target ->
-        scope.launch { repository.archiveTask(target.id) }
+        scope.launch {
+            try {
+                repository.archiveTask(target.id)
+                snackbarHostState.showSnackbar("事项已归档")
+            } catch (error: Exception) {
+                if (error is CancellationException) throw error
+                snackbarHostState.showSnackbar("归档失败：${error.message ?: "请稍后重试"}")
+            }
+        }
     }
 
     val unarchiveTask: (TaskUiModel) -> Unit = { target ->
-        scope.launch { repository.unarchiveTask(target.id) }
+        scope.launch {
+            try {
+                repository.unarchiveTask(target.id)
+                snackbarHostState.showSnackbar("事项已恢复")
+            } catch (error: Exception) {
+                if (error is CancellationException) throw error
+                snackbarHostState.showSnackbar("恢复失败：${error.message ?: "请稍后重试"}")
+            }
+        }
     }
 
     val isTaskPanelVisible = showAddSheet || taskForEdit != null
@@ -1086,17 +1112,35 @@ private fun DianMaoApp() {
                         onOpenCalendarReminder = { openCalendarReminder(context, it) },
                         onToggleSubTask = { subTaskId, completed ->
                             scope.launch {
-                                repository.updateSubTaskCompleted(task.id, subTaskId, completed)
+                                try {
+                                    repository.updateSubTaskCompleted(task.id, subTaskId, completed)
+                                    snackbarHostState.showSnackbar(if (completed) "子事项已完成" else "子事项已恢复")
+                                } catch (error: Exception) {
+                                    if (error is CancellationException) throw error
+                                    snackbarHostState.showSnackbar("子事项更新失败：${error.message ?: "请稍后重试"}")
+                                }
                             }
                         },
                         onDeleteCompletion = { completionId ->
                             scope.launch {
-                                repository.deleteCompletion(completionId)
+                                try {
+                                    repository.deleteCompletion(completionId)
+                                    snackbarHostState.showSnackbar("完成记录已删除")
+                                } catch (error: Exception) {
+                                    if (error is CancellationException) throw error
+                                    snackbarHostState.showSnackbar("删除完成记录失败：${error.message ?: "请稍后重试"}")
+                                }
                             }
                         },
                         onUpdateCompletionNote = { completionId, note ->
                             scope.launch {
-                                repository.updateCompletionNote(completionId, note)
+                                try {
+                                    repository.updateCompletionNote(completionId, note)
+                                    snackbarHostState.showSnackbar("完成心得已保存")
+                                } catch (error: Exception) {
+                                    if (error is CancellationException) throw error
+                                    snackbarHostState.showSnackbar("保存完成心得失败：${error.message ?: "请稍后重试"}")
+                                }
                             }
                         }
                     )
@@ -1158,7 +1202,9 @@ private fun DianMaoApp() {
                             } else {
                                 try {
                                     val eventId = previousTask?.calendarEventId ?: saved.calendarEventId
-                                    deleteCalendarEvent(context, eventId)
+                                    if (!deleteCalendarEvent(context, eventId)) {
+                                        sideEffectFailures += "旧日历事件清理失败"
+                                    }
                                     if (saved.calendarEventId != null) {
                                         repository.updateCalendarEventId(saved.id, null)
                                     }
@@ -1201,12 +1247,24 @@ private fun DianMaoApp() {
                         onComplete = { taskForNote = it },
                         onDeleteCompletion = { completionId ->
                             scope.launch {
-                                repository.deleteCompletion(completionId)
+                                try {
+                                    repository.deleteCompletion(completionId)
+                                    snackbarHostState.showSnackbar("完成记录已删除")
+                                } catch (error: Exception) {
+                                    if (error is CancellationException) throw error
+                                    snackbarHostState.showSnackbar("删除完成记录失败：${error.message ?: "请稍后重试"}")
+                                }
                             }
                         },
                         onUpdateCompletionNote = { completionId, note ->
                             scope.launch {
-                                repository.updateCompletionNote(completionId, note)
+                                try {
+                                    repository.updateCompletionNote(completionId, note)
+                                    snackbarHostState.showSnackbar("完成心得已保存")
+                                } catch (error: Exception) {
+                                    if (error is CancellationException) throw error
+                                    snackbarHostState.showSnackbar("保存完成心得失败：${error.message ?: "请稍后重试"}")
+                                }
                             }
                         }
                     )
@@ -1265,7 +1323,13 @@ private fun DianMaoApp() {
                     onDismiss = { showArchivedPanel = false },
                     onUnarchive = { task ->
                         scope.launch {
-                            repository.unarchiveTask(task.id)
+                            try {
+                                repository.unarchiveTask(task.id)
+                                snackbarHostState.showSnackbar("事项已恢复")
+                            } catch (error: Exception) {
+                                if (error is CancellationException) throw error
+                                snackbarHostState.showSnackbar("恢复失败：${error.message ?: "请稍后重试"}")
+                            }
                         }
                     }
                 )
@@ -1279,14 +1343,29 @@ private fun DianMaoApp() {
             onDismiss = { taskForNote = null },
             onSave = { note ->
                 scope.launch {
-                    val updated = repository.saveCompletionNote(task.id, note)
-                    scheduler.cancel(task.id)
-                    if (updated != null && updated.useAlarm && updated.dueAtMillis != null) {
-                        val uiTask = task.copy(
-                            dueAtMillis = updated.dueAtMillis,
-                            dueLabel = updated.dueLabel
+                    try {
+                        val updated = repository.saveCompletionNote(task.id, note)
+                        var reminderFailure = false
+                        try {
+                            if (!task.completed) scheduler.cancel(task.id)
+                            if (!task.completed && updated != null && updated.useAlarm && updated.dueAtMillis != null) {
+                                scheduler.schedule(task.copy(
+                                    dueAtMillis = updated.dueAtMillis,
+                                    dueLabel = updated.dueLabel,
+                                    completed = updated.completed
+                                ))
+                            }
+                        } catch (error: Exception) {
+                            if (error is CancellationException) throw error
+                            reminderFailure = true
+                        }
+                        snackbarHostState.showSnackbar(
+                            if (reminderFailure) "完成心得已保存；提醒重新调度失败"
+                            else "完成心得已保存"
                         )
-                        scheduler.schedule(uiTask)
+                    } catch (error: Exception) {
+                        if (error is CancellationException) throw error
+                        snackbarHostState.showSnackbar("完成失败：${error.message ?: "请稍后重试"}")
                     }
                 }
                 taskForNote = null
@@ -1300,9 +1379,33 @@ private fun DianMaoApp() {
             onDismiss = { taskForDelete = null },
             onConfirm = {
                 scope.launch {
-                    scheduler.cancel(task.id)
-                    deleteCalendarEvent(context, task.calendarEventId)
-                    repository.deleteTask(task.id)
+                    var reminderFailure = false
+                    var calendarFailure = false
+                    try { scheduler.cancel(task.id) } catch (error: Exception) {
+                        if (error is CancellationException) throw error
+                        reminderFailure = true
+                    }
+                    try {
+                        if (!deleteCalendarEvent(context, task.calendarEventId)) {
+                            calendarFailure = true
+                        }
+                    } catch (error: Exception) {
+                        if (error is CancellationException) throw error
+                        calendarFailure = true
+                    }
+                    try {
+                        repository.deleteTask(task.id)
+                        val failures = listOfNotNull(
+                            if (reminderFailure) "提醒清理失败" else null,
+                            if (calendarFailure) "日历清理失败" else null
+                        )
+                        snackbarHostState.showSnackbar(
+                            if (failures.isEmpty()) "事项已删除" else "事项已删除；${failures.joinToString("、")}"
+                        )
+                    } catch (error: Exception) {
+                        if (error is CancellationException) throw error
+                        snackbarHostState.showSnackbar("删除失败：${error.message ?: "请稍后重试"}")
+                    }
                 }
                 taskForDelete = null
             }
@@ -1315,7 +1418,16 @@ private fun DianMaoApp() {
             onDismiss = { taskForUncompletion = null },
             onConfirm = {
                 scope.launch {
-                    repository.toggleCompleted(task, false)
+                    try {
+                        repository.toggleCompleted(task, false)
+                        if (task.useAlarm && task.dueAtMillis != null && task.repeatRule != RepeatRule.Count) {
+                            scheduler.schedule(task.copy(completed = false))
+                        }
+                        snackbarHostState.showSnackbar("事项已恢复为未完成")
+                    } catch (error: Exception) {
+                        if (error is CancellationException) throw error
+                        snackbarHostState.showSnackbar("恢复失败：${error.message ?: "请稍后重试"}")
+                    }
                 }
                 taskForUncompletion = null
             }
@@ -3158,6 +3270,7 @@ private fun AddTaskPanel(
                                 dueTimeMinutes = null
                                 useCalendar = false
                                 useAlarm = false
+                                repeatRule = RepeatRule.None
                             }
                         )
                         ToggleRow(
@@ -3184,7 +3297,7 @@ private fun AddTaskPanel(
                         )
                         RepeatRulePicker(
                             selected = repeatRule,
-                            enabled = true,
+                            enabled = dueDateMillis != null && useAlarm,
                             onSelected = { repeatRule = it }
                         )
                     }
@@ -3251,7 +3364,7 @@ private fun AddTaskPanel(
                                             useAlarm = useAlarm,
                                             repeatRule = repeatRule,
                                             subTasks = subTasks
-                                        )
+                                        ).normalizedTimeSettings()
                                     )
                                     isSaving = false
                                     saveFailed = !outcome.saved
@@ -4257,7 +4370,8 @@ fun RecurringTaskHistoryPanel(
                     items(completions, key = { it.id }) { completion ->
                         CompletionItem(
                             completion = completion,
-                            onDelete = { onDeleteCompletion(completion.id) }
+                            onDelete = { onDeleteCompletion(completion.id) },
+                            onUpdateNote = onUpdateCompletionNote
                         )
                     }
                 }
