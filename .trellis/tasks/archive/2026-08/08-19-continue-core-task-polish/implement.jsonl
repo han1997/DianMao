@@ -1,0 +1,7 @@
+{"_example": "Fill with {\"file\": \"<path>\", \"reason\": \"<why>\"}. Put spec/research files only — no code paths. Run `py -3 .trellis/scripts/get_context.py --mode packages` to list available specs. Delete this line once real entries are added."}
+{"file": ".trellis/spec/backend/index.md", "reason": "Single-module Android project guidelines and required checks"}
+{"file": ".trellis/spec/backend/compose-patterns.md", "reason": "Compose state, accessibility, responsive layout, and overlay conventions"}
+{"file": ".trellis/spec/backend/error-handling.md", "reason": "Permission, async failure, platform side-effect, and cancellation contracts"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Testing and verification requirements"}
+{"file": ".trellis/spec/guides/overlay-navigation-thinking-guide.md", "reason": "Back behavior for stacked detail, sheets, dialogs, and panels"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Reuse existing UI and state patterns before introducing helpers"}
