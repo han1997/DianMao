@@ -117,6 +117,8 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -170,6 +172,7 @@ import `fun`.han1997.dianmao.data.TaskSubTask
 import `fun`.han1997.dianmao.data.TaskUiModel
 import `fun`.han1997.dianmao.data.TaskCompletionEntity
 import `fun`.han1997.dianmao.data.DateTimeFormatters
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -226,6 +229,11 @@ internal data class HomeSmartTaskItem(
     val task: TaskUiModel,
     val dueAtMillis: Long?,
     val dueLabel: String?
+)
+
+private data class TaskSaveOutcome(
+    val saved: Boolean,
+    val message: String
 )
 
 internal fun buildTimeFocusItems(
@@ -741,6 +749,7 @@ private fun DianMaoApp() {
     val backupSettingsStore = remember(context) { BackupSettingsStore(context.applicationContext) }
     val webDavClient = remember { WebDavBackupClient() }
     val scope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
     val activeTasks by repository.activeTasks.collectAsState(initial = emptyList())
     val archivedTasks by repository.archivedTasks.collectAsState(initial = emptyList())
 
@@ -889,6 +898,7 @@ private fun DianMaoApp() {
     Surface(color = MaterialTheme.colorScheme.background) {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
+            snackbarHost = { SnackbarHost(snackbarHostState) },
             floatingActionButton = {
                 if (taskForDetail == null) {
                     FloatingActionButton(
@@ -945,7 +955,12 @@ private fun DianMaoApp() {
                         QuadrantBoard(
                             tasks = homeVisibleTasks,
                             modifier = Modifier.weight(1f),
-                            onSelected = { priority -> activePriority = priority }
+                            onSelected = { priority -> activePriority = priority },
+                            emptyMessage = if (homeSearchQuery.isNotBlank() && homeVisibleTasks.isEmpty()) {
+                                "没有匹配“${homeSearchQuery.trim()}”的事项"
+                            } else {
+                                null
+                            }
                         )
                     }
                 } else {
@@ -1099,40 +1114,78 @@ private fun DianMaoApp() {
                     },
                     onSave = { form ->
                         val previousTask = taskForEdit
-                        scope.launch {
+                        try {
                             val saved = if (previousTask == null) {
                                 repository.addTask(form)
                             } else {
-                                scheduler.cancel(previousTask.id)
                                 repository.updateTask(previousTask.id, form)
                             }
-                            if (saved != null) {
-                                if (saved.useAlarm) {
+                            checkNotNull(saved) { "事项不存在，可能已被删除" }
+
+                            val sideEffectFailures = mutableListOf<String>()
+                            if (previousTask != null) {
+                                try {
+                                    scheduler.cancel(previousTask.id)
+                                } catch (error: Exception) {
+                                    if (error is CancellationException) throw error
+                                    sideEffectFailures += "旧提醒清理失败"
+                                }
+                            }
+                            if (saved.useAlarm) {
+                                try {
                                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
                                         ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
                                     ) {
                                         notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                                     }
                                     scheduler.schedule(saved)
+                                } catch (error: Exception) {
+                                    if (error is CancellationException) throw error
+                                    sideEffectFailures += "响铃提醒同步失败"
                                 }
+                            }
 
-                                if (saved.useCalendar) {
+                            if (saved.useCalendar) {
+                                try {
                                     val eventId = saveOrOpenCalendarEvent(context, saved)
                                     if (eventId != null && eventId != saved.calendarEventId) {
                                         repository.updateCalendarEventId(saved.id, eventId)
                                     }
-                                } else {
+                                } catch (error: Exception) {
+                                    if (error is CancellationException) throw error
+                                    sideEffectFailures += "系统日历同步失败"
+                                }
+                            } else {
+                                try {
                                     val eventId = previousTask?.calendarEventId ?: saved.calendarEventId
                                     deleteCalendarEvent(context, eventId)
                                     if (saved.calendarEventId != null) {
                                         repository.updateCalendarEventId(saved.id, null)
                                     }
+                                } catch (error: Exception) {
+                                    if (error is CancellationException) throw error
+                                    sideEffectFailures += "旧日历事件清理失败"
                                 }
                             }
+
+                            if (sideEffectFailures.isEmpty()) {
+                                TaskSaveOutcome(saved = true, message = "事项已保存")
+                            } else {
+                                TaskSaveOutcome(
+                                    saved = true,
+                                    message = "事项已保存；${sideEffectFailures.distinct().joinToString("、")}"
+                                )
+                            }
+                        } catch (error: Exception) {
+                            if (error is CancellationException) throw error
+                            TaskSaveOutcome(
+                                saved = false,
+                                message = "保存失败：${error.message?.takeIf { it.isNotBlank() } ?: "请稍后重试"}"
+                            )
                         }
-                        if (previousTask != null) {
-                            dismissTaskPanel()
-                        }
+                    },
+                    onStatus = { message ->
+                        scope.launch { snackbarHostState.showSnackbar(message) }
                     }
                 )
 
@@ -1954,7 +2007,8 @@ private fun QuadrantDetailEmptyState(quadrant: TaskPriority) {
 private fun QuadrantBoard(
     tasks: List<TaskUiModel>,
     modifier: Modifier = Modifier,
-    onSelected: (TaskPriority) -> Unit
+    onSelected: (TaskPriority) -> Unit,
+    emptyMessage: String? = null
 ) {
     Surface(
         modifier = modifier
@@ -1964,7 +2018,37 @@ private fun QuadrantBoard(
         border = quietBorder(0.10f),
         shadowElevation = 0.dp
     ) {
-        Column {
+        if (emptyMessage != null) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(18.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                IconTile(
+                    icon = Icons.Rounded.Search,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.48f),
+                    iconSize = 18.dp
+                )
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    text = emptyMessage,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    text = "换个关键词，或关闭搜索查看全部象限。",
+                    modifier = Modifier.padding(top = 4.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        } else Column {
             Row(modifier = Modifier.weight(1f)) {
                 QuadrantPane(
                     quadrant = TaskPriority.ImportantUrgent,
@@ -2381,23 +2465,7 @@ private fun TaskRow(
                     }
                 }
             }
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(2.dp)
-            ) {
-                IconButton(
-                    onClick = { onEditNote(task) },
-                    modifier = Modifier.size(48.dp)
-                ) {
-                    IconTile(
-                        icon = if (task.completed) Icons.Rounded.EditNote else Icons.Rounded.DoneAll,
-                        contentDescription = if (task.completed) "编辑完成备注" else "完成并写备注",
-                        tint = MaterialTheme.colorScheme.primary,
-                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
-                        iconSize = 18.dp
-                    )
-                }
-                Box {
+            Box {
                     IconButton(
                         onClick = { actionsExpanded = true },
                         modifier = Modifier.size(48.dp)
@@ -2414,6 +2482,20 @@ private fun TaskRow(
                         expanded = actionsExpanded,
                         onDismissRequest = { actionsExpanded = false }
                     ) {
+                        DropdownMenuItem(
+                            text = { Text(if (task.completed) "编辑完成备注" else "完成并写备注") },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = if (task.completed) Icons.Rounded.EditNote else Icons.Rounded.DoneAll,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            },
+                            onClick = {
+                                actionsExpanded = false
+                                onEditNote(task)
+                            }
+                        )
                         DropdownMenuItem(
                             text = { Text("编辑事项") },
                             leadingIcon = {
@@ -2457,7 +2539,6 @@ private fun TaskRow(
                             }
                         )
                     }
-                }
             }
         }
     }
@@ -2831,7 +2912,8 @@ private fun AddTaskPanel(
     initialPriority: TaskPriority,
     onDismiss: () -> Unit,
     onRequestCalendarPermission: () -> Unit,
-    onSave: (TaskFormState) -> Unit
+    onSave: suspend (TaskFormState) -> TaskSaveOutcome,
+    onStatus: (String) -> Unit
 ) {
     var title by rememberSaveable { mutableStateOf("") }
     var priority by rememberSaveable(initialPriority) { mutableStateOf(initialPriority) }
@@ -2843,8 +2925,11 @@ private fun AddTaskPanel(
     var subTasks by remember { mutableStateOf<List<TaskSubTask>>(emptyList()) }
     var subTaskDraft by rememberSaveable { mutableStateOf("") }
     var saveFeedback by rememberSaveable { mutableStateOf<String?>(null) }
+    var saveFailed by rememberSaveable { mutableStateOf(false) }
+    var isSaving by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
+    val scope = rememberCoroutineScope()
     val formScrollState = rememberScrollState()
     val isEditing = editingTask != null
     val panelTitle = if (isEditing) "编辑事项" else "先记录一件事"
@@ -2869,11 +2954,13 @@ private fun AddTaskPanel(
             subTasks = editingTask?.subTasks ?: emptyList()
             subTaskDraft = ""
             saveFeedback = null
+            saveFailed = false
+            isSaving = false
         }
     }
 
     LaunchedEffect(saveFeedback) {
-        if (saveFeedback != null) {
+        if (saveFeedback != null && !saveFailed) {
             kotlinx.coroutines.delay(2200)
             saveFeedback = null
         }
@@ -3109,8 +3196,16 @@ private fun AddTaskPanel(
                         Surface(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RowShape,
-                            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.54f),
-                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                            color = if (saveFailed) {
+                                MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.66f)
+                            } else {
+                                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.54f)
+                            },
+                            contentColor = if (saveFailed) {
+                                MaterialTheme.colorScheme.onErrorContainer
+                            } else {
+                                MaterialTheme.colorScheme.onPrimaryContainer
+                            },
                             border = quietBorder(0.08f)
                         ) {
                             Row(
@@ -3119,10 +3214,14 @@ private fun AddTaskPanel(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 IconTile(
-                                    icon = Icons.Rounded.Check,
+                                    icon = if (saveFailed) Icons.Rounded.Close else Icons.Rounded.Check,
                                     contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    containerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.10f),
+                                    tint = if (saveFailed) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onPrimaryContainer,
+                                    containerColor = if (saveFailed) {
+                                        MaterialTheme.colorScheme.onErrorContainer.copy(alpha = 0.10f)
+                                    } else {
+                                        MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.10f)
+                                    },
                                     iconSize = 14.dp
                                 )
                                 Text(
@@ -3137,33 +3236,50 @@ private fun AddTaskPanel(
                     Button(
                         onClick = {
                             val trimmed = title.trim()
-                            if (trimmed.isNotEmpty()) {
-                                onSave(
-                                    TaskFormState(
-                                        title = trimmed,
-                                        quadrant = priority.type,
-                                        dueDateMillis = dueDateMillis,
-                                        dueTimeMinutes = dueTimeMinutes,
-                                        useCalendar = useCalendar,
-                                        useAlarm = useAlarm,
-                                        repeatRule = repeatRule,
-                                        subTasks = subTasks
+                            if (trimmed.isNotEmpty() && !isSaving) {
+                                isSaving = true
+                                saveFeedback = null
+                                saveFailed = false
+                                scope.launch {
+                                    val outcome = onSave(
+                                        TaskFormState(
+                                            title = trimmed,
+                                            quadrant = priority.type,
+                                            dueDateMillis = dueDateMillis,
+                                            dueTimeMinutes = dueTimeMinutes,
+                                            useCalendar = useCalendar,
+                                            useAlarm = useAlarm,
+                                            repeatRule = repeatRule,
+                                            subTasks = subTasks
+                                        )
                                     )
-                                )
-                                if (!isEditing) {
-                                    saveFeedback = "已保存到 ${priority.shortTitle}，可继续记录"
-                                    title = ""
-                                    dueDateMillis = null
-                                    dueTimeMinutes = null
-                                    useCalendar = false
-                                    useAlarm = false
-                                    repeatRule = RepeatRule.None
-                                    subTasks = emptyList()
-                                    subTaskDraft = ""
+                                    isSaving = false
+                                    saveFailed = !outcome.saved
+                                    if (!outcome.saved) {
+                                        saveFeedback = outcome.message
+                                        return@launch
+                                    }
+
+                                    if (outcome.message != "事项已保存") {
+                                        onStatus(outcome.message)
+                                    }
+                                    if (isEditing) {
+                                        onDismiss()
+                                    } else {
+                                        saveFeedback = "已保存到 ${priority.shortTitle}，可继续记录"
+                                        title = ""
+                                        dueDateMillis = null
+                                        dueTimeMinutes = null
+                                        useCalendar = false
+                                        useAlarm = false
+                                        repeatRule = RepeatRule.None
+                                        subTasks = emptyList()
+                                        subTaskDraft = ""
+                                    }
                                 }
                             }
                         },
-                        enabled = title.isNotBlank(),
+                        enabled = title.isNotBlank() && !isSaving,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RowShape,
                         contentPadding = PaddingValues(vertical = 13.dp),
@@ -3175,7 +3291,7 @@ private fun AddTaskPanel(
                             containerColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.12f)
                         )
                         Spacer(Modifier.width(8.dp))
-                        Text(saveButtonText)
+                        Text(if (isSaving) "正在保存…" else saveButtonText)
                     }
                 }
             }
@@ -4174,22 +4290,25 @@ fun CompletionItem(
                 .fillMaxWidth()
                 .padding(12.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = DateTimeFormatters.formatTimestamp(completion.completedAtMillis),
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = DateTimeFormatters.formatTimestamp(completion.completedAtMillis),
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(
                         onClick = {
                             editNoteText = completion.note.orEmpty()
                             isEditingNote = true
                         },
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(48.dp)
                     ) {
                         Icon(
                             Icons.Rounded.Edit,
@@ -4200,7 +4319,7 @@ fun CompletionItem(
                     }
                     IconButton(
                         onClick = { showDeleteDialog = true },
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(48.dp)
                     ) {
                         Icon(
                             Icons.Rounded.Delete,
@@ -4544,16 +4663,15 @@ private fun TaskDetailScreen(
                 shadowElevation = 8.dp,
                 color = MaterialTheme.colorScheme.surface
             ) {
-                Row(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 18.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Button(
                         onClick = { onToggleComplete(task) },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.fillMaxWidth(),
                         shape = RowShape,
                         contentPadding = PaddingValues(vertical = 12.dp),
                         colors = ButtonDefaults.buttonColors(
@@ -4569,37 +4687,50 @@ private fun TaskDetailScreen(
                         Spacer(Modifier.width(6.dp))
                         Text(if (task.completed) "标为未完成" else "完成")
                     }
-                    if (task.completed) {
-                        FilledTonalButton(
-                            onClick = { onArchive(task) },
-                            modifier = Modifier.weight(1f),
-                            shape = RowShape,
-                            colors = ButtonDefaults.filledTonalButtonColors(
-                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
-                        ) {
-                            InlineButtonIcon(
-                                icon = Icons.Rounded.Archive,
-                                tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                containerColor = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.10f)
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            Text("归档")
-                        }
-                    }
-                    IconButton(
-                        onClick = { onDelete(task) },
-                        modifier = Modifier.size(48.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        IconTile(
-                            icon = Icons.Rounded.Delete,
-                            contentDescription = "删除",
-                            tint = MaterialTheme.colorScheme.error,
-                            containerColor = MaterialTheme.colorScheme.errorContainer,
-                            iconSize = 20.dp,
-                            modifier = Modifier.size(34.dp)
-                        )
+                        if (task.completed) {
+                            FilledTonalButton(
+                                onClick = { onArchive(task) },
+                                modifier = Modifier.weight(1f),
+                                shape = RowShape,
+                                colors = ButtonDefaults.filledTonalButtonColors(
+                                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                            ) {
+                                InlineButtonIcon(
+                                    icon = Icons.Rounded.Archive,
+                                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    containerColor = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.10f)
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text("归档")
+                            }
+                        } else {
+                            Text(
+                                text = "删除会先要求确认",
+                                modifier = Modifier.weight(1f),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        IconButton(
+                            onClick = { onDelete(task) },
+                            modifier = Modifier.size(48.dp)
+                        ) {
+                            IconTile(
+                                icon = Icons.Rounded.Delete,
+                                contentDescription = "删除",
+                                tint = MaterialTheme.colorScheme.error,
+                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                iconSize = 20.dp,
+                                modifier = Modifier.size(34.dp)
+                            )
+                        }
                     }
                 }
             }

@@ -235,6 +235,73 @@ Not applicable. This app currently has no HTTP API layer.
   creating a duplicate instead of opening the managed event.
 * Moving runtime permission checks into helpers that Android lint cannot follow.
 
+## Scenario: Coroutine Cancellation in UI Save Flows
+
+### 1. Scope / Trigger
+
+Apply this contract when a Compose-launched save or platform-side-effect flow
+catches `Exception` to convert failures into visible UI status.
+
+### 2. Signatures
+
+* Save callback: `suspend (TaskFormState) -> TaskSaveOutcome`
+* Cancellation type: `kotlinx.coroutines.CancellationException`
+
+### 3. Contracts
+
+* Ordinary persistence and platform-side-effect exceptions may be converted to
+  retryable form feedback or snackbar status.
+* `CancellationException` must be rethrown immediately and must not be converted
+  into a save failure, snackbar, or other business result.
+* A successful Room save remains successful when a later reminder or calendar
+  side effect fails; report the side-effect failure separately.
+
+### 4. Validation & Error Matrix
+
+* Room save throws ordinary exception -> preserve draft and show retryable error.
+* Reminder/calendar side effect throws ordinary exception after Room save ->
+  report partial synchronization failure without claiming local data was lost.
+* Coroutine is cancelled -> rethrow cancellation and do not update UI status.
+
+### 5. Good/Base/Bad Cases
+
+* Good: Catch `Exception`, rethrow cancellation, then map remaining failures to
+  a user-visible outcome.
+* Base: Let the exception propagate when no local recovery or status is needed.
+* Bad: Use a broad `runCatching` or `catch (Exception)` that converts coroutine
+  cancellation into "save failed".
+
+### 6. Tests Required
+
+* Run `:app:testDebugUnitTest`, `:app:lintDebug`, and `:app:assembleDebug` after
+  changing the Compose save flow.
+* When extracting the save coordinator into a pure/testable unit, assert that
+  ordinary failures produce an error outcome and cancellation is rethrown.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```kotlin
+val outcome = runCatching { repository.addTask(form) }
+    .fold(
+        onSuccess = { TaskSaveOutcome(saved = true, message = "Saved") },
+        onFailure = { TaskSaveOutcome(saved = false, message = "Save failed") }
+    )
+```
+
+#### Correct
+
+```kotlin
+val outcome = try {
+    repository.addTask(form)
+    TaskSaveOutcome(saved = true, message = "Saved")
+} catch (error: Exception) {
+    if (error is CancellationException) throw error
+    TaskSaveOutcome(saved = false, message = "Save failed")
+}
+```
+
 ## Scenario: AlarmManager Reminder Restoration
 
 ### 1. Scope / Trigger

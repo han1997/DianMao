@@ -1,5 +1,16 @@
 # Changelog
 
+- Improved the main task workflow for narrow screens and failure recovery:
+  search with no matches now shows a clear board-level empty state, task rows
+  keep one compact overflow action instead of two permanent trailing buttons,
+  and task-detail actions wrap into a safer vertical hierarchy with 48dp note
+  history controls.
+
+- Task creation and editing now wait for the Room save result before clearing
+  or closing the form. Failed saves keep the full draft visible with an inline
+  retry message, while reminder or calendar side-effect failures are reported
+  separately without treating the durable local save as lost.
+
 - Simplified the home screen layout by removing the browse module (browse title,
   result count, and view-switching filter chips) and moving the search button into
   the app header title row. The floating search panel now expands from the header
