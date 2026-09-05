@@ -406,6 +406,28 @@ WebDAV or another user-configured HTTP endpoint.
 
 * Directory-shaped URLs upload to `<directory>/dianmao-backup-latest.json`;
   the client attempts `MKCOL` on each missing collection level first.
+* Before upload/download, the client probes the configured URL with a single
+  `PROPFIND Depth: 0` (`probeRemoteType` -> MISSING / COLLECTION /
+  LEGACY_FILE). During upload, a remote FILE at the configured URL (e.g. a
+  backup written by a legacy app version) is **migrated once**: download and
+  verify the body with `looksLikeDianmaoBackup` (must contain
+  `"dianmao.tasks"`), DELETE the file, MKCOL the directory chain, then PUT
+  the fresh backup inside — the end state is always
+  `<dir>/dianmao-backup-latest.json`. A non-backup file occupying the URL is
+  never deleted; the upload aborts with an `IOException`. MISSING keeps
+  directory semantics; download falls back to GET on the file URL itself
+  (read-only, no migration). Other probe failures (401/403/5xx) abort with
+  an `IOException` instead of guessing semantics and writing to the wrong
+  place.
+* `propfindBodyIsCollection` (`backup/WebDavUrl.kt`, pure) parses the 207
+  multistatus body: `<resourcetype>` containing `collection` = directory,
+  empty `<resourcetype>` = file. The check tolerates an optional `D:`/prefix
+  and case differences.
+* HttpURLConnection rejects WebDAV verbs (PROPFIND/MKCOL) with a local
+  `ProtocolException` ("Expected one of [OPTIONS, GET, ...] but was
+  PROPFIND") before any network I/O. `openConnection` sets the protected
+  `method` field reflectively to bypass the whitelist; MKCOL failures stay
+  non-fatal, so this bug previously hid behind the silent catch.
 * All MKCOL/PUT/GET target URLs are percent-encoded per path segment
   (`encodeWebDavUrl`). Synology/QNAP WebDAV servers (Apache core) reject raw
   non-ASCII bytes or spaces in the request line with 400 Bad Request — a
@@ -452,7 +474,10 @@ WebDAV or another user-configured HTTP endpoint.
 * Run `:app:lintDebug` for network permission and UI call-path checks.
 * Run `:app:assembleDebug` after changing the backup panel or WebDAV client.
 * `WebDavUrlTest.kt` covers URL encoding: Chinese/space segments, preserved
-  percent-escapes, scheme/authority untouched, collection chain encoding.
+  percent-escapes, scheme/authority untouched, collection chain encoding,
+  PROPFIND body parsing (collection with/without `D:` prefix, empty
+  resourcetype file, garbage bodies), and the DianMao backup content marker
+  used before deleting a legacy file during migration.
 * Manual verification should include a known WebDAV endpoint before relying on
   the feature for real backups.
 
