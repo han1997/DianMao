@@ -1227,3 +1227,37 @@ Replaced android.app date/time dialogs with themed Compose M3 pickers: new ui/co
 ### Next Steps
 
 - None - task complete
+
+
+## Session 37: WebDAV 400 fix: URL percent-encoding + fixed-length PUT
+
+**Date**: 2026-09-05
+**Task**: WebDAV 400 fix: URL percent-encoding + fixed-length PUT
+**Branch**: `master`
+
+### Summary
+
+Diagnosed WebDAV upload 400 on Synology/QNAP: raw non-ASCII/space path bytes in request line and chunked PUT bodies, not missing folders (those give 409; MKCOL auto-create already existed). Added encodeWebDavPathSegment/encodeWebDavUrl in WebDavUrl.kt applied to MKCOL/PUT/GET URLs (already-encoded sequences preserved), switched upload to setFixedLengthStreamingMode, added WebDavUrlTest (13 JVM tests). Registered encoding + fixed-length contract in error-handling.md.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `434be72` | (see git log) |
+| `61d4d1a` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
