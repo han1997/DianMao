@@ -107,6 +107,34 @@ Reference files:
 - Swallowing WebDAV or backup import failures after deleting local data.
 - Logging task titles, notes, WebDAV credentials, or backup payloads.
 
+## Gotcha: PowerShell Text Cmdlets Corrupt UTF-8 Source
+
+> **Warning**: Never edit Kotlin/Markdown files containing Chinese text via
+> PowerShell `Get-Content` + `Set-Content` on this machine. The console decodes
+> UTF-8 as GBK, so a read-modify-write round trip silently mojibakes every
+> multi-byte character (source became `梳理…` → `姊崇悕...`-style corruption,
+> plus a BOM was prepended). Verified 2026-09 during the UI-comfort task.
+
+**Why it happens**: Windows PowerShell 5.1 uses the system ANSI code page
+(GBK on zh-CN) for `Get-Content` without `-Encoding`, and writes BOM +
+re-encoded bytes on `Set-Content -Encoding UTF8`.
+
+**Correct approach**:
+- Use the editor tools (Read/Edit) for small edits — they are UTF-8 safe.
+- For bulk/mechanical edits, use Python with explicit encoding:
+
+```python
+import io
+with io.open(path, 'r', encoding='utf-8', newline='') as f:
+    src = f.read()
+# ... string replaces ...
+with io.open(path, 'w', encoding='utf-8', newline='') as f:
+    f.write(src)
+```
+
+**Prevention**: after any scripted bulk edit, verify a known Chinese string
+still exists (`grep "梳理本周"`) and `git diff` shows only the intended lines.
+
 ## Review Checklist
 
 Before finishing:

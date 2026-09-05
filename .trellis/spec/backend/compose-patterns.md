@@ -284,8 +284,10 @@ items are not part of the reorderable list.
 
 **Reference implementation**:
 - `app/src/main/java/fun/han1997/dianmao/MainActivity.kt` — quadrant detail
-  LazyColumn (header + `QuadrantDetailIntro` + "未完成" label + open tasks +
-  collapsed completed group)
+  LazyColumn assembly (header + `QuadrantDetailIntro` + "未完成" label + open
+  tasks + collapsed completed group); drag state helper lives in
+  `app/src/main/java/fun/han1997/dianmao/ui/components/TaskRow.kt`
+  (`DragDropListState`)
 
 ---
 
@@ -344,8 +346,9 @@ primary action should commit the capture. Edit mode is a "refine" flow —
 focus and Done behave conservatively there.
 
 **Reference implementation**:
-- `app/src/main/java/fun/han1997/dianmao/MainActivity.kt` — `AddTaskPanel`
-  title field + `LaunchedEffect(visible, editingTask?.id)` auto-focus
+- `app/src/main/java/fun/han1997/dianmao/ui/panels/AddTaskPanel.kt` —
+  `AddTaskPanel` title field + `LaunchedEffect(visible, editingTask?.id)`
+  auto-focus
 
 **Verification**:
 - Open add sheet from FAB: keyboard is up, cursor in title field.
@@ -657,10 +660,18 @@ touch targets and accessibility. The bad pattern spends too much vertical space
 on classification, uses heavy borders, relies on negative letter spacing for
 density, and leaves unrelated default icons without a shared visual system.
 
-**Reference implementation**:
-- `app/src/main/java/fun/han1997/dianmao/MainActivity.kt`
-- `DianMaoTheme`, `AppHeader`, `QuadrantBoard`, `TaskRow`, `CompactMeta`,
-  `AddTaskPanel`, `TaskDetailScreen`
+**Reference implementation** (2026-09 file split):
+- `app/src/main/java/fun/han1997/dianmao/ui/theme/DianMaoTheme.kt` —
+  `DianMaoTheme`, shapes, `quietBorder`, `quietTextFieldColors`
+- `app/src/main/java/fun/han1997/dianmao/ui/components/` — shared components
+  (`IconTile`, `HeaderActionButton`, `CompactMeta`, `TaskRow`, ...)
+- `app/src/main/java/fun/han1997/dianmao/ui/screens/` — `HomeScreen.kt`
+  (`AppHeader`, `QuadrantBoard`), `QuadrantDetailScreen.kt`,
+  `TaskDetailScreen.kt`
+- `app/src/main/java/fun/han1997/dianmao/ui/panels/` — `AddTaskPanel.kt`,
+  `BackupPanel.kt`, `Dialogs.kt`
+- `app/src/main/java/fun/han1997/dianmao/MainActivity.kt` — Activity entry +
+  `DianMaoApp` wiring only
 
 **Verification**:
 - Run `:app:compileDebugKotlin`, `:app:lintDebug`, and `:app:assembleDebug`
@@ -910,8 +921,10 @@ than three unrelated dialogs. The `Card` + `cardElevation` also produces the
 correct shadow per DESIGN.md's Sheet (6dp) elevation vocabulary.
 
 **Reference implementation**:
-- `app/src/main/java/fun/han1997/dianmao/MainActivity.kt`
-- `AddTaskPanel`, `BackupPanel`, `ArchivedPanel`
+- `app/src/main/java/fun/han1997/dianmao/ui/panels/AddTaskPanel.kt` —
+  `AddTaskPanel`
+- `app/src/main/java/fun/han1997/dianmao/ui/panels/BackupPanel.kt` —
+  `BackupPanel`, `ArchivedPanel`
 
 **Verification**:
 - Open each panel and verify they share the same top-corner radius, shadow
@@ -1016,8 +1029,10 @@ decorative animation. Clearing the query on close prevents invisible stale
 filters.
 
 **Reference implementation**:
-- `app/src/main/java/fun/han1997/dianmao/MainActivity.kt`
-- `HomeSmartControls`, `DianMaoApp`
+- `app/src/main/java/fun/han1997/dianmao/ui/screens/HomeScreen.kt` —
+  `AppHeader` search toggle (the standalone `HomeSmartControls` variant was
+  removed as dead code in the 2026-09 split)
+- `app/src/main/java/fun/han1997/dianmao/MainActivity.kt` — `DianMaoApp`
 
 **Verification**:
 - Verify the quadrant board has more vertical space than before.

@@ -23,7 +23,12 @@ Runtime Kotlin code lives under `app/src/main/java/fun/han1997/dianmao/`.
 
 | Package | Ownership |
 |---|---|
-| root package | Compose app shell, screen state, user workflows, navigation/back handling |
+| root package | `MainActivity` entry + `DianMaoApp` assembly (repository/scheduler wiring, overlays, back handling) |
+| `ui.theme` | Compose theme, light color scheme, shapes, quiet-border and quiet text-field helpers |
+| `ui.components` | Shared composables (`IconTile`, `HeaderActionButton`, `TaskRow`, subtask editors, drag state) |
+| `ui.logic` | Pure UI models/resolvers (`InAppBackTarget`, `HomeSmartView`, `buildTimeFocusItems`, platform helpers) |
+| `ui.screens` | Full-screen composables (`HomeScreen`, `QuadrantDetailScreen`, `TaskDetailScreen`) |
+| `ui.panels` | Overlay panels and dialogs (`AddTaskPanel`, `BackupPanel`, `ArchivedPanel`, dialogs) |
 | `data` | Room entities, DAOs, database migrations, repositories, backup codec, date/repeat calculators |
 | `alerts` | AlarmManager scheduling, notification channel setup, reminder delivery, boot restoration |
 | `calendar` | Calendar Provider read/write/update/delete and calendar insert/edit intents |
