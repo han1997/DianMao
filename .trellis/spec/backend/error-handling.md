@@ -395,14 +395,27 @@ WebDAV or another user-configured HTTP endpoint.
 * Download: `WebDavBackupClient.download(settings): String`
 * URL helpers (`backup/WebDavUrl.kt`, pure and JVM-testable):
   `resolveBackupFileUrl(url): String` — appends `dianmao-backup-latest.json`
-  to directory URLs, passes `.json` URLs through;
+  to directory URLs, passes `.json` URLs through, then percent-encodes the
+  path;
   `webDavCollectionUrls(url): List<String>` — ordered collection chain for
-  MKCOL.
+  MKCOL, percent-encoded per segment;
+  `encodeWebDavPathSegment(segment): String` /
+  `encodeWebDavUrl(url): String` — percent-encoding helpers.
 
 ### 3. Contracts
 
 * Directory-shaped URLs upload to `<directory>/dianmao-backup-latest.json`;
   the client attempts `MKCOL` on each missing collection level first.
+* All MKCOL/PUT/GET target URLs are percent-encoded per path segment
+  (`encodeWebDavUrl`). Synology/QNAP WebDAV servers (Apache core) reject raw
+  non-ASCII bytes or spaces in the request line with 400 Bad Request — a
+  missing directory produces 409, not 400. Already-encoded sequences survive
+  untouched (`%` is a safe char), so pasting an encoded URL must not
+  double-encode.
+* PUT bodies use `setFixedLengthStreamingMode(bytes.size)`. HttpURLConnection
+  switches to chunked transfer-encoding above its internal buffer when the
+  length is unset, and some NAS WebDAV firmwares reject chunked PUTs with
+  400/411.
 * MKCOL failures are non-fatal by design (405 = already exists; servers that
   forbid MKCOL still accept PUT). The PUT status decides the outcome.
 * File-shaped URLs (`.json` suffix) PUT/GET the URL directly — legacy
@@ -438,6 +451,8 @@ WebDAV or another user-configured HTTP endpoint.
 
 * Run `:app:lintDebug` for network permission and UI call-path checks.
 * Run `:app:assembleDebug` after changing the backup panel or WebDAV client.
+* `WebDavUrlTest.kt` covers URL encoding: Chinese/space segments, preserved
+  percent-escapes, scheme/authority untouched, collection chain encoding.
 * Manual verification should include a known WebDAV endpoint before relying on
   the feature for real backups.
 
