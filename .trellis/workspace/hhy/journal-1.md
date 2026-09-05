@@ -1193,3 +1193,37 @@ WebDAV backup now treats the configured URL as a directory: resolveBackupFileUrl
 ### Next Steps
 
 - None - task complete
+
+
+## Session 36: Global UI consistency: M3 pickers
+
+**Date**: 2026-09-05
+**Task**: Global UI consistency: M3 pickers
+**Branch**: `master`
+
+### Summary
+
+Replaced android.app date/time dialogs with themed Compose M3 pickers: new ui/components/DateTimePickers.kt (DatePickerDialog with local-midnight/UTC conversion, 24h TimePicker in freeform Dialog+Card), AddTaskPanel chips now state-driven, legacy showDatePicker/showTimePicker removed. Consistency audit: all text fields confirmed on quietTextFieldColors, dialog dismisses all TextButton, fixed recurring-panel complete button missing RowShape. DESIGN.md picker pattern registered.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c3b1811` | (see git log) |
+| `51145f7` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

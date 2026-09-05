@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 35
+- **Total Sessions**: 36
 - **Last Active**: 2026-09-05
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1195 | Active |
+| `journal-1.md` | ~1229 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 36 | 2026-09-05 | Global UI consistency: M3 pickers | `c3b1811`, `51145f7` | `master` |
 | 35 | 2026-09-05 | WebDAV folder backup and format v4 | `4c69005`, `a5143a9` | `master` |
 | 34 | 2026-09-05 | UI comfort: spacing, motion, file split | `5575c1f`, `9b88b4f` | `master` |
 | 33 | 2026-09-05 | UI polish: secondary and capture pages | `eb5e05d`, `6fc555f` | `master` |
