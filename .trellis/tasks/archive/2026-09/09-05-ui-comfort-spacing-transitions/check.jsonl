@@ -1,0 +1,5 @@
+{"file": ".trellis/tasks/09-05-ui-comfort-spacing-transitions/prd.md", "reason": "Acceptance criteria: token consistency, no behavior change, MainActivity <500 lines, three Gradle checks"}
+{"file": "DESIGN.md", "reason": "Verify spacing frontmatter matches code values; Motion Vocabulary durations 200/280ms applied; named rules unbroken (10% accent, quiet borders, no rest shadows)"}
+{"file": ".trellis/spec/backend/compose-patterns.md", "reason": "Verify contracts survived the split: BackHandler snapshot, Overlay Panel (Card+SheetShape+6dp+handle rules), drag reorder sectioning, capture auto-focus"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Verification commands and review checklist; CHANGELOG update requirement"}
+{"file": ".trellis/spec/guides/overlay-navigation-thinking-guide.md", "reason": "Back priority must still resolve identically after refactor; tests unchanged"}
