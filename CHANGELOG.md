@@ -1,5 +1,19 @@
 # Changelog
 
+- Relaxed the visual rhythm and motion for a calmer feel: spacing tokens
+  across screens, rows, sections, and sheets grew by 2-4dp (screen padding
+  20dp, row gaps 12dp, section gaps 14dp, sheet padding 16dp) and all
+  state-change animations lengthened into a 140-280ms comfort band (sheets
+  enter at 200/280ms, exits at 160/220ms) while keeping the
+  state-change-only, single-easing motion rules.
+
+- Split the single-file UI into a layered structure: `ui/theme` (theme,
+  shapes, quiet helpers), `ui/components` (shared composables and task rows),
+  `ui/logic` (pure models, resolvers, and platform helpers), `ui/screens`
+  (home, quadrant detail, task detail), and `ui/panels` (add/edit, backup,
+  archive, dialogs). `MainActivity.kt` now holds only the Activity entry and
+  app assembly, with no behavior change.
+
 - Restructured secondary and capture surfaces to match mainstream to-do apps:
   the task detail page now opens with a completion checkbox beside the title,
   reads metadata as full-width verb rows, and collapses completion history

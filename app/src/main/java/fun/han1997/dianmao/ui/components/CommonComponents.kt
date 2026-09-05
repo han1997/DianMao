@@ -1,0 +1,278 @@
+package `fun`.han1997.dianmao
+
+import `fun`.han1997.dianmao.data.TaskPriority
+import `fun`.han1997.dianmao.quietBorder
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
+@Composable
+internal fun AppCompassMark(
+    modifier: Modifier = Modifier,
+    compact: Boolean = false
+) {
+    val size = if (compact) 32.dp else 42.dp
+    Surface(
+        modifier = modifier.size(size),
+        shape = IconTileShape,
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.72f),
+        contentColor = MaterialTheme.colorScheme.primary,
+        border = quietBorder(0.12f)
+    ) {
+        Box(
+            modifier = Modifier.padding(if (compact) 7.dp else 8.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(3.dp)
+            ) {
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(3.dp)
+                ) {
+                    CompassCell(TaskPriority.ImportantUrgent.color, Modifier.weight(1f))
+                    CompassCell(TaskPriority.ImportantNotUrgent.color, Modifier.weight(1f))
+                }
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.spacedBy(3.dp)
+                ) {
+                    CompassCell(TaskPriority.NotImportantUrgent.color, Modifier.weight(1f))
+                    CompassCell(TaskPriority.NotImportantNotUrgent.color, Modifier.weight(1f))
+                }
+            }
+            Box(
+                modifier = Modifier
+                    .size(if (compact) 8.dp else 10.dp)
+                    .background(MaterialTheme.colorScheme.surface, CircleShape)
+                    .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.44f), CircleShape)
+            )
+        }
+    }
+}
+
+@Composable
+internal fun CompassCell(color: Color, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .fillMaxHeight()
+            .background(color.copy(alpha = 0.82f), RoundedCornerShape(4.dp))
+    )
+}
+
+@Composable
+internal fun IconTile(
+    icon: ImageVector,
+    contentDescription: String?,
+    tint: Color,
+    modifier: Modifier = Modifier,
+    containerColor: Color = tint.copy(alpha = 0.10f),
+    iconSize: androidx.compose.ui.unit.Dp = 18.dp
+) {
+    Surface(
+        modifier = modifier.size(if (iconSize <= 14.dp) 20.dp else 30.dp),
+        shape = if (iconSize <= 14.dp) ChipShape else IconTileShape,
+        color = containerColor,
+        contentColor = tint
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                tint = tint,
+                modifier = Modifier.size(iconSize)
+            )
+        }
+    }
+}
+
+@Composable
+internal fun HeaderActionButton(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+    tint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.50f)
+) {
+    IconButton(
+        onClick = onClick,
+        modifier = Modifier.size(48.dp)
+    ) {
+        IconTile(
+            icon = icon,
+            contentDescription = contentDescription,
+            tint = tint,
+            containerColor = containerColor,
+            iconSize = 20.dp,
+            modifier = Modifier.size(34.dp)
+        )
+    }
+}
+
+@Composable
+internal fun InlineButtonIcon(
+    icon: ImageVector,
+    tint: Color,
+    containerColor: Color = tint.copy(alpha = 0.12f)
+) {
+    IconTile(
+        icon = icon,
+        contentDescription = null,
+        tint = tint,
+        containerColor = containerColor,
+        iconSize = 15.dp
+    )
+}
+
+@Composable
+internal fun ColorDot(color: Color) {
+    Box(
+        modifier = Modifier
+            .size(10.dp)
+            .background(color, CircleShape)
+            .border(1.2.dp, MaterialTheme.colorScheme.surface.copy(alpha = if (color.luminance() < 0.5f) 0.38f else 0.72f), CircleShape)
+    )
+}
+
+@Composable
+internal fun CompletionMark(completed: Boolean, color: Color, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .padding(top = 2.dp)
+            .size(18.dp)
+            .background(
+                if (completed) color else Color.Transparent,
+                CircleShape
+            )
+            .border(
+                1.5.dp,
+                if (completed) color else MaterialTheme.colorScheme.outline,
+                CircleShape
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        if (completed) {
+            Icon(
+                imageVector = Icons.Rounded.Check,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.size(12.dp)
+            )
+        }
+    }
+}
+
+@Composable
+internal fun CompactMeta(
+    icon: ImageVector,
+    text: String,
+    tint: Color = MaterialTheme.colorScheme.secondary
+) {
+    Row(
+        modifier = Modifier
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.34f), ChipShape)
+            .padding(start = 3.dp, top = 3.dp, end = 7.dp, bottom = 3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        IconTile(
+            icon = icon,
+            contentDescription = null,
+            tint = tint.copy(alpha = 0.82f),
+            containerColor = tint.copy(alpha = 0.10f),
+            iconSize = 12.dp
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium.copy(
+                letterSpacing = 0.sp
+            ),
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.82f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
+internal fun InlineStatDot(count: Int, label: String, color: Color) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(6.dp)
+                .background(color, CircleShape)
+        )
+        Text(
+            text = "$count $label",
+            style = MaterialTheme.typography.labelMedium.copy(
+                fontWeight = FontWeight.Medium,
+                letterSpacing = 0.sp
+            ),
+            color = color.copy(alpha = 0.78f)
+        )
+    }
+}
+
+@Composable
+internal fun SummaryPill(value: String, label: String, color: Color, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
+            .background(color.copy(alpha = 0.08f), ChipShape)
+            .padding(horizontal = 7.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(6.dp)
+                .background(color.copy(alpha = 0.78f), CircleShape)
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.labelMedium.copy(
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 0.sp
+            ),
+            color = color
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontWeight = FontWeight.Medium,
+                letterSpacing = 0.sp
+            ),
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.76f)
+        )
+    }
+}

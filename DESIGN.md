@@ -69,19 +69,19 @@ rounded:
   inline-14: "14dp"
   pill: "999dp"
 spacing:
-  screen-h: "18dp"
+  screen-h: "20dp"
   screen-v: "8dp"
-  row-h: "14dp"
-  row-v: "10dp"
-  section-h: "14dp"
-  section-v: "11dp"
-  sheet-h: "18dp"
-  sheet-v: "14dp"
-  gap-xl: "16dp"
-  gap-lg: "12dp"
-  gap-md: "8dp"
-  gap-sm: "4dp"
-  gap-xs: "2dp"
+  row-h: "16dp"
+  row-v: "12dp"
+  section-h: "16dp"
+  section-v: "14dp"
+  sheet-h: "20dp"
+  sheet-v: "16dp"
+  gap-xl: "18dp"
+  gap-lg: "14dp"
+  gap-md: "10dp"
+  gap-sm: "6dp"
+  gap-xs: "3dp"
 components:
   button-filled:
     backgroundColor: "{colors.terracotta-accent}"
@@ -231,15 +231,15 @@ Flat by default, layered only when structure requires it. Depth comes from tonal
 
 ### Motion Vocabulary
 
-State changes only. No orchestrated entrances, no scroll-driven sequences, no decorative choreography. Default `FastOutSlowInEasing` (cubic-bezier(0.4, 0, 0.2, 1)) on every animated value; no custom beziers.
+State changes only. No orchestrated entrances, no scroll-driven sequences, no decorative choreography. Default `FastOutSlowInEasing` (cubic-bezier(0.4, 0, 0.2, 1)) on every animated value; no custom beziers. Durations sit in the 140–280ms comfort band (relaxed 2026-09 from the original 120–220ms for a smoother feel; the state-change-only principle is unchanged).
 
-- **Sheet enter** (150ms fade + 220ms slide, 1/4 travel): AddTaskPanel, BackupPanel, ArchivedPanel. Paired `fadeIn` + `slideInVertically`.
-- **Sheet exit** (120ms fade + 180ms slide, 1/4 travel): Mirror of enter, faster. The asymmetry (faster exit than enter) is deliberate — users perceive exits as less important than entrances.
+- **Sheet enter** (200ms fade + 280ms slide, 1/4 travel): AddTaskPanel, BackupPanel, ArchivedPanel. Paired `fadeIn` + `slideInVertically`.
+- **Sheet exit** (160ms fade + 220ms slide, 1/4 travel): Mirror of enter, faster. The asymmetry (faster exit than enter) is deliberate — users perceive exits as less important than entrances.
 - **Quadrant pane tint** (200ms `animateColorAsState`): Background color reacts to data changes (completion state, open count). Not a click animation — clicking a quadrant navigates immediately.
 - **Task completion scale** (180ms, 0.985 vs 1.0): Subtle shrink on the row when marked done. Reads as a quiet "settled" gesture, not a celebration.
-- **Save-feedback reveal** (120ms fade + 160ms slide, 1/3 travel): Capture-first save pill appears under the title field. Auto-clears after 2200ms.
-- **Collapsed group reveal** (150ms fade + 180ms slide, 1/4 travel in; 120ms fade + 150ms slide out): The task-detail completion history group and the quadrant-detail completed group expand/collapse in place. Only these two collapsibles are registered; do not add more choreographed reveals.
-- **Detail body expansion** (180ms fade + 180ms slide, 1/4 travel in; 120ms fade + 150ms slide out): The AddTaskPanel 子事项 section expands from a collapsed row. Same state-change vocabulary, no spring, no bounce.
+- **Save-feedback reveal** (140ms fade + 180ms slide, 1/3 travel): Capture-first save pill appears under the title field. Auto-clears after 2200ms.
+- **Collapsed group reveal** (220ms fade + 220ms slide, 1/4 travel in; 160ms fade + 180ms slide out): The task-detail completion history group and the quadrant-detail completed group expand/collapse in place. Only these two collapsibles are registered; do not add more choreographed reveals.
+- **Detail body expansion** (220ms fade + 220ms slide, 1/4 travel in; 160ms fade + 180ms slide out): The AddTaskPanel 子事项 section expands from a collapsed row. Same state-change vocabulary, no spring, no bounce.
 - **Drag lift** (instant, no tween): `graphicsLayer.shadowElevation` jumps to 8dp and scale to 1.02 on drag start; returns to 0 at drop. No easing — drag tracks the finger.
 - **Drag commit debounce** (50ms): Delay before persisting reorder, to coalesce rapid swaps.
 - **List item placement** (default `animateItemPlacement`): Reordered items glide into their new slot. Uses Material default duration/easing; do not override.
@@ -322,7 +322,7 @@ A signature DianMao flow. When the user saves a newly-created task from `AddTask
 - **Do** keep same-day tasks and long-term responsibilities in the same visual item model.
 - **Do** make calendar-linked and alarmed items visually recognizable with calendar blue, without turning the screen into a calendar clone.
 - **Do** support completion notes as a first-class part of the detail view.
-- **Do** keep motion in the 120–220ms range and use it only to convey state (sheets, completion, drag, feedback). See Motion Vocabulary for the exact specs; default `FastOutSlowInEasing` everywhere, no custom beziers, drag lift instant.
+- **Do** keep motion in the 140–280ms comfort band and use it only to convey state (sheets, completion, drag, feedback). See Motion Vocabulary for the exact specs; default `FastOutSlowInEasing` everywhere, no custom beziers, drag lift instant.
 - **Do** use quiet borders (outline at 0.10–0.22 alpha) instead of full-stroke outlines to create structure without heaviness.
 - **Do** keep quadrant color as a low-alpha surface tint: 4.5% on the home board, 8% on quadrant detail headers and empty states, plus indicator dots. Never as a saturated background.
 
