@@ -1,5 +1,19 @@
 # Changelog
 
+- Restructured secondary and capture surfaces to match mainstream to-do apps:
+  the task detail page now opens with a completion checkbox beside the title,
+  reads metadata as full-width verb rows, and collapses completion history
+  into an expandable group; the quadrant detail page uses a single-row tinted
+  header with an intro block and splits the list into open and completed
+  sections; the add-task sheet pins a capture head (auto-focused title,
+  metadata chip row, save button) above a collapsed subtask section, and the
+  keyboard Done key saves in add mode; the backup panel became a scrolling
+  settings page with a sync status card, a pure WebDAV form with a password
+  visibility toggle, and a single primary upload action; the archive panel
+  shows richer rows with counts and dates and drops its decorative drag
+  handle; dialogs now use text-button dismiss actions and a freeform card for
+  the completion-note form.
+
 - Continued core task workflow hardening: date, calendar, alarm, and repeat
   settings now normalize into valid combinations; completion, subtask,
   archive, delete, and completion-history actions show success or failure

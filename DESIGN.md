@@ -238,6 +238,8 @@ State changes only. No orchestrated entrances, no scroll-driven sequences, no de
 - **Quadrant pane tint** (200ms `animateColorAsState`): Background color reacts to data changes (completion state, open count). Not a click animation — clicking a quadrant navigates immediately.
 - **Task completion scale** (180ms, 0.985 vs 1.0): Subtle shrink on the row when marked done. Reads as a quiet "settled" gesture, not a celebration.
 - **Save-feedback reveal** (120ms fade + 160ms slide, 1/3 travel): Capture-first save pill appears under the title field. Auto-clears after 2200ms.
+- **Collapsed group reveal** (150ms fade + 180ms slide, 1/4 travel in; 120ms fade + 150ms slide out): The task-detail completion history group and the quadrant-detail completed group expand/collapse in place. Only these two collapsibles are registered; do not add more choreographed reveals.
+- **Detail body expansion** (180ms fade + 180ms slide, 1/4 travel in; 120ms fade + 150ms slide out): The AddTaskPanel 子事项 section expands from a collapsed row. Same state-change vocabulary, no spring, no bounce.
 - **Drag lift** (instant, no tween): `graphicsLayer.shadowElevation` jumps to 8dp and scale to 1.02 on drag start; returns to 0 at drop. No easing — drag tracks the finger.
 - **Drag commit debounce** (50ms): Delay before persisting reorder, to coalesce rapid swaps.
 - **List item placement** (default `animateItemPlacement`): Reordered items glide into their new slot. Uses Material default duration/easing; do not override.
@@ -268,22 +270,39 @@ Confident and restrained. Every interactive element feels native and unhurried. 
 
 ### Cards / Containers
 - **Task Row Card:** RowShape (12dp), 0dp elevation, quiet border at 0.18 alpha. Raised surface (#FFFCF9) background for active tasks, surfaceVariant at 0.38 alpha for completed tasks.
-- **Bottom Sheet (add-task / backup / archived):** SheetShape (22dp top corners), 6dp elevation. Raised surface background. Heights vary by panel: AddTaskPanel fills 90% of viewport, BackupPanel fills 88%, ArchivedPanel fills 75% and is centered rather than bottom-docked. All three use a custom 38×4dp drag handle in the outline color at 0.34 alpha.
+- **Bottom Sheet (add-task / backup / archived):** SheetShape (22dp top corners), 6dp elevation. Raised surface background. Heights vary by panel: AddTaskPanel fills 90% of viewport, BackupPanel fills 88%, ArchivedPanel fills 75% and is centered rather than bottom-docked. AddTaskPanel and BackupPanel keep the 38×4dp drag handle in outline at 0.34 alpha; ArchivedPanel is a centered card that cannot be dragged, so it omits the handle.
 - **Quadrant Panel (home board):** PanelShape (18dp radius), no shadow. Quadrant color at 0.045 alpha as a background tint, animated over 200ms on data change. Outer board surface carries a quiet border at 0.14 alpha. A 12dp color dot anchors the quadrant label; the open-count number sits top-right in the quadrant color.
-- **Quadrant Detail Header / Empty State:** Inline 14dp radius. Quadrant color at 0.08 alpha as a background tint. This is the only place the 8% tint shows up; the home board stays at 4.5%.
+- **Quadrant Detail Header / Empty State:** Inline 14dp radius. Quadrant color at 0.08 alpha as a background tint. This is the only place the 8% tint shows up; the home board stays at 4.5%. The header is a single sticky row (back + 12dp quadrant dot + title + open count) with a quiet border at 0.16 alpha — never a shadow when stuck. The quadrant description and stat dots live in a non-tinted intro block above the list so the 8% tint area stays small.
 - **Task Form Section:** PanelShape (18dp), surfaceVariant at 0.26 alpha, quiet border at 0.14 alpha.
+- **Collapsed Completed Group:** surfaceVariant at 0.20 alpha, RowShape, quiet border at 0.12 alpha. Header row carries a Label Medium title, a count, and a chevron; content expands in place (see Collapsed group reveal). Used for the task-detail completion history and the quadrant-detail completed section.
 - **Time Focus Lane:** RowShape (12dp), raised surface background, quiet border at 0.14 alpha. Per-row background uses the lane color (error / primary / secondary) at 0.07 alpha with a 0.12-alpha border in the same color.
 
 ### Inputs / Fields
 - **Style:** RowShape (12dp). Surface background for both focused and unfocused states. No filled container contrast.
-- **Focus:** Primary accent at 0.45 alpha for the focused indicator line. Unfocused indicator at 0.18 alpha of outline.
+- **Focus:** Primary accent at 0.45 alpha for the focused indicator line. Unfocused indicator at 0.18 alpha of outline. On the add-task sheet the focused indicator is the accent moment — the title field carries no emphasized container tint.
 - **Disabled:** SurfaceVariant at 0.18 alpha for container, outline at 0.10 alpha for indicator.
-- **Capture-First Pattern:** Quick-capture field visible immediately on the add-task sheet; quadrant, date, alarm, and note controls revealed progressively below.
+- **Capture-First Pattern:** Quick-capture field visible immediately on the add-task sheet; metadata lives in one chip row beneath it, and heavier editors (subtasks) stay collapsed below.
+- **Capture Auto-Focus:** In add mode the title field requests focus on open (`FocusRequester` + short delay) so the keyboard is up on the first frame. Edit mode does not auto-focus.
+- **IME Done Save:** On the add-task sheet the keyboard Done action saves and continues capture (same as the save button). In edit mode Done only clears focus.
+- **Password Visibility Toggle:** Secret fields show a trailing eye toggle that swaps `PasswordVisualTransformation` for plain text. The toggle resets to hidden when the panel reopens.
 
 ### Chips
 - **Style:** ChipShape (8dp). Compact and semantic. Summary pills, "今日" badge, meta chips, quadrant labels.
 - **State:** Selected chips use terracotta container background with on-container ink. Unselected remain neutral with quiet border.
+- **Metadata Chip Row (AddTaskPanel):** One FlowRow of FilterChips under the title field: quadrant (with 12dp ColorDot), date, time, calendar, alarm, repeat. Each chip shows its current value or "未设置"; tapping opens the existing picker or menu. Dependency chains are expressed as disabled chips: calendar/alarm need a date, repeat needs a date plus alarm. Repeat opens a dropdown menu rather than cycling values.
 - **Quadrant Dots:** 12dp circles in quadrant color, used as visual anchors inside chips and list items.
+
+### Detail Page Patterns
+- **Hero (TaskDetailScreen):** Completion checkbox and title share one line; a quadrant chip (12dp dot + shortTitle) sits beneath. Metadata reads as full-width icon rows inside a TaskFormSection — each row shows a verb when unset ("添加提醒") and the value when set (To Do's verb-becomes-value pattern). Calendar-linked rows use calendar blue (secondary) for scheduling semantics only.
+- **Sticky Slim Header (QuadrantDetailScreen):** One row: back + 12dp quadrant dot + title + open count, tinted at 0.08 alpha with a quiet border. No shadow at rest.
+- **Sectioned List:** Label Medium section headers ("未完成" expanded, "已完成" collapsed with count). Completed rows keep the completed-row treatment (surfaceVariant 0.38 alpha, border 0.12).
+- **Settings-Page Backup Panel:** Scrolling structure: sync status header card (WebDAV host parsed from the URL + connection state chip) → 本地备份 → WebDAV 配置 (pure form with one trailing 保存设置 text action) → 云端同步 → status line last. Exactly one filled primary button is visible ("上传备份"; "导出本地" takes the primary slot only when cloud is unconfigured).
+- **Meta-Enriched Archive Row:** ColorDot + full-contrast title (onSurface) + one Label Medium meta line (quadrant shortTitle · due date · completion note preview, ellipsized) + explicit Unarchive button. Header carries a count ("归档事项 · N").
+
+### Dialogs
+- **Two-button confirms** (delete, uncomplete-recurring) use `AlertDialog` with TextButton actions; destructive confirm keeps the error color and the text names the exact object.
+- **Form dialogs** (completion note) use a freeform `Dialog` + Card container per official M3 guidance, with TextButton actions right-aligned.
+- **Dismiss actions are TextButton**, never outlined — outlined dismiss adds a third visual weight to a two-button dialog.
 
 ### Navigation
 - **Main Scaffold:** Single-screen layout with FAB. No side navigation, no drawer.

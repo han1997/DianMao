@@ -87,10 +87,14 @@ import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.FileUpload
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Inventory2
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.Repeat
 import androidx.compose.material.icons.rounded.Replay
 import androidx.compose.material.icons.rounded.Unarchive
+import androidx.compose.material.icons.rounded.Visibility
+import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material.icons.rounded.Save
@@ -144,15 +148,19 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import `fun`.han1997.dianmao.alerts.ReminderScheduler
@@ -991,13 +999,19 @@ private fun DianMaoApp() {
                     }
                 } else {
                     val listState = rememberLazyListState()
+                    val openDetailTaskCount = reorderableDetailTasks.count { !it.completed }
                     val dragDropState = rememberDragDropListState(
                         lazyListState = listState,
                         onMove = { fromIndex, toIndex ->
-                            val list = reorderableDetailTasks.toMutableList()
-                            val item = list.removeAt(fromIndex)
-                            list.add(toIndex, item)
-                            reorderableDetailTasks = list
+                            if (fromIndex in 0 until openDetailTaskCount &&
+                                toIndex in 0 until openDetailTaskCount
+                            ) {
+                                val openTasks = reorderableDetailTasks.filter { !it.completed }
+                                val list = openTasks.toMutableList()
+                                val item = list.removeAt(fromIndex)
+                                list.add(toIndex, item)
+                                reorderableDetailTasks = list + reorderableDetailTasks.filter { it.completed }
+                            }
                         }
                     )
 
@@ -1027,9 +1041,11 @@ private fun DianMaoApp() {
                                                 offset.y.toInt() in item.offset..(item.offset + item.size)
                                             }
                                             ?.let {
-                                                // Subtract 1 to account for header item at index 0
-                                                val taskIndex = it.index - 1
-                                                if (taskIndex >= 0) {
+                                                // Subtract 3 to account for header, intro, and section label items
+                                                val taskIndex = it.index - 3
+                                                // Only open (未完成) task rows are draggable; the
+                                                // completed group sits after them and must not drag.
+                                                if (taskIndex in 0 until openDetailTaskCount) {
                                                     dragDropState.onDragStart(taskIndex)
                                                 }
                                             }
@@ -1057,28 +1073,46 @@ private fun DianMaoApp() {
                                     onBack = { activePriority = null }
                                 )
                             }
+                            item {
+                                QuadrantDetailIntro(
+                                    quadrant = priority,
+                                    tasks = reorderableDetailTasks
+                                )
+                            }
                             if (reorderableDetailTasks.isEmpty()) {
                                 item {
                                     QuadrantDetailEmptyState(priority)
                                 }
                             } else {
-                                itemsIndexed(reorderableDetailTasks, key = { _, task -> task.id }) { index, task ->
-                                    val isBeingDragged = dragDropState.draggedIndex == index
-                                    val offsetY = if (isBeingDragged) dragDropState.draggedOffset else 0f
-
-                                    Box(
-                                        modifier = Modifier
-                                            .zIndex(if (isBeingDragged) 1f else 0f)
-                                            .graphicsLayer {
-                                                translationY = offsetY
-                                                shadowElevation = if (isBeingDragged) 8.dp.toPx() else 0f
-                                                scaleX = if (isBeingDragged) 1.02f else 1f
-                                                scaleY = if (isBeingDragged) 1.02f else 1f
-                                            }
-                                            .animateItemPlacement()
-                                    ) {
-                                        TaskRow(
-                                            task = task,
+                                item {
+                                    QuadrantDetailSectionLabel(
+                                        text = "未完成",
+                                        count = reorderableDetailTasks.count { !it.completed }
+                                    )
+                                }
+                                itemsIndexed(
+                                    reorderableDetailTasks.filter { !it.completed },
+                                    key = { _, task -> task.id }
+                                ) { _, task ->
+                                    TaskRow(
+                                        task = task,
+                                        repository = repository,
+                                        onToggleComplete = toggleComplete,
+                                        onEditTask = { t ->
+                                            taskForEdit = t
+                                        },
+                                        onDeleteTask = { taskForDelete = it },
+                                        onEditNote = { taskForNote = it },
+                                        onArchiveTask = archiveTask,
+                                        onViewDetail = { taskForDetail = it },
+                                        showQuadrantMeta = false
+                                    )
+                                }
+                                val completedDetailTasks = reorderableDetailTasks.filter { it.completed }
+                                if (completedDetailTasks.isNotEmpty()) {
+                                    item {
+                                        QuadrantDetailCompletedGroup(
+                                            tasks = completedDetailTasks,
                                             repository = repository,
                                             onToggleComplete = toggleComplete,
                                             onEditTask = { t ->
@@ -1087,8 +1121,7 @@ private fun DianMaoApp() {
                                             onDeleteTask = { taskForDelete = it },
                                             onEditNote = { taskForNote = it },
                                             onArchiveTask = archiveTask,
-                                            onViewDetail = { taskForDetail = it },
-                                            showQuadrantMeta = false
+                                            onViewDetail = { taskForDetail = it }
                                         )
                                     }
                                 }
@@ -1996,59 +2029,200 @@ private fun QuadrantDetailHeader(
     onBack: () -> Unit
 ) {
     val openTasks = tasks.count { !it.completed }
-    val timedTasks = tasks.count { !it.completed && (it.useAlarm || it.useCalendar) }
-    val completedTasks = tasks.count { it.completed }
 
     Surface(
         color = quadrant.color.copy(alpha = 0.08f),
         shape = RoundedCornerShape(14.dp),
         border = quietBorder(0.16f)
     ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 6.dp, end = 14.dp, top = 6.dp, bottom = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                HeaderActionButton(
-                    icon = Icons.AutoMirrored.Rounded.ArrowBack,
-                    contentDescription = "返回四象限",
-                    onClick = onBack
-                )
-                IconTile(
-                    icon = Icons.Rounded.Inventory2,
-                    contentDescription = null,
-                    tint = quadrant.color,
-                    containerColor = quadrant.color.copy(alpha = 0.10f),
-                    iconSize = 18.dp
-                )
-                Text(
-                    modifier = Modifier.weight(1f),
-                    text = quadrant.title,
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+            HeaderActionButton(
+                icon = Icons.AutoMirrored.Rounded.ArrowBack,
+                contentDescription = "返回四象限",
+                onClick = onBack
+            )
+            Box(
+                modifier = Modifier
+                    .size(12.dp)
+                    .background(quadrant.color, CircleShape)
+            )
             Text(
-                text = quadrant.description,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f),
+                text = quadrant.title,
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
-            FlowRow(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+            Text(
+                text = "$openTasks 未完成",
+                style = MaterialTheme.typography.labelMedium.copy(
+                    fontWeight = FontWeight.Medium,
+                    letterSpacing = 0.sp
+                ),
+                color = quadrant.color.copy(alpha = 0.85f),
+                maxLines = 1
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun QuadrantDetailIntro(
+    quadrant: TaskPriority,
+    tasks: List<TaskUiModel>
+) {
+    val openTasks = tasks.count { !it.completed }
+    val timedTasks = tasks.count { !it.completed && (it.useAlarm || it.useCalendar) }
+    val completedTasks = tasks.count { it.completed }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp, vertical = 2.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Text(
+            text = quadrant.description,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            InlineStatDot(count = openTasks, label = "未完成", color = quadrant.color)
+            InlineStatDot(count = timedTasks, label = "有提醒", color = MaterialTheme.colorScheme.secondary)
+            InlineStatDot(count = completedTasks, label = "已复盘", color = TaskPriority.NotImportantNotUrgent.color)
+        }
+    }
+}
+
+@Composable
+private fun QuadrantDetailSectionLabel(
+    text: String,
+    count: Int? = null
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium.copy(
+                fontWeight = FontWeight.Medium,
+                letterSpacing = 0.05.sp
+            ),
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        if (count != null) {
+            Text(
+                text = count.toString(),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.62f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun QuadrantDetailCompletedGroup(
+    tasks: List<TaskUiModel>,
+    repository: TaskRepository,
+    onToggleComplete: (TaskUiModel) -> Unit,
+    onEditTask: (TaskUiModel) -> Unit,
+    onDeleteTask: (TaskUiModel) -> Unit,
+    onEditNote: (TaskUiModel) -> Unit,
+    onArchiveTask: (TaskUiModel) -> Unit,
+    onViewDetail: (TaskUiModel) -> Unit
+) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.20f),
+        shape = RowShape,
+        border = quietBorder(0.12f)
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 44.dp)
+                    .clickable(
+                        role = Role.Button
+                    ) { expanded = !expanded }
+                    .padding(horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                InlineStatDot(count = openTasks, label = "未完成", color = quadrant.color)
-                InlineStatDot(count = timedTasks, label = "有提醒", color = MaterialTheme.colorScheme.secondary)
-                InlineStatDot(count = completedTasks, label = "已复盘", color = TaskPriority.NotImportantNotUrgent.color)
+                Icon(
+                    imageVector = Icons.Rounded.CheckCircle,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.62f),
+                    modifier = Modifier.size(16.dp)
+                )
+                Text(
+                    text = "已完成",
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontWeight = FontWeight.Medium,
+                        letterSpacing = 0.05.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = tasks.size.toString(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.62f)
+                )
+                Icon(
+                    imageVector = if (expanded) {
+                        Icons.Rounded.KeyboardArrowUp
+                    } else {
+                        Icons.Rounded.KeyboardArrowDown
+                    },
+                    contentDescription = if (expanded) "收起已完成" else "展开已完成",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            AnimatedVisibility(
+                visible = expanded,
+                enter = fadeIn(tween(150)) + slideInVertically(tween(180)) { it / 4 },
+                exit = fadeOut(tween(120)) + slideOutVertically(tween(150)) { it / 4 }
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    tasks.forEach { task ->
+                        TaskRow(
+                            task = task,
+                            repository = repository,
+                            onToggleComplete = onToggleComplete,
+                            onEditTask = onEditTask,
+                            onDeleteTask = onDeleteTask,
+                            onEditNote = onEditNote,
+                            onArchiveTask = onArchiveTask,
+                            onViewDetail = onViewDetail,
+                            showQuadrantMeta = false
+                        )
+                    }
+                }
             }
         }
     }
@@ -2963,7 +3137,7 @@ private fun SubTaskReadOnlySection(
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
             )
             Text(
-                text = task.subTaskProgressLabel,
+                text = "已完成 ${task.completedSubTaskCount}/${task.subTasks.size}",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -3039,19 +3213,16 @@ private fun AddTaskPanel(
     var saveFeedback by rememberSaveable { mutableStateOf<String?>(null) }
     var saveFailed by rememberSaveable { mutableStateOf(false) }
     var isSaving by rememberSaveable { mutableStateOf(false) }
+    var subTasksExpanded by rememberSaveable { mutableStateOf(false) }
+    var repeatMenuExpanded by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
+    val keyboard = LocalSoftwareKeyboardController.current
     val scope = rememberCoroutineScope()
     val formScrollState = rememberScrollState()
+    val titleFocusRequester = remember { FocusRequester() }
     val isEditing = editingTask != null
     val panelTitle = if (isEditing) "编辑事项" else "先记录一件事"
-    val panelSubtitle = if (isEditing) {
-        "修正内容后保存，面板会自动关闭"
-    } else {
-        "先把任务写清楚；象限、时间和提醒可以稍后整理"
-    }
-    val primarySectionTitle = if (isEditing) "事项内容" else "今天要捕获什么？"
-    val primarySectionSubtitle = if (isEditing) "标题是主要内容，其他设置保持原有行为" else "唯一必填。写完即可保存并继续记录下一条"
     val saveButtonText = if (isEditing) "保存修改并关闭" else "保存并继续记录"
 
     LaunchedEffect(visible, editingTask?.id, initialPriority) {
@@ -3068,6 +3239,15 @@ private fun AddTaskPanel(
             saveFeedback = null
             saveFailed = false
             isSaving = false
+            subTasksExpanded = false
+        }
+    }
+
+    // Auto-focus the title field with the keyboard on add-mode open.
+    LaunchedEffect(visible, editingTask?.id) {
+        if (visible && !isEditing) {
+            kotlinx.coroutines.delay(220)
+            titleFocusRequester.requestFocus()
         }
     }
 
@@ -3087,6 +3267,55 @@ private fun AddTaskPanel(
             completed = false
         )
         subTaskDraft = ""
+    }
+
+    fun saveTask() {
+        val trimmed = title.trim()
+        if (trimmed.isNotEmpty() && !isSaving) {
+            focusManager.clearFocus()
+            keyboard?.hide()
+            isSaving = true
+            saveFeedback = null
+            saveFailed = false
+            scope.launch {
+                val outcome = onSave(
+                    TaskFormState(
+                        title = trimmed,
+                        quadrant = priority.type,
+                        dueDateMillis = dueDateMillis,
+                        dueTimeMinutes = dueTimeMinutes,
+                        useCalendar = useCalendar,
+                        useAlarm = useAlarm,
+                        repeatRule = repeatRule,
+                        subTasks = subTasks
+                    ).normalizedTimeSettings()
+                )
+                isSaving = false
+                saveFailed = !outcome.saved
+                if (!outcome.saved) {
+                    saveFeedback = outcome.message
+                    return@launch
+                }
+
+                if (outcome.message != "事项已保存") {
+                    onStatus(outcome.message)
+                }
+                if (isEditing) {
+                    onDismiss()
+                } else {
+                    saveFeedback = "已保存到 ${priority.shortTitle}，可继续记录"
+                    title = ""
+                    dueDateMillis = null
+                    dueTimeMinutes = null
+                    useCalendar = false
+                    useAlarm = false
+                    repeatRule = RepeatRule.None
+                    subTasks = emptyList()
+                    subTaskDraft = ""
+                    subTasksExpanded = false
+                }
+            }
+        }
     }
 
     AnimatedVisibility(
@@ -3133,122 +3362,64 @@ private fun AddTaskPanel(
                             .height(4.dp)
                             .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.34f), CircleShape)
                     )
+                    // Compact header: title + close only
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        IconTile(
-                            icon = if (isEditing) Icons.Rounded.Edit else Icons.Rounded.Add,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.62f),
-                            iconSize = 20.dp
+                        Text(
+                            text = panelTitle,
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                panelTitle,
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                panelSubtitle,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
                         HeaderActionButton(
                             icon = Icons.Rounded.Close,
                             contentDescription = if (isEditing) "关闭编辑面板" else "关闭新增面板",
                             onClick = onDismiss
                         )
                     }
-                    Column(
+                    // Title field: auto-focused, 1-3 lines adaptive (sticky head)
+                    OutlinedTextField(
+                        value = title,
+                        onValueChange = { title = it },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .weight(1f)
-                            .verticalScroll(formScrollState),
-                        verticalArrangement = Arrangement.spacedBy(11.dp)
+                            .focusRequester(titleFocusRequester),
+                        placeholder = { Text(if (isEditing) "更新事项内容" else "要记录什么？") },
+                        singleLine = false,
+                        minLines = 1,
+                        maxLines = 3,
+                        shape = RowShape,
+                        textStyle = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 18.sp,
+                            lineHeight = 25.sp,
+                            letterSpacing = 0.sp
+                        ),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { if (!isEditing) saveTask() else focusManager.clearFocus() }),
+                        colors = quietTextFieldColors()
+                    )
+                    // Metadata chip row: quadrant / date / time / calendar / alarm / repeat
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(7.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        TaskFormSection(
-                            title = primarySectionTitle,
-                            subtitle = primarySectionSubtitle,
-                            icon = Icons.Rounded.EditNote,
-                            iconTint = MaterialTheme.colorScheme.primary,
-                            emphasized = true
-                        ) {
-                            OutlinedTextField(
-                                value = title,
-                                onValueChange = { title = it },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .heightIn(min = 118.dp),
-                                label = { Text(if (isEditing) "事项标题" else "快速输入") },
-                                placeholder = { Text(if (isEditing) "更新事项内容" else "例如：确认明天下午会议材料") },
-                                singleLine = false,
-                                minLines = 4,
-                                maxLines = 6,
-                                shape = RowShape,
-                                textStyle = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.Medium,
-                                    fontSize = 18.sp,
-                                    lineHeight = 25.sp,
-                                    letterSpacing = 0.sp
-                                ),
-                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                                keyboardActions = KeyboardActions(onDone = { focusManager.clearFocus() }),
-                                colors = quietTextFieldColors()
-                            )
-                            Text(
-                                text = if (isEditing) "保存后会回到上一层上下文。" else "保存后保留当前象限，清空内容、子事项、时间、日历、响铃和重复规则。",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                        TaskPriority.entries.forEach { item ->
+                            FilterChip(
+                                selected = item == priority,
+                                onClick = { priority = item },
+                                label = { Text(item.shortTitle) },
+                                leadingIcon = { ColorDot(item.color) }
                             )
                         }
-                        SubTaskEditor(
-                            subTasks = subTasks,
-                            draft = subTaskDraft,
-                            onDraftChange = { subTaskDraft = it },
-                            onAdd = { addSubTask() },
-                            onTitleChange = { id, newTitle ->
-                                subTasks = subTasks.map { item ->
-                                    if (item.id == id) item.copy(title = newTitle) else item
-                                }
-                            },
-                            onCheckedChange = { id, checked ->
-                                subTasks = subTasks.map { item ->
-                                    if (item.id == id) item.copy(completed = checked) else item
-                                }
-                            },
-                            onDelete = { id ->
-                                subTasks = subTasks.filterNot { it.id == id }
-                            }
-                        )
-                        FormSettingBlock(
-                            title = "象限",
-                            subtitle = if (isEditing) "调整归属象限" else "可先使用默认象限，稍后再整理",
-                            icon = Icons.Rounded.Inventory2,
-                            iconTint = priority.color
-                        ) {
-                            FlowRow(
-                                horizontalArrangement = Arrangement.spacedBy(7.dp),
-                                verticalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                TaskPriority.entries.forEach { item ->
-                                    FilterChip(
-                                        selected = item == priority,
-                                        onClick = { priority = item },
-                                        label = { Text(item.shortTitle) },
-                                        leadingIcon = { ColorDot(item.color) }
-                                    )
-                                }
-                            }
-                        }
-                        DateTimePickerRow(
-                            dueDateMillis = dueDateMillis,
-                            dueTimeMinutes = dueTimeMinutes,
-                            onPickDate = {
+                        FilterChip(
+                            selected = dueDateMillis != null,
+                            onClick = {
                                 showDatePicker(
                                     context = context,
                                     currentMillis = dueDateMillis,
@@ -3258,48 +3429,139 @@ private fun AddTaskPanel(
                                     }
                                 )
                             },
-                            onPickTime = {
+                            label = {
+                                val currentDate = dueDateMillis
+                                Text(
+                                    if (currentDate == null) {
+                                        "未设置"
+                                    } else {
+                                        Instant.ofEpochMilli(currentDate)
+                                            .atZone(ZoneId.systemDefault())
+                                            .toLocalDate()
+                                            .format(DateTimeFormatter.ofPattern("M月d日"))
+                                    }
+                                )
+                            },
+                            leadingIcon = {
+                                InlineButtonIcon(
+                                    icon = Icons.Rounded.CalendarMonth,
+                                    tint = MaterialTheme.colorScheme.secondary
+                                )
+                            }
+                        )
+                        FilterChip(
+                            selected = dueTimeMinutes != null,
+                            enabled = dueDateMillis != null,
+                            onClick = {
                                 showTimePicker(
                                     context = context,
                                     currentMinutes = dueTimeMinutes,
                                     onSelected = { dueTimeMinutes = it }
                                 )
                             },
-                            onClear = {
-                                dueDateMillis = null
-                                dueTimeMinutes = null
-                                useCalendar = false
-                                useAlarm = false
-                                repeatRule = RepeatRule.None
+                            label = {
+                                val currentTime = dueTimeMinutes
+                                Text(
+                                    if (currentTime == null) {
+                                        "未设置"
+                                    } else {
+                                        val hour = currentTime / 60
+                                        val minute = currentTime % 60
+                                        "${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}"
+                                    }
+                                )
+                            },
+                            leadingIcon = {
+                                InlineButtonIcon(
+                                    icon = Icons.Rounded.Schedule,
+                                    tint = if (dueDateMillis != null) {
+                                        MaterialTheme.colorScheme.secondary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.58f)
+                                    }
+                                )
                             }
                         )
-                        ToggleRow(
-                            icon = Icons.Rounded.CalendarMonth,
-                            title = "系统日历",
-                            subtitle = if (dueDateMillis == null) "选择时间后可同步" else "保存后写入系统日历",
-                            checked = useCalendar,
+                        FilterChip(
+                            selected = useCalendar,
                             enabled = dueDateMillis != null,
-                            onCheckedChange = {
-                                useCalendar = it
-                                if (it) onRequestCalendarPermission()
+                            onClick = {
+                                useCalendar = !useCalendar
+                                if (useCalendar) onRequestCalendarPermission()
+                            },
+                            label = { Text(if (useCalendar) "日历" else "未设置") },
+                            leadingIcon = {
+                                InlineButtonIcon(
+                                    icon = Icons.Rounded.CalendarMonth,
+                                    tint = if (dueDateMillis != null) {
+                                        MaterialTheme.colorScheme.secondary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.58f)
+                                    }
+                                )
                             }
                         )
-                        ToggleRow(
-                            icon = Icons.Rounded.Alarm,
-                            title = "响铃提醒",
-                            subtitle = if (dueDateMillis == null) "选择时间后可提醒" else "保存后写入 AlarmManager",
-                            checked = useAlarm,
+                        FilterChip(
+                            selected = useAlarm,
                             enabled = dueDateMillis != null,
-                            onCheckedChange = {
-                                useAlarm = it
-                                if (!it) repeatRule = RepeatRule.None
+                            onClick = {
+                                useAlarm = !useAlarm
+                                if (!useAlarm) repeatRule = RepeatRule.None
+                            },
+                            label = { Text(if (useAlarm) "响铃" else "未设置") },
+                            leadingIcon = {
+                                InlineButtonIcon(
+                                    icon = Icons.Rounded.Alarm,
+                                    tint = if (dueDateMillis != null) {
+                                        MaterialTheme.colorScheme.secondary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.58f)
+                                    }
+                                )
                             }
                         )
-                        RepeatRulePicker(
-                            selected = repeatRule,
+                        FilterChip(
+                            selected = repeatRule != RepeatRule.None,
                             enabled = dueDateMillis != null && useAlarm,
-                            onSelected = { repeatRule = it }
+                            onClick = { repeatMenuExpanded = true },
+                            label = { Text(if (repeatRule == RepeatRule.None) "未设置" else repeatRule.label) },
+                            leadingIcon = {
+                                InlineButtonIcon(
+                                    icon = Icons.Rounded.Repeat,
+                                    tint = if (dueDateMillis != null && useAlarm) {
+                                        MaterialTheme.colorScheme.secondary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.58f)
+                                    }
+                                )
+                            }
                         )
+                    }
+                    DropdownMenu(
+                        expanded = repeatMenuExpanded,
+                        onDismissRequest = { repeatMenuExpanded = false }
+                    ) {
+                        RepeatRule.entries.forEach { rule ->
+                            DropdownMenuItem(
+                                text = { Text(rule.label) },
+                                leadingIcon = if (rule == repeatRule) {
+                                    {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Check,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                } else {
+                                    null
+                                },
+                                onClick = {
+                                    repeatRule = rule
+                                    repeatMenuExpanded = false
+                                }
+                            )
+                        }
                     }
                     AnimatedVisibility(
                         visible = saveFeedback != null,
@@ -3346,52 +3608,9 @@ private fun AddTaskPanel(
                             }
                         }
                     }
+                    // Save button pinned at the bottom of the sticky head
                     Button(
-                        onClick = {
-                            val trimmed = title.trim()
-                            if (trimmed.isNotEmpty() && !isSaving) {
-                                isSaving = true
-                                saveFeedback = null
-                                saveFailed = false
-                                scope.launch {
-                                    val outcome = onSave(
-                                        TaskFormState(
-                                            title = trimmed,
-                                            quadrant = priority.type,
-                                            dueDateMillis = dueDateMillis,
-                                            dueTimeMinutes = dueTimeMinutes,
-                                            useCalendar = useCalendar,
-                                            useAlarm = useAlarm,
-                                            repeatRule = repeatRule,
-                                            subTasks = subTasks
-                                        ).normalizedTimeSettings()
-                                    )
-                                    isSaving = false
-                                    saveFailed = !outcome.saved
-                                    if (!outcome.saved) {
-                                        saveFeedback = outcome.message
-                                        return@launch
-                                    }
-
-                                    if (outcome.message != "事项已保存") {
-                                        onStatus(outcome.message)
-                                    }
-                                    if (isEditing) {
-                                        onDismiss()
-                                    } else {
-                                        saveFeedback = "已保存到 ${priority.shortTitle}，可继续记录"
-                                        title = ""
-                                        dueDateMillis = null
-                                        dueTimeMinutes = null
-                                        useCalendar = false
-                                        useAlarm = false
-                                        repeatRule = RepeatRule.None
-                                        subTasks = emptyList()
-                                        subTaskDraft = ""
-                                    }
-                                }
-                            }
-                        },
+                        onClick = { saveTask() },
                         enabled = title.isNotBlank() && !isSaving,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RowShape,
@@ -3405,6 +3624,89 @@ private fun AddTaskPanel(
                         )
                         Spacer(Modifier.width(8.dp))
                         Text(if (isSaving) "正在保存…" else saveButtonText)
+                    }
+                    // Collapsed detail body: expandable 子事项 section (default collapsed)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .verticalScroll(formScrollState),
+                        verticalArrangement = Arrangement.spacedBy(11.dp)
+                    ) {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RowShape,
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.20f),
+                            border = quietBorder(0.10f)
+                        ) {
+                            Column {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(min = 48.dp)
+                                        .clickable(role = Role.Button) { subTasksExpanded = !subTasksExpanded }
+                                        .padding(horizontal = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.CheckCircle,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.64f),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Text(
+                                        text = if (subTasks.isEmpty()) {
+                                            "子事项"
+                                        } else {
+                                            "子事项 · ${subTasks.size}"
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Icon(
+                                        imageVector = if (subTasksExpanded) {
+                                            Icons.Rounded.KeyboardArrowUp
+                                        } else {
+                                            Icons.Rounded.KeyboardArrowDown
+                                        },
+                                        contentDescription = if (subTasksExpanded) "收起子事项" else "展开子事项",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                AnimatedVisibility(
+                                    visible = subTasksExpanded,
+                                    enter = fadeIn(tween(180)) + slideInVertically(tween(180)) { it / 4 },
+                                    exit = fadeOut(tween(120)) + slideOutVertically(tween(150)) { it / 4 }
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)
+                                    ) {
+                                        SubTaskEditor(
+                                            subTasks = subTasks,
+                                            draft = subTaskDraft,
+                                            onDraftChange = { subTaskDraft = it },
+                                            onAdd = { addSubTask() },
+                                            onTitleChange = { id, newTitle ->
+                                                subTasks = subTasks.map { item ->
+                                                    if (item.id == id) item.copy(title = newTitle) else item
+                                                }
+                                            },
+                                            onCheckedChange = { id, checked ->
+                                                subTasks = subTasks.map { item ->
+                                                    if (item.id == id) item.copy(completed = checked) else item
+                                                }
+                                            },
+                                            onDelete = { id ->
+                                                subTasks = subTasks.filterNot { it.id == id }
+                                            }
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -3427,14 +3729,17 @@ private fun BackupPanel(
     var url by rememberSaveable { mutableStateOf(initialSettings.url) }
     var username by rememberSaveable { mutableStateOf(initialSettings.username) }
     var password by rememberSaveable { mutableStateOf(initialSettings.password) }
+    var passwordVisible by rememberSaveable { mutableStateOf(false) }
     val webDavSettings = WebDavSettings(url = url, username = username, password = password)
     val webDavReady = url.isNotBlank()
+    val backupScrollState = rememberScrollState()
 
     LaunchedEffect(visible, initialSettings) {
         if (visible) {
             url = initialSettings.url
             username = initialSettings.username
             password = initialSettings.password
+            passwordVisible = false
         }
     }
 
@@ -3475,6 +3780,13 @@ private fun BackupPanel(
                         .padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.CenterHorizontally)
+                            .width(38.dp)
+                            .height(4.dp)
+                            .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.34f), CircleShape)
+                    )
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -3505,56 +3817,150 @@ private fun BackupPanel(
                         )
                     }
 
-                    FormSettingBlock(title = "本地备份", subtitle = "导出当前数据，或从文件恢复") {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                            .verticalScroll(backupScrollState),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        // Sync status header card: parsed host + connection state chip
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RowShape,
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.26f),
+                            border = quietBorder(0.14f)
                         ) {
-                            Button(
-                                onClick = onLocalExport,
-                                modifier = Modifier.weight(1f),
-                                shape = RowShape,
-                                contentPadding = PaddingValues(vertical = 11.dp)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 11.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                InlineButtonIcon(
-                                    icon = Icons.Rounded.FileUpload,
-                                    tint = MaterialTheme.colorScheme.onPrimary,
-                                    containerColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.12f)
+                                IconTile(
+                                    icon = Icons.Rounded.CloudUpload,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.secondary,
+                                    containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.10f),
+                                    iconSize = 18.dp
                                 )
-                                Spacer(Modifier.width(6.dp))
-                                Text("导出本地")
-                            }
-                            OutlinedButton(
-                                onClick = onLocalImport,
-                                modifier = Modifier.weight(1f),
-                                shape = RowShape,
-                                contentPadding = PaddingValues(vertical = 11.dp)
-                            ) {
-                                InlineButtonIcon(
-                                    icon = Icons.Rounded.FileDownload,
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                                Spacer(Modifier.width(6.dp))
-                                Text("本地恢复")
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                                ) {
+                                    Text(
+                                        text = webDavHost(url) ?: "未配置云端同步",
+                                        style = MaterialTheme.typography.titleSmall.copy(
+                                            fontWeight = FontWeight.SemiBold,
+                                            letterSpacing = 0.sp
+                                        ),
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                    Text(
+                                        text = if (webDavReady) "WebDAV 云端备份目标" else "配置下方地址后可上传与恢复",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.82f),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                                Surface(
+                                    color = if (webDavReady) {
+                                        MaterialTheme.colorScheme.secondary.copy(alpha = 0.10f)
+                                    } else {
+                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.48f)
+                                    },
+                                    contentColor = if (webDavReady) {
+                                        MaterialTheme.colorScheme.secondary
+                                    } else {
+                                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
+                                    },
+                                    shape = ChipShape
+                                ) {
+                                    Text(
+                                        text = if (webDavReady) "已连接" else "未配置",
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                        style = MaterialTheme.typography.labelMedium.copy(
+                                            fontWeight = FontWeight.Medium,
+                                            letterSpacing = 0.sp
+                                        ),
+                                        maxLines = 1
+                                    )
+                                }
                             }
                         }
-                    }
 
-                    FormSettingBlock(title = "WebDAV", subtitle = "保存地址后可手动上传或下载恢复") {
-                        OutlinedTextField(
-                            value = url,
-                            onValueChange = { url = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text("备份文件 URL") },
-                            placeholder = { Text("https:// 或局域网 http://192.168.x.x/backup.json") },
-                            singleLine = true,
-                            shape = RowShape,
-                            colors = quietTextFieldColors()
-                        )
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        FormSettingBlock(title = "本地备份", subtitle = "导出当前数据，或从文件恢复") {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                if (webDavReady) {
+                                    // Cloud is configured: the single filled-primary slot
+                                    // belongs to 上传备份 in 云端同步, so local export is outlined.
+                                    OutlinedButton(
+                                        onClick = onLocalExport,
+                                        modifier = Modifier.weight(1f),
+                                        shape = RowShape,
+                                        contentPadding = PaddingValues(vertical = 11.dp)
+                                    ) {
+                                        InlineButtonIcon(
+                                            icon = Icons.Rounded.FileUpload,
+                                            tint = MaterialTheme.colorScheme.primary
+                                        )
+                                        Spacer(Modifier.width(6.dp))
+                                        Text("导出本地")
+                                    }
+                                } else {
+                                    // Cloud unconfigured: local export takes the primary slot.
+                                    Button(
+                                        onClick = onLocalExport,
+                                        modifier = Modifier.weight(1f),
+                                        shape = RowShape,
+                                        contentPadding = PaddingValues(vertical = 11.dp)
+                                    ) {
+                                        InlineButtonIcon(
+                                            icon = Icons.Rounded.FileUpload,
+                                            tint = MaterialTheme.colorScheme.onPrimary,
+                                            containerColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.12f)
+                                        )
+                                        Spacer(Modifier.width(6.dp))
+                                        Text("导出本地")
+                                    }
+                                }
+                                OutlinedButton(
+                                    onClick = onLocalImport,
+                                    modifier = Modifier.weight(1f),
+                                    shape = RowShape,
+                                    contentPadding = PaddingValues(vertical = 11.dp)
+                                ) {
+                                    InlineButtonIcon(
+                                        icon = Icons.Rounded.FileDownload,
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                    Spacer(Modifier.width(6.dp))
+                                    Text("本地恢复")
+                                }
+                            }
+                        }
+
+                        FormSettingBlock(title = "WebDAV 配置", subtitle = "保存地址后可手动上传或下载恢复") {
+                            OutlinedTextField(
+                                value = url,
+                                onValueChange = { url = it },
+                                modifier = Modifier.fillMaxWidth(),
+                                label = { Text("备份文件 URL") },
+                                placeholder = { Text("https:// 或局域网 http://192.168.x.x/backup.json") },
+                                singleLine = true,
+                                shape = RowShape,
+                                colors = quietTextFieldColors()
+                            )
                             OutlinedTextField(
                                 value = username,
                                 onValueChange = { username = it },
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.fillMaxWidth(),
                                 label = { Text("用户名") },
                                 singleLine = true,
                                 shape = RowShape,
@@ -3563,20 +3969,37 @@ private fun BackupPanel(
                             OutlinedTextField(
                                 value = password,
                                 onValueChange = { password = it },
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.fillMaxWidth(),
                                 label = { Text("密码") },
                                 singleLine = true,
-                                visualTransformation = PasswordVisualTransformation(),
+                                visualTransformation = if (passwordVisible) {
+                                    VisualTransformation.None
+                                } else {
+                                    PasswordVisualTransformation()
+                                },
+                                trailingIcon = {
+                                    IconButton(
+                                        onClick = { passwordVisible = !passwordVisible },
+                                        modifier = Modifier.size(40.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = if (passwordVisible) {
+                                                Icons.Rounded.VisibilityOff
+                                            } else {
+                                                Icons.Rounded.Visibility
+                                            },
+                                            contentDescription = if (passwordVisible) "隐藏密码" else "显示密码",
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                    }
+                                },
                                 shape = RowShape,
                                 colors = quietTextFieldColors()
                             )
-                        }
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            OutlinedButton(
+                            TextButton(
                                 onClick = { onSaveWebDav(webDavSettings) },
-                                modifier = Modifier.weight(1f),
-                                shape = RowShape,
-                                contentPadding = PaddingValues(vertical = 11.dp)
+                                modifier = Modifier.align(Alignment.End)
                             ) {
                                 InlineButtonIcon(
                                     icon = Icons.Rounded.Save,
@@ -3585,10 +4008,13 @@ private fun BackupPanel(
                                 Spacer(Modifier.width(6.dp))
                                 Text("保存设置")
                             }
+                        }
+
+                        FormSettingBlock(title = "云端同步", subtitle = "上传当前数据到 WebDAV，或从云端恢复") {
                             Button(
                                 onClick = { onUploadWebDav(webDavSettings) },
                                 enabled = webDavReady,
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.fillMaxWidth(),
                                 shape = RowShape,
                                 contentPadding = PaddingValues(vertical = 11.dp)
                             ) {
@@ -3600,70 +4026,71 @@ private fun BackupPanel(
                                 Spacer(Modifier.width(6.dp))
                                 Text("上传备份")
                             }
-                        }
-                        OutlinedButton(
-                            onClick = { onRestoreWebDav(webDavSettings) },
-                            enabled = webDavReady,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RowShape,
-                            contentPadding = PaddingValues(vertical = 11.dp)
-                        ) {
-                            InlineButtonIcon(
-                                icon = Icons.Rounded.CloudDownload,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                            Spacer(Modifier.width(6.dp))
-                            Text("下载恢复")
-                        }
-                    }
-
-                    if (!status.isNullOrBlank()) {
-                        val isError = status.contains("失败")
-                        val isUpload = status.contains("上传")
-                        val isDownload = status.contains("下载") || status.contains("从 WebDAV 恢复") || status.contains("从本地备份恢复")
-                        val isExport = status.contains("导出")
-                        val isSave = status.contains("设置已保存")
-                        val statusIcon = when {
-                            isError -> Icons.Rounded.Close
-                            isUpload -> Icons.Rounded.CloudUpload
-                            isDownload -> Icons.Rounded.CloudDownload
-                            isExport -> Icons.Rounded.FileUpload
-                            isSave -> Icons.Rounded.Save
-                            else -> Icons.Rounded.CloudUpload
-                        }
-                        val statusTint = if (isError) {
-                            MaterialTheme.colorScheme.error
-                        } else {
-                            MaterialTheme.colorScheme.onSecondaryContainer
-                        }
-                        Surface(
-                            color = if (isError) {
-                                MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.62f)
-                            } else {
-                                MaterialTheme.colorScheme.secondaryContainer
-                            },
-                            contentColor = statusTint,
-                            shape = RowShape,
-                            border = quietBorder(0.08f)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 9.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            OutlinedButton(
+                                onClick = { onRestoreWebDav(webDavSettings) },
+                                enabled = webDavReady,
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RowShape,
+                                contentPadding = PaddingValues(vertical = 11.dp)
                             ) {
-                                IconTile(
-                                    icon = statusIcon,
-                                    contentDescription = null,
-                                    tint = statusTint,
-                                    containerColor = statusTint.copy(alpha = 0.10f),
-                                    iconSize = 14.dp
+                                InlineButtonIcon(
+                                    icon = Icons.Rounded.CloudDownload,
+                                    tint = MaterialTheme.colorScheme.primary
                                 )
-                                Text(
-                                    text = status,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis
-                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text("下载恢复")
+                            }
+                        }
+
+                        // Status line pinned last
+                        if (!status.isNullOrBlank()) {
+                            val isError = status.contains("失败")
+                            val isUpload = status.contains("上传")
+                            val isDownload = status.contains("下载") || status.contains("从 WebDAV 恢复") || status.contains("从本地备份恢复")
+                            val isExport = status.contains("导出")
+                            val isSave = status.contains("设置已保存")
+                            val statusIcon = when {
+                                isError -> Icons.Rounded.Close
+                                isUpload -> Icons.Rounded.CloudUpload
+                                isDownload -> Icons.Rounded.CloudDownload
+                                isExport -> Icons.Rounded.FileUpload
+                                isSave -> Icons.Rounded.Save
+                                else -> Icons.Rounded.CloudUpload
+                            }
+                            val statusTint = if (isError) {
+                                MaterialTheme.colorScheme.error
+                            } else {
+                                MaterialTheme.colorScheme.onSecondaryContainer
+                            }
+                            Surface(
+                                color = if (isError) {
+                                    MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.62f)
+                                } else {
+                                    MaterialTheme.colorScheme.secondaryContainer
+                                },
+                                contentColor = statusTint,
+                                shape = RowShape,
+                                border = quietBorder(0.08f)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 9.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    IconTile(
+                                        icon = statusIcon,
+                                        contentDescription = null,
+                                        tint = statusTint,
+                                        containerColor = statusTint.copy(alpha = 0.10f),
+                                        iconSize = 14.dp
+                                    )
+                                    Text(
+                                        text = status,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        maxLines = 2,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
                             }
                         }
                     }
@@ -3671,6 +4098,21 @@ private fun BackupPanel(
             }
         }
     }
+}
+
+private fun webDavHost(url: String): String? {
+    val trimmed = url.trim()
+    if (trimmed.isBlank()) return null
+    return runCatching {
+        val parsed = java.net.URI(trimmed)
+        val scheme = parsed.scheme
+        val host = parsed.host
+        if (!scheme.isNullOrBlank() && !host.isNullOrBlank()) {
+            if (parsed.port > 0) "$scheme://$host:${parsed.port}" else "$scheme://$host"
+        } else {
+            null
+        }
+    }.getOrNull()
 }
 
 @Composable
@@ -3716,14 +4158,6 @@ private fun ArchivedPanel(
                         .windowInsetsPadding(WindowInsets.safeDrawing)
                         .padding(horizontal = 20.dp, vertical = 14.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.CenterHorizontally)
-                            .width(38.dp)
-                            .height(4.dp)
-                            .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.34f), CircleShape)
-                    )
-                    Spacer(Modifier.height(10.dp))
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -3737,7 +4171,7 @@ private fun ArchivedPanel(
                             iconSize = 20.dp
                         )
                         Text(
-                            text = "归档事项",
+                            text = if (tasks.isEmpty()) "归档事项" else "归档事项 · ${tasks.size}",
                             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
                             color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.weight(1f)
@@ -3800,6 +4234,14 @@ private fun ArchivedTaskItem(
     task: TaskUiModel,
     onUnarchive: () -> Unit
 ) {
+    val metaParts = buildList {
+        add(task.quadrant.shortTitle)
+        task.dueLabel?.let { add(it) }
+        task.lastCompletedAtMillis?.let {
+            add("归档于 ${DateTimeFormatters.formatTimestamp(it)}")
+        }
+    }
+
     Surface(
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.34f),
         shape = RowShape,
@@ -3815,18 +4257,27 @@ private fun ArchivedTaskItem(
             ColorDot(task.quadrant.color)
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(3.dp)
             ) {
                 Text(
                     text = task.title,
                     style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
-                if (task.completionNote != null) {
+                val metaLine = buildString {
+                    append(metaParts.joinToString(" · "))
+                    if (!task.completionNote.isNullOrBlank()) {
+                        if (isNotEmpty()) append(" · ")
+                        append(task.completionNote)
+                    }
+                }
+                if (metaLine.isNotBlank()) {
                     Text(
-                        text = task.completionNote,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                        text = metaLine,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -3839,105 +4290,6 @@ private fun ArchivedTaskItem(
                 tint = MaterialTheme.colorScheme.primary,
                 containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.50f)
             )
-        }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun RepeatRulePicker(
-    selected: RepeatRule,
-    enabled: Boolean,
-    onSelected: (RepeatRule) -> Unit
-) {
-    FormSettingBlock(
-        title = "重复规则",
-        subtitle = "用于周期性事项",
-        enabled = enabled,
-        icon = Icons.Rounded.Repeat,
-        iconTint = MaterialTheme.colorScheme.secondary
-    ) {
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(7.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            RepeatRule.entries.forEach { rule ->
-                FilterChip(
-                    selected = selected == rule,
-                    onClick = { if (enabled) onSelected(rule) },
-                    enabled = enabled,
-                    shape = ChipShape,
-                    label = { Text(rule.label) }
-                )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun DateTimePickerRow(
-    dueDateMillis: Long?,
-    dueTimeMinutes: Int?,
-    onPickDate: () -> Unit,
-    onPickTime: () -> Unit,
-    onClear: () -> Unit
-) {
-    val label = if (dueDateMillis == null) {
-        "未设置时间"
-    } else {
-        val date = Instant.ofEpochMilli(dueDateMillis)
-            .atZone(ZoneId.systemDefault())
-            .toLocalDate()
-            .format(DateTimeFormatter.ofPattern("M月d日"))
-        val time = dueTimeMinutes?.let {
-            val hour = it / 60
-            val minute = it % 60
-            "${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}"
-        }
-        listOfNotNull(date, time).joinToString(" ")
-    }
-
-    FormSettingBlock(
-        title = "时间",
-        subtitle = label,
-        icon = Icons.Rounded.Schedule,
-        iconTint = MaterialTheme.colorScheme.secondary
-    ) {
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(7.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            OutlinedButton(
-                onClick = onPickDate,
-                shape = RowShape,
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
-            ) {
-                InlineButtonIcon(
-                    icon = Icons.Rounded.CalendarMonth,
-                    tint = MaterialTheme.colorScheme.primary
-                )
-                Spacer(Modifier.width(6.dp))
-                Text(if (dueDateMillis == null) "选择日期" else "更改日期")
-            }
-            OutlinedButton(
-                onClick = onPickTime,
-                enabled = dueDateMillis != null,
-                shape = RowShape,
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
-            ) {
-                InlineButtonIcon(
-                    icon = Icons.Rounded.Schedule,
-                    tint = if (dueDateMillis != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.58f)
-                )
-                Spacer(Modifier.width(6.dp))
-                Text(if (dueTimeMinutes == null) "选择时间" else "更改时间")
-            }
-            if (dueDateMillis != null) {
-                TextButton(onClick = onClear) {
-                    Text("清除")
-                }
-            }
         }
     }
 }
@@ -4033,7 +4385,7 @@ private fun DeleteTaskDialog(
             }
         },
         dismissButton = {
-            OutlinedButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss) {
                 Text("取消")
             }
         }
@@ -4068,64 +4420,11 @@ private fun UncompleteRecurringTaskDialog(
             }
         },
         dismissButton = {
-            OutlinedButton(onClick = onDismiss) {
+            TextButton(onClick = onDismiss) {
                 Text("取消")
             }
         }
     )
-}
-
-@Composable
-private fun ToggleRow(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    checked: Boolean,
-    enabled: Boolean = true,
-    onCheckedChange: (Boolean) -> Unit
-) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(enabled = enabled) { onCheckedChange(!checked) },
-        shape = RowShape,
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (enabled) 0.26f else 0.16f),
-        border = quietBorder(if (enabled) 0.10f else 0.06f)
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 9.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            val contentColor = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
-            IconTile(
-                icon = icon,
-                contentDescription = null,
-                tint = if (enabled) MaterialTheme.colorScheme.secondary else contentColor.copy(alpha = 0.62f),
-                containerColor = if (enabled) {
-                    MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.52f)
-                } else {
-                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.26f)
-                },
-                iconSize = 18.dp
-            )
-            Spacer(Modifier.width(10.dp))
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(title, style = MaterialTheme.typography.bodyLarge, color = contentColor)
-                Text(
-                    subtitle,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (enabled) 0.82f else 0.58f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-            Switch(
-                checked = checked && enabled,
-                enabled = enabled,
-                onCheckedChange = onCheckedChange
-            )
-        }
-    }
 }
 
 @Composable
@@ -4136,21 +4435,49 @@ private fun CompletionNoteDialog(
 ) {
     var note by rememberSaveable(task.id) { mutableStateOf(task.completionNote.orEmpty()) }
 
-    AlertDialog(
+    // Freeform Dialog + Card: form dialogs use a custom container per official M3 guidance.
+    Dialog(
         onDismissRequest = onDismiss,
-        icon = {
-            Icon(
-                imageVector = Icons.Rounded.EditNote,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary
-            )
-        },
-        title = { Text(if (task.completed) "编辑完成备注" else "完成并写备注") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp),
+            shape = PanelShape,
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    IconTile(
+                        icon = Icons.Rounded.EditNote,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.62f),
+                        iconSize = 18.dp
+                    )
+                    Text(
+                        text = if (task.completed) "编辑完成备注" else "完成并写备注",
+                        modifier = Modifier.weight(1f),
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.SemiBold
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
                 Text(
                     text = task.title,
-                    style = MaterialTheme.typography.bodyLarge
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
                 OutlinedTextField(
                     value = note,
@@ -4164,19 +4491,20 @@ private fun CompletionNoteDialog(
                     textStyle = MaterialTheme.typography.bodyMedium,
                     colors = quietTextFieldColors()
                 )
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = { onSave(note) }) {
-                Text("保存备注")
-            }
-        },
-        dismissButton = {
-            OutlinedButton(onClick = onDismiss) {
-                Text("稍后再写")
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text("稍后再写")
+                    }
+                    TextButton(onClick = { onSave(note) }) {
+                        Text("保存备注")
+                    }
+                }
             }
         }
-    )
+    }
 }
 
 @Composable
@@ -4515,6 +4843,125 @@ fun CompletionItem(
     }
 }
 
+@Composable
+private fun DetailMetaRow(
+    icon: ImageVector,
+    iconTint: Color,
+    label: String
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 36.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        IconTile(
+            icon = icon,
+            contentDescription = null,
+            tint = iconTint,
+            containerColor = iconTint.copy(alpha = 0.10f),
+            iconSize = 16.dp
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.86f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
+private fun CompletionHistoryGroup(
+    completions: List<TaskCompletionEntity>,
+    isRecurring: Boolean,
+    onDelete: (Long) -> Unit,
+    onUpdateNote: (Long, String?) -> Unit
+) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.20f),
+        shape = RowShape,
+        border = quietBorder(0.12f)
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 44.dp)
+                    .clickable(
+                        role = Role.Button
+                    ) { expanded = !expanded }
+                    .padding(horizontal = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.History,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.64f),
+                    modifier = Modifier.size(16.dp)
+                )
+                Text(
+                    text = "完成历史",
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontWeight = FontWeight.Medium,
+                        letterSpacing = 0.05.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = completions.size.toString(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.62f)
+                )
+                Icon(
+                    imageVector = if (expanded) {
+                        Icons.Rounded.KeyboardArrowUp
+                    } else {
+                        Icons.Rounded.KeyboardArrowDown
+                    },
+                    contentDescription = if (expanded) "收起完成历史" else "展开完成历史",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            AnimatedVisibility(
+                visible = expanded,
+                enter = fadeIn(tween(150)) + slideInVertically(tween(180)) { it / 4 },
+                exit = fadeOut(tween(120)) + slideOutVertically(tween(150)) { it / 4 }
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (completions.isEmpty()) {
+                        Text(
+                            text = if (isRecurring) "完成循环事项后这里会记录每次完成" else "暂无完成记录",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 6.dp)
+                        )
+                    } else {
+                        completions.forEach { completion ->
+                            CompletionItem(
+                                completion = completion,
+                                onDelete = { onDelete(completion.id) },
+                                onUpdateNote = onUpdateNote
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun TaskDetailScreen(
@@ -4532,7 +4979,6 @@ private fun TaskDetailScreen(
     onUpdateCompletionNote: (Long, String?) -> Unit
 ) {
     val completions by repository.observeCompletions(task.id).collectAsState(initial = emptyList())
-    val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
 
     Surface(
@@ -4582,50 +5028,104 @@ private fun TaskDetailScreen(
                 contentPadding = PaddingValues(top = 12.dp, bottom = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(11.dp)
             ) {
-                // Task title
+                // Hero: completion checkbox + title on one line (To Do/Things pattern)
                 item {
-                    Text(
-                        text = task.title,
-                        style = MaterialTheme.typography.headlineSmall.copy(
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        color = if (task.completed) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.Top,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(48.dp)
+                                .clickable(
+                                    role = Role.Checkbox
+                                ) { onToggleComplete(task) }
+                                .semantics {
+                                    contentDescription = if (task.completed) "标记为未完成" else "标记为完成"
+                                },
+                            contentAlignment = Alignment.TopCenter
+                        ) {
+                            CompletionMark(
+                                completed = task.completed,
+                                color = task.quadrant.color
+                            )
+                        }
+                        Text(
+                            text = task.title,
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.headlineSmall.copy(
+                                fontWeight = FontWeight.SemiBold
+                            ),
+                            color = if (task.completed) {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            }
+                        )
+                    }
                 }
 
-                item { Spacer(Modifier.height(2.dp)) }
+                // Quadrant chip beneath the title (12dp dot + shortTitle)
+                item {
+                    Row(
+                        modifier = Modifier.padding(start = 58.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(12.dp)
+                                .background(task.quadrant.color, CircleShape)
+                        )
+                        Text(
+                            text = task.quadrant.shortTitle,
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                fontWeight = FontWeight.Medium,
+                                letterSpacing = 0.05.sp
+                            ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
 
-                // Meta section
+                // Meta section: full-width verb rows (To Do verb-becomes-value pattern)
                 item {
                     TaskFormSection(
                         title = "事项信息",
                         icon = Icons.Rounded.Inventory2,
                         iconTint = task.quadrant.color
                     ) {
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            CompactMeta(
-                                icon = Icons.Rounded.Inventory2,
-                                text = task.quadrant.label,
-                                tint = task.quadrant.color
+                        DetailMetaRow(
+                            icon = Icons.Rounded.Schedule,
+                            iconTint = MaterialTheme.colorScheme.secondary,
+                            label = if (task.dueLabel != null) task.dueLabel else "添加提醒"
+                        )
+                        DetailMetaRow(
+                            icon = Icons.Rounded.CalendarMonth,
+                            iconTint = MaterialTheme.colorScheme.secondary,
+                            label = if (task.useCalendar) "已同步系统日历" else "未同步系统日历"
+                        )
+                        DetailMetaRow(
+                            icon = Icons.Rounded.Alarm,
+                            iconTint = MaterialTheme.colorScheme.secondary,
+                            label = if (task.useAlarm) "响铃提醒已开启" else "未设置响铃"
+                        )
+                        DetailMetaRow(
+                            icon = Icons.Rounded.Repeat,
+                            iconTint = MaterialTheme.colorScheme.secondary,
+                            label = if (task.repeatRule != RepeatRule.None) {
+                                task.repeatRule.label
+                            } else {
+                                "不重复"
+                            }
+                        )
+                        if (task.completionCount > 0) {
+                            DetailMetaRow(
+                                icon = Icons.Rounded.CheckCircle,
+                                iconTint = task.quadrant.color,
+                                label = "已完成 ${task.completionCount} 次"
                             )
-                            task.dueLabel?.let {
-                                CompactMeta(icon = Icons.Rounded.Schedule, text = it)
-                            }
-                            if (task.useCalendar) {
-                                CompactMeta(icon = Icons.Rounded.CalendarMonth, text = "系统日历")
-                            }
-                            if (task.useAlarm) {
-                                CompactMeta(icon = Icons.Rounded.Alarm, text = "响铃")
-                            }
-                            if (task.repeatRule != RepeatRule.None) {
-                                CompactMeta(icon = Icons.Rounded.Repeat, text = task.repeatRule.label)
-                            }
-                            if (task.completionCount > 0) {
-                                CompactMeta(icon = Icons.Rounded.CheckCircle, text = "已完成 ${task.completionCount} 次")
-                            }
                         }
                     }
                 }
@@ -4667,7 +5167,7 @@ private fun TaskDetailScreen(
                         ) {
                             Text(
                                 text = note,
-                                style = MaterialTheme.typography.bodyMedium,
+                                style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -4719,55 +5219,14 @@ private fun TaskDetailScreen(
                     }
                 }
 
-                item { Spacer(Modifier.height(2.dp)) }
-
-                // Completion history
+                // Completion history: collapsed group at the bottom (Google Tasks pattern)
                 item {
-                    Text(
-                        text = "完成历史",
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.SemiBold
-                        )
+                    CompletionHistoryGroup(
+                        completions = completions,
+                        isRecurring = task.repeatRule != RepeatRule.None,
+                        onDelete = onDeleteCompletion,
+                        onUpdateNote = onUpdateCompletionNote
                     )
-                }
-
-                if (completions.isEmpty()) {
-                    item {
-                        Surface(
-                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.20f),
-                            shape = RowShape,
-                            border = quietBorder(0.10f)
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 14.dp, vertical = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                IconTile(
-                                    icon = Icons.Rounded.History,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.64f),
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f),
-                                    iconSize = 16.dp
-                                )
-                                Text(
-                                    text = if (task.repeatRule != RepeatRule.None) "完成循环事项后这里会记录每次完成" else "暂无完成记录",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-                } else {
-                    items(completions, key = { it.id }) { completion ->
-                        CompletionItem(
-                            completion = completion,
-                            onDelete = { onDeleteCompletion(completion.id) },
-                            onUpdateNote = { id, note -> onUpdateCompletionNote(id, note) }
-                        )
-                    }
                 }
             }
 
