@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 40
+- **Total Sessions**: 41
 - **Last Active**: 2026-09-05
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1363 | Active |
+| `journal-1.md` | ~1396 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 41 | 2026-09-05 | FAB hidden while overlay panels are open | `475a8bf` | `master` |
 | 40 | 2026-09-05 | Unified top toast feedback replacing per-panel status lines | `e8206ea` | `master` |
 | 39 | 2026-09-05 | Home header compaction + full-bleed overlay without scrim | `a34ad1d` | `master` |
 | 38 | 2026-09-05 | WebDAV 400 root cause: legacy file target, probe + migrate to directory | `ce3ae60`, `e65f060` | `master` |

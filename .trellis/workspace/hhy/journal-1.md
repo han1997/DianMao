@@ -1361,3 +1361,36 @@ Replaced the scattered feedback channels with one top toast: custom SnackbarHost
 ### Next Steps
 
 - None - task complete
+
+
+## Session 41: FAB hidden while overlay panels are open
+
+**Date**: 2026-09-05
+**Task**: FAB hidden while overlay panels are open
+**Branch**: `master`
+
+### Summary
+
+The Scaffold-slot FAB floats above the content layer, so it blocked panel content whenever backup/archived/add-task overlays were open (scrim was removed earlier, making it more obtrusive). FAB visibility now also requires no overlay: !showBackupPanel && !showArchivedPanel && !isTaskPanelVisible, in addition to the existing home-only conditions (activePriority == null && taskForDetail == null). FAB returns when panels close. assembleDebug green, committed and archived.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `475a8bf` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
