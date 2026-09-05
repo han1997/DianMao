@@ -87,6 +87,41 @@ internal fun resolveBackupFileUrl(url: String, fileName: String = WEBDAV_BACKUP_
 }
 
 /**
+ * True when a WebDAV PROPFIND Depth:0 response body describes a collection
+ * (directory) rather than a plain file. QNAP/Synology servers answer with a
+ * 207 multistatus whose single `<D:response>` carries either
+ * `<D:resourcetype><D:collection/></D:resourcetype>` (directory) or an empty
+ * `<D:resourcetype></D:resourcetype>` (file). Matching on the
+ * `resourcetype` element keeps the check independent of the `D:` prefix,
+ * which some servers omit.
+ */
+internal fun propfindBodyIsCollection(body: String): Boolean {
+    val open = Regex("<(?:[A-Za-z0-9_.-]+:)?resourcetype\\b[^>]*>", RegexOption.IGNORE_CASE)
+    val match = open.find(body) ?: return false
+    val closeTag = "</" + match.value.trimStart('<', '/').trimEnd('>') + ">"
+    val closeIndex = body.indexOf(closeTag, match.range.last, ignoreCase = true)
+    val inner = if (closeIndex >= 0) {
+        body.substring(match.range.last + 1, closeIndex)
+    } else {
+        // Self-closing is never a collection; fall through to the inner scan.
+        body.substring(match.range.last + 1, body.length.coerceAtMost(match.range.last + 200))
+    }
+    return inner.contains(Regex("<(?:[A-Za-z0-9_.-]+:)?collection\\b", RegexOption.IGNORE_CASE)) ||
+        inner.contains("collection", ignoreCase = true)
+}
+
+/**
+ * Cheap structural check that a remote body is a DianMao backup document
+ * before it is deleted during the file-to-directory migration. The backup
+ * codec always emits `"format": "dianmao.tasks"` near the top of the JSON;
+ * whitespace and attribute order variations are tolerated by matching the
+ * format token anywhere in the body.
+ */
+internal fun looksLikeDianmaoBackup(body: String): Boolean {
+    return body.contains("\"dianmao.tasks\"")
+}
+
+/**
  * Returns the WebDAV collection URLs that must exist for a directory-shaped
  * URL to accept an upload, ordered from outermost to innermost. Each entry is
  * a full URL ending in "/". File-shaped or unparseable URLs yield an empty
