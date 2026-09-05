@@ -1,5 +1,13 @@
 # Changelog
 
+- WebDAV backups now treat the configured URL as a backup folder: the app
+  writes `dianmao-backup-latest.json` inside the directory, creates missing
+  directory levels with WebDAV MKCOL before uploading, and keeps legacy
+  full-file URLs (ending in `.json`) working unchanged. The backup format was
+  upgraded to version 4 with human-readable ISO-8601 timestamps, app and
+  device metadata, a summary block, and readable quadrant/repeat labels next
+  to the machine fields; version 3 backup files still import.
+
 - Relaxed the visual rhythm and motion for a calmer feel: spacing tokens
   across screens, rows, sections, and sheets grew by 2-4dp (screen padding
   20dp, row gaps 12dp, section gaps 14dp, sheet padding 16dp) and all

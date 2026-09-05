@@ -387,15 +387,27 @@ WebDAV or another user-configured HTTP endpoint.
 ### 2. Signatures
 
 * Settings: `WebDavSettings(url: String, username: String, password: String)`
+  — `url` is a **directory URL** by default (e.g. `https://dav.example.com/dianmao/`);
+  a URL ending in `.json` is honored as a legacy full-file URL.
 * Store: `BackupSettingsStore.loadWebDavSettings(): WebDavSettings`
 * Store: `BackupSettingsStore.saveWebDavSettings(settings)`
 * Upload: `WebDavBackupClient.upload(settings, payload)`
 * Download: `WebDavBackupClient.download(settings): String`
+* URL helpers (`backup/WebDavUrl.kt`, pure and JVM-testable):
+  `resolveBackupFileUrl(url): String` — appends `dianmao-backup-latest.json`
+  to directory URLs, passes `.json` URLs through;
+  `webDavCollectionUrls(url): List<String>` — ordered collection chain for
+  MKCOL.
 
 ### 3. Contracts
 
-* WebDAV backup uses manual `PUT` to the configured file URL.
-* WebDAV restore uses manual `GET` from the configured file URL.
+* Directory-shaped URLs upload to `<directory>/dianmao-backup-latest.json`;
+  the client attempts `MKCOL` on each missing collection level first.
+* MKCOL failures are non-fatal by design (405 = already exists; servers that
+  forbid MKCOL still accept PUT). The PUT status decides the outcome.
+* File-shaped URLs (`.json` suffix) PUT/GET the URL directly — legacy
+  behavior preserved.
+* WebDAV restore uses `GET` on the resolved file URL.
 * Optional Basic auth is sent only when username or password is present.
 * Local WebDAV servers may use `http://` LAN URLs; public or remote backup
   endpoints should prefer `https://`.

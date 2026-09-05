@@ -150,7 +150,16 @@ field in `TaskEntity`.
 ### 3. Contracts
 
 * Backup payloads are UTF-8 JSON with `format`, `backupVersion`,
-  `databaseVersion`, `createdAtMillis`, and `tasks`.
+  `databaseVersion`, `createdAtMillis`, `createdAt` (ISO-8601),
+  `app` (`versionName`/`platform`/`osVersion`), `summary`
+  (`taskCount`/`completionCount`/`archivedCount`), `tasks`, and `completions`.
+  Current `backupVersion` is **4**.
+* Version 4 task/completion objects add human-readable companions alongside
+  the machine fields: `quadrantLabel`, `repeatRuleLabel`, `dueAt`/`createdAt`/
+  `updatedAt`/`lastCompletedAt`/`completedAt` ISO-8601 strings. Machine fields
+  (enum names, millis) remain the source of truth for import.
+* Import accepts any `backupVersion <= 4`; v3 payloads (no ISO companions)
+  import unchanged because all new fields are optional at decode time.
 * Import replaces all local task rows inside a Room transaction.
 * Import clears `calendarEventId`; Calendar Provider ids are device-local and
   must not be restored across devices.
