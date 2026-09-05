@@ -1295,3 +1295,36 @@ ADB + curl reproduction against the QNAP NAS showed /webdav/DianMao was a legacy
 ### Next Steps
 
 - None - task complete
+
+
+## Session 39: Home header compaction + full-bleed overlay without scrim
+
+**Date**: 2026-09-05
+**Task**: Home header compaction + full-bleed overlay without scrim
+**Branch**: `master`
+
+### Summary
+
+Removed the home date tagline row and the redundant home chip (header now one row: compass + title + actions). Moved insets handling from Scaffold content to per-surface: home column and quadrant detail LazyColumn apply safeDrawing themselves, so panel overlays now cover the full screen including the status bar. Removed the 16% scrim background from AddTaskPanel/BackupPanel/ArchivedPanel entirely (transparent click-to-dismiss layer kept, card elevation kept). Hit the known PowerShell GBK mojibake trap batch-editing imports; rolled back with git checkout and redid edits via Edit tool. Verified: assembleDebug green, user confirmed on device.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `a34ad1d` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
