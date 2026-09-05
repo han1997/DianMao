@@ -1,5 +1,12 @@
 # Changelog
 
+- Replaced the system date and time dialogs with Material 3 Compose pickers
+  that inherit the app theme: the add-task sheet now opens a themed calendar
+  date picker and a 24-hour time picker in a matching card dialog, and the
+  legacy android.app picker helpers were removed. A consistency pass also
+  aligned the recurring-task complete button with the shared button shape and
+  padding.
+
 - WebDAV backups now treat the configured URL as a backup folder: the app
   writes `dianmao-backup-latest.json` inside the directory, creates missing
   directory levels with WebDAV MKCOL before uploading, and keeps legacy

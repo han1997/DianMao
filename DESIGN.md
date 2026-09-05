@@ -304,6 +304,11 @@ Confident and restrained. Every interactive element feels native and unhurried. 
 - **Form dialogs** (completion note) use a freeform `Dialog` + Card container per official M3 guidance, with TextButton actions right-aligned.
 - **Dismiss actions are TextButton**, never outlined — outlined dismiss adds a third visual weight to a two-button dialog.
 
+### Date & Time Pickers
+- **Date:** M3 `DatePickerDialog` + `DatePicker` (calendar mode) in `ui/components/DateTimePickers.kt`. Inherits DianMaoTheme; confirm/cancel are TextButton ("确定"/"取消"). Converts between the app's local-midnight convention and the picker's UTC-midnight state explicitly.
+- **Time:** M3 `TimePicker` (24-hour) inside a freeform `Dialog` + Card (PanelShape) container — there is no M3 TimePickerDialog composable. TextButton actions right-aligned.
+- The legacy `android.app.DatePickerDialog`/`TimePickerDialog` are removed; all pickers are Compose M3 and theme-consistent.
+
 ### Navigation
 - **Main Scaffold:** Single-screen layout with FAB. No side navigation, no drawer.
 - **Sheets:** ModalBottomSheet for task detail (skipPartiallyExpanded). Manual Card sheets for add/edit and backup at 90% height.
