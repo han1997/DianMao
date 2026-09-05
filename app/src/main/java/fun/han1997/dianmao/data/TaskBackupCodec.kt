@@ -1,22 +1,41 @@
 package `fun`.han1997.dianmao.data
 
+import android.os.Build
+import java.time.OffsetDateTime
+import java.time.ZoneId
 import org.json.JSONArray
 import org.json.JSONObject
 
 object TaskBackupCodec {
     private const val FORMAT = "dianmao.tasks"
-    private const val BACKUP_VERSION = 3
+    private const val BACKUP_VERSION = 4
 
     fun encode(
         tasks: List<TaskEntity>,
         completions: List<TaskCompletionEntity>,
-        createdAtMillis: Long = System.currentTimeMillis()
+        createdAtMillis: Long = System.currentTimeMillis(),
+        appVersionName: String = "1.0"
     ): String {
         val root = JSONObject()
             .put("format", FORMAT)
             .put("backupVersion", BACKUP_VERSION)
             .put("databaseVersion", TASK_DATABASE_VERSION)
             .put("createdAtMillis", createdAtMillis)
+            .put("createdAt", isoTimestamp(createdAtMillis))
+            .put(
+                "app",
+                JSONObject()
+                    .put("versionName", appVersionName)
+                    .put("platform", "android")
+                    .put("osVersion", Build.VERSION.SDK_INT)
+            )
+            .put(
+                "summary",
+                JSONObject()
+                    .put("taskCount", tasks.size)
+                    .put("completionCount", completions.size)
+                    .put("archivedCount", tasks.count { it.archived })
+            )
             .put(
                 "tasks",
                 JSONArray().apply {
@@ -54,26 +73,39 @@ object TaskBackupCodec {
         return Pair(taskList, completions)
     }
 
+    private fun isoTimestamp(millis: Long): String {
+        return OffsetDateTime.ofInstant(
+            java.time.Instant.ofEpochMilli(millis),
+            ZoneId.systemDefault()
+        ).toString()
+    }
+
     private fun taskToJson(task: TaskEntity): JSONObject {
         return JSONObject()
             .put("id", task.id)
             .put("title", task.title)
             .put("quadrant", task.quadrant.name)
+            .put("quadrantLabel", TaskPriority.valueOf(task.quadrant.name).label)
             .putNullable("dueLabel", task.dueLabel)
             .putNullable("dueAtMillis", task.dueAtMillis)
+            .putNullable("dueAt", task.dueAtMillis?.let { isoTimestamp(it) })
             .put("useCalendar", task.useCalendar)
             .putNullable("calendarEventId", task.calendarEventId)
             .put("useAlarm", task.useAlarm)
             .put("repeatRule", task.repeatRule.name)
+            .put("repeatRuleLabel", task.repeatRule.label)
             .put("subTasks", subTasksToJson(task.subTasks))
             .put("completionCount", task.completionCount)
             .putNullable("lastCompletedAtMillis", task.lastCompletedAtMillis)
+            .putNullable("lastCompletedAt", task.lastCompletedAtMillis?.let { isoTimestamp(it) })
             .put("completed", task.completed)
             .putNullable("completionNote", task.completionNote)
             .put("archived", task.archived)
             .put("displayOrder", task.displayOrder)
             .put("createdAtMillis", task.createdAtMillis)
+            .put("createdAt", isoTimestamp(task.createdAtMillis))
             .put("updatedAtMillis", task.updatedAtMillis)
+            .put("updatedAt", isoTimestamp(task.updatedAtMillis))
     }
 
     private fun taskFromJson(json: JSONObject): TaskEntity {
@@ -104,6 +136,7 @@ object TaskBackupCodec {
             .put("id", completion.id)
             .put("taskId", completion.taskId)
             .put("completedAtMillis", completion.completedAtMillis)
+            .put("completedAt", isoTimestamp(completion.completedAtMillis))
             .putNullable("note", completion.note)
     }
 

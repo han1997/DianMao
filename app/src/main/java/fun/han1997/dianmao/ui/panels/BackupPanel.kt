@@ -1,6 +1,7 @@
 package `fun`.han1997.dianmao
 
 import `fun`.han1997.dianmao.backup.WebDavSettings
+import `fun`.han1997.dianmao.backup.resolveBackupFileUrl
 import `fun`.han1997.dianmao.data.DateTimeFormatters
 import `fun`.han1997.dianmao.data.TaskUiModel
 import `fun`.han1997.dianmao.ColorDot
@@ -231,7 +232,11 @@ internal fun BackupPanel(
                                         overflow = TextOverflow.Ellipsis
                                     )
                                     Text(
-                                        text = if (webDavReady) "WebDAV 云端备份目标" else "配置下方地址后可上传与恢复",
+                                        text = if (webDavReady) {
+                                            "WebDAV 云端备份目标 · " + resolveBackupFileUrl(url).substringAfterLast('/')
+                                        } else {
+                                            "配置下方地址后可上传与恢复"
+                                        },
                                         style = MaterialTheme.typography.labelMedium,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.82f),
                                         maxLines = 1,
@@ -317,17 +322,18 @@ internal fun BackupPanel(
                             }
                         }
 
-                        FormSettingBlock(title = "WebDAV 配置", subtitle = "保存地址后可手动上传或下载恢复") {
-                            OutlinedTextField(
-                                value = url,
-                                onValueChange = { url = it },
-                                modifier = Modifier.fillMaxWidth(),
-                                label = { Text("备份文件 URL") },
-                                placeholder = { Text("https:// 或局域网 http://192.168.x.x/backup.json") },
-                                singleLine = true,
-                                shape = RowShape,
-                                colors = quietTextFieldColors()
-                            )
+                         FormSettingBlock(title = "WebDAV 配置", subtitle = "填目录地址自动建目录备份；以 .json 结尾则视为文件") {
+                             OutlinedTextField(
+                                 value = url,
+                                 onValueChange = { url = it },
+                                 modifier = Modifier.fillMaxWidth(),
+                                 label = { Text("备份目录 URL") },
+                                 placeholder = { Text("https://dav.example.com/dianmao/ 或 http://192.168.x.x/dav/") },
+                                 supportingText = { Text("备份写入目录内 dianmao-backup-latest.json；目录不存在会自动创建") },
+                                 singleLine = true,
+                                 shape = RowShape,
+                                 colors = quietTextFieldColors()
+                             )
                             OutlinedTextField(
                                 value = username,
                                 onValueChange = { username = it },

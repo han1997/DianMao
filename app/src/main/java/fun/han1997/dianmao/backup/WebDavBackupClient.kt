@@ -12,7 +12,9 @@ class WebDavBackupClient {
     suspend fun upload(settings: WebDavSettings, payload: String) {
         withContext(Dispatchers.IO) {
             require(settings.url.isNotBlank()) { "WebDAV URL is empty" }
-            val connection = openConnection(settings, "PUT").apply {
+            ensureDirectoryExists(settings)
+            val fileUrl = resolveBackupFileUrl(settings.url)
+            val connection = openConnection(settings, "PUT", fileUrl).apply {
                 doOutput = true
                 setRequestProperty("Content-Type", "application/json; charset=utf-8")
             }
@@ -30,7 +32,8 @@ class WebDavBackupClient {
     suspend fun download(settings: WebDavSettings): String {
         return withContext(Dispatchers.IO) {
             require(settings.url.isNotBlank()) { "WebDAV URL is empty" }
-            val connection = openConnection(settings, "GET")
+            val fileUrl = resolveBackupFileUrl(settings.url)
+            val connection = openConnection(settings, "GET", fileUrl)
             try {
                 connection.requireSuccess()
                 connection.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
@@ -40,8 +43,37 @@ class WebDavBackupClient {
         }
     }
 
-    private fun openConnection(settings: WebDavSettings, method: String): HttpURLConnection {
-        val connection = (URL(settings.url.trim()).openConnection() as HttpURLConnection).apply {
+    /**
+     * WebDAV directory support: when the configured URL is a directory (not a
+     * ".json" file URL), try to create the collection chain with MKCOL before
+     * uploading. MKCOL failures are deliberately non-fatal — many servers
+     * pre-create the directory or forbid MKCOL — the subsequent PUT decides
+     * the outcome through its own status code.
+     */
+    private fun ensureDirectoryExists(settings: WebDavSettings) {
+        webDavCollectionUrls(settings.url).forEach { collectionUrl ->
+            runCatching { mkcolCollection(settings, collectionUrl) }
+        }
+    }
+
+    private fun mkcolCollection(settings: WebDavSettings, collectionUrl: String) {
+        val connection = openConnection(settings, "MKCOL", collectionUrl)
+        try {
+            val code = connection.responseCode
+            // 201 created, 405 already exists; any failure here is non-fatal
+            // by design — the subsequent PUT reports the real outcome.
+            if (code in 200..299 || code == 405) return
+        } finally {
+            connection.disconnect()
+        }
+    }
+
+    private fun openConnection(
+        settings: WebDavSettings,
+        method: String,
+        targetUrl: String = settings.url.trim()
+    ): HttpURLConnection {
+        val connection = (URL(targetUrl).openConnection() as HttpURLConnection).apply {
             requestMethod = method
             connectTimeout = 15_000
             readTimeout = 20_000
