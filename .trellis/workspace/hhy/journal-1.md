@@ -1394,3 +1394,36 @@ The Scaffold-slot FAB floats above the content layer, so it blocked panel conten
 ### Next Steps
 
 - None - task complete
+
+
+## Session 42: Task detail safe-area fix
+
+**Date**: 2026-09-05
+**Task**: Task detail safe-area fix
+**Branch**: `master`
+
+### Summary
+
+Fixed status-bar overlap by applying WindowInsets.safeDrawing to TaskDetailScreen content while keeping its background edge-to-edge; updated the changelog and Compose safe-area guidelines. Verification passed: 51 unit tests, lintDebug (0 errors, 24 warnings, 1 hint), assembleDebug, and git diff --check. Runtime visual verification remains pending because no Android device or configured emulator was available. Archived the task and preserved unrelated IDE/tooling changes; no remote push.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `9ab2012` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
