@@ -1427,3 +1427,37 @@ Fixed status-bar overlap by applying WindowInsets.safeDrawing to TaskDetailScree
 ### Next Steps
 
 - None - task complete
+
+
+## Session 43: Redesign secondary surfaces as full-screen destinations
+
+**Date**: 2026-09-06
+**Task**: Redesign secondary surfaces as full-screen destinations
+**Branch**: `master`
+
+### Summary
+
+Converted backup/settings, archive, add/edit task, and recurring completion history from bottom-sheet/overlay cards into full-screen destinations consistent with the home's warm paper visual language. Added shared FullScreenScaffold (quiet anchored top bar, single safeDrawing column, centered 600dp content cap). Compact confirmations and pickers stay themed dialogs. No nav/back-priority or task-behavior change. Checks: testDebugUnitTest, lintDebug, assembleDebug, git diff --check all green. Updated DESIGN.md + README to document the full-screen presentation contract.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `1c20e43` | (see git log) |
+| `0da8c8e` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

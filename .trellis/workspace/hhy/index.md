@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 42
-- **Last Active**: 2026-09-05
+- **Total Sessions**: 43
+- **Last Active**: 2026-09-06
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1429 | Active |
+| `journal-1.md` | ~1463 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 43 | 2026-09-06 | Redesign secondary surfaces as full-screen destinations | `1c20e43`, `0da8c8e` | `master` |
 | 42 | 2026-09-05 | Task detail safe-area fix | `9ab2012` | `master` |
 | 41 | 2026-09-05 | FAB hidden while overlay panels are open | `475a8bf` | `master` |
 | 40 | 2026-09-05 | Unified top toast feedback replacing per-panel status lines | `e8206ea` | `master` |
