@@ -1091,3 +1091,37 @@ Removed HomeSmartControls from home layout, moved search button and floating sea
 ### Next Steps
 
 - None - task complete
+
+
+## Session 33: UI polish: secondary and capture pages
+
+**Date**: 2026-09-05
+**Task**: UI polish: secondary and capture pages
+**Branch**: `master`
+
+### Summary
+
+Restructured secondary/capture UI per mainstream to-do app patterns: TaskDetail verb rows + collapsed history, QuadrantDetail sticky slim header + sectioned list, AddTaskPanel sticky capture head with chip row/auto-focus/IME save, BackupPanel settings-page layout with single primary button, ArchivedPanel meta-enriched rows, dialogs to TextButton + freeform form dialog. Synced compose-patterns spec (back target signature, drag-reorder sectioning, capture auto-focus contracts).
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `eb5e05d` | (see git log) |
+| `6fc555f` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
