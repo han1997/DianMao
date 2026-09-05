@@ -14,15 +14,19 @@
 
 ```kotlin
 // State resolver (composition time)
+// NOTE: the live signature now includes taskForDetail and returns null
+// (not None) when no layer can consume back — see InAppBackTarget enum
+// in MainActivity.kt. Update this spec when the signature changes again.
 fun resolveInAppBackTarget(
-    backupPanelShown: Boolean,
-    archivedPanelShown: Boolean,
-    taskPanelState: TaskPanelState,
-    activePriority: Priority?
-): InAppBackTarget
+    showBackupPanel: Boolean,
+    showArchivedPanel: Boolean,
+    isTaskPanelVisible: Boolean,
+    hasActivePriority: Boolean,
+    taskForDetail: Boolean
+): InAppBackTarget?
 
 // BackHandler callback (execution time)
-BackHandler(enabled = backTarget != InAppBackTarget.None) {
+BackHandler(enabled = backTarget != null) {
     // Callback body executes after composition
 }
 ```
@@ -32,7 +36,7 @@ BackHandler(enabled = backTarget != InAppBackTarget.None) {
 **Composition-time state snapshot**:
 - Must compute derived state (like back target) during composition
 - Store result in a `val` that captures the snapshot
-- Type: `InAppBackTarget` (enum representing priority order)
+- Type: `InAppBackTarget?` (nullable enum representing priority order; null = fall through to system back)
 
 **Callback-time execution**:
 - Must reference the pre-computed snapshot variable
@@ -42,6 +46,8 @@ BackHandler(enabled = backTarget != InAppBackTarget.None) {
 **State mutation**:
 - Dismiss operations must mutate the original state variables
 - Type: `Boolean` flags or sealed class states that trigger recomposition
+
+**Priority order (current, 2026-09)**: BackupPanel > ArchivedPanel > TaskPanel > TaskDetail > QuadrantDetail > null. `TaskDetail` was added when the task detail surface became a back-consuming layer; any new back-capable layer must be inserted into the enum, the resolver `when`, the dispatch `when`, and `InAppBackTargetTest` in the same change.
 
 ### 4. Validation & Error Matrix
 
@@ -56,12 +62,12 @@ BackHandler(enabled = backTarget != InAppBackTarget.None) {
 **Good**: Pre-compute at composition time, use snapshot in callback
 ```kotlin
 val backTarget = resolveInAppBackTarget(
-    backupPanelShown, archivedPanelShown, 
-    taskPanelState, activePriority
+    showBackupPanel, showArchivedPanel,
+    isTaskPanelVisible, hasActivePriority, taskForDetail
 )
-BackHandler(enabled = backTarget != InAppBackTarget.None) {
+BackHandler(enabled = backTarget != null) {
     when (backTarget) {  // Uses snapshot
-        InAppBackTarget.BackupPanel -> { backupPanelShown = false }
+        InAppBackTarget.BackupPanel -> { showBackupPanel = false }
         // ...
     }
 }
@@ -79,9 +85,9 @@ BackHandler(enabled = someFlag) {
 **Bad**: Re-compute inside callback
 ```kotlin
 val backTarget = resolveInAppBackTarget(...)
-BackHandler(enabled = backTarget != InAppBackTarget.None) {
+BackHandler(enabled = backTarget != null) {
     when (resolveInAppBackTarget(...)) {  // WRONG: re-evaluates
-        InAppBackTarget.BackupPanel -> { backupPanelShown = false }
+        InAppBackTarget.BackupPanel -> { showBackupPanel = false }
         // State seen here may differ from composition time
     }
 }
@@ -90,21 +96,23 @@ BackHandler(enabled = backTarget != InAppBackTarget.None) {
 ### 6. Tests Required
 
 **Unit tests** for state resolver (pure function):
-- Assert priority order: backup > archived > task > quadrant
-- Assert None when all layers closed
+- Assert priority order: backup > archived > task panel > task detail > quadrant
+- Assert null when all layers closed (system-back fallback)
 - Assert correct target for each combination
 
 Example assertions:
 ```kotlin
 @Test
-fun `edit panel over quadrant detail resolves to TaskPanel`() {
+fun taskDetailTakesPriorityOverQuadrantDetail() {
     val target = resolveInAppBackTarget(
-        backupPanelShown = false,
-        archivedPanelShown = false,
-        taskPanelState = TaskPanelState.Editing(taskId = 1),
-        activePriority = Priority.P1
+        showBackupPanel = false,
+        showArchivedPanel = false,
+        isTaskPanelVisible = false,
+        hasActivePriority = true,
+        taskForDetail = true
     )
-    assertEquals(InAppBackTarget.TaskPanel, target)
+
+    assertEquals(InAppBackTarget.TaskDetail, target)
 }
 ```
 
@@ -117,26 +125,20 @@ fun `edit panel over quadrant detail resolves to TaskPanel`() {
 
 #### Wrong
 ```kotlin
-// Line 477: Compute back target
+// Compute back target
 val backTarget = resolveInAppBackTarget(
-    backupPanelShown, archivedPanelShown,
-    taskPanelState, activePriority
+    showBackupPanel, showArchivedPanel,
+    isTaskPanelVisible, hasActivePriority, taskForDetail
 )
 
-// Line 484: Re-compute inside callback
-BackHandler(enabled = backTarget != InAppBackTarget.None) {
+// Re-compute inside callback
+BackHandler(enabled = backTarget != null) {
     when (resolveInAppBackTarget(  // BUG: re-evaluates state
-        backupPanelShown, archivedPanelShown,
-        taskPanelState, activePriority
+        showBackupPanel, showArchivedPanel,
+        isTaskPanelVisible, hasActivePriority, taskForDetail
     )) {
         InAppBackTarget.BackupPanel -> { 
-            backupPanelShown = false  // Changes state
-        }
-        InAppBackTarget.TaskPanel -> {
-            taskPanelState = TaskPanelState.Closed
-        }
-        InAppBackTarget.QuadrantDetail -> {
-            activePriority = null  // Changes state
+            showBackupPanel = false  // Changes state
         }
         // When dismiss changes state, re-evaluation sees
         // different values than the composition-time snapshot
@@ -144,32 +146,37 @@ BackHandler(enabled = backTarget != InAppBackTarget.None) {
 }
 ```
 
-**Problem**: After `backupPanelShown = false` executes, the next line re-evaluating `resolveInAppBackTarget()` sees `backupPanelShown=false` and might jump to `TaskPanel` or `QuadrantDetail` instead of just returning. This causes layers to be skipped.
+**Problem**: After `showBackupPanel = false` executes, the next line re-evaluating `resolveInAppBackTarget()` sees `showBackupPanel=false` and might jump to `TaskPanel` or `QuadrantDetail` instead of just returning. This causes layers to be skipped.
 
 #### Correct
 ```kotlin
-// Line 477: Compute back target ONCE at composition time
+// Compute back target ONCE at composition time
 val backTarget = resolveInAppBackTarget(
-    backupPanelShown, archivedPanelShown,
-    taskPanelState, activePriority
+    showBackupPanel, showArchivedPanel,
+    isTaskPanelVisible, hasActivePriority, taskForDetail
 )
 
-// Line 484: Use the snapshot in callback
-BackHandler(enabled = backTarget != InAppBackTarget.None) {
+// Use the snapshot in callback
+BackHandler(enabled = backTarget != null) {
     when (backTarget) {  // Uses pre-computed snapshot
         InAppBackTarget.BackupPanel -> { 
-            backupPanelShown = false
+            showBackupPanel = false
         }
         InAppBackTarget.ArchivedPanel -> {
-            archivedPanelShown = false
+            showArchivedPanel = false
         }
         InAppBackTarget.TaskPanel -> {
-            taskPanelState = TaskPanelState.Closed
+            // close the add/edit sheet (live code: showAddSheet = false;
+            // taskForEdit = null)
+            dismissTaskPanel()
+        }
+        InAppBackTarget.TaskDetail -> {
+            taskForDetail = null
         }
         InAppBackTarget.QuadrantDetail -> {
             activePriority = null
         }
-        InAppBackTarget.None -> {}
+        null -> {}
     }
 }
 ```
@@ -180,7 +187,7 @@ BackHandler(enabled = backTarget != InAppBackTarget.None) {
 
 ## Design Decision: Explicit Back Priority Model
 
-**Context**: Multiple overlays (backup panel, archived panel, task edit/add panel) can overlap with underlying detail views (quadrant detail). Back gesture must close the topmost visible layer first.
+**Context**: Multiple overlays (backup panel, archived panel, task edit/add panel) can overlap with underlying detail views (quadrant detail, task detail). Back gesture must close the topmost visible layer first.
 
 **Options Considered**:
 1. Multiple conditional `BackHandler` calls (one per layer)
@@ -191,24 +198,32 @@ BackHandler(enabled = backTarget != InAppBackTarget.None) {
 - Priority becomes implicit and fragile
 - Hard to test and reason about
 
-**Implementation**:
+**Implementation** (live signature, 2026-09):
 ```kotlin
 enum class InAppBackTarget {
-    None,
-    QuadrantDetail,
-    TaskPanel,
+    TaskDetail,
+    BackupPanel,
     ArchivedPanel,
-    BackupPanel  // Highest priority
+    TaskPanel,
+    QuadrantDetail
 }
 
-fun resolveInAppBackTarget(...): InAppBackTarget {
+fun resolveInAppBackTarget(
+    showBackupPanel: Boolean,
+    showArchivedPanel: Boolean,
+    isTaskPanelVisible: Boolean,
+    hasActivePriority: Boolean,
+    taskForDetail: Boolean
+): InAppBackTarget? {
     return when {
-        backupPanelShown -> InAppBackTarget.BackupPanel
-        archivedPanelShown -> InAppBackTarget.ArchivedPanel
-        taskPanelState != TaskPanelState.Closed -> InAppBackTarget.TaskPanel
-        activePriority != null -> InAppBackTarget.QuadrantDetail
-        else -> InAppBackTarget.None
+        showBackupPanel -> InAppBackTarget.BackupPanel
+        showArchivedPanel -> InAppBackTarget.ArchivedPanel
+        isTaskPanelVisible -> InAppBackTarget.TaskPanel
+        taskForDetail -> InAppBackTarget.TaskDetail
+        hasActivePriority -> InAppBackTarget.QuadrantDetail
+        else -> null
     }
+}
 }
 ```
 
@@ -217,6 +232,127 @@ fun resolveInAppBackTarget(...): InAppBackTarget {
 2. Add condition to resolver
 3. Add branch to dispatch when
 4. Add test case for the new priority
+
+(The 2026-09 UI-polish task added `TaskDetail` this way — resolver, enum,
+dispatch, and `InAppBackTargetTest` all changed together.)
+
+---
+
+## Pattern: Drag Reorder With Sectioned LazyColumn
+
+**Problem**: When a drag-to-reorder LazyColumn gains non-task items (sticky
+header, intro block, section labels, collapsed groups), `onMove` receives
+**absolute LazyColumn item indices**, while the reorder state operates on a
+**task-only list**. Naive index math corrupts reorder state or lets drags
+cross section boundaries.
+
+**Contracts**:
+- Compute the absolute item offset: count every non-task item rendered before
+  the first task row (header + intro + section label = constant prefix).
+- Only enable drag on rows whose absolute index falls inside the active
+  (未完成) section's absolute range.
+- Guard `onMove` with the open-task count so a drag cannot move an item past
+  the boundary into collapsed-group items.
+- If a collapsed group renders expanded task rows inside the same LazyColumn,
+  do not include them in the reorderable list indices.
+
+**Good**:
+```kotlin
+val sectionPrefix = 3 // header item + intro item + section label item
+val openCount = openDetailTaskCount
+
+dragEnabled = index >= sectionPrefix && index < sectionPrefix + openCount
+
+onMove = { from, to ->
+    val fromTask = from - sectionPrefix
+    val toTask = to - sectionPrefix
+    if (fromTask in 0 until openCount && toTask in 0 until openCount) {
+        onReorder(fromTask, toTask)
+    }
+}
+```
+
+**Bad**:
+```kotlin
+// Passes absolute LazyColumn indices straight into task-list reorder.
+onMove = { from, to -> onReorder(from, to) }
+```
+
+**Why**: Absolute vs relative index mismatch silently swaps the wrong tasks,
+and without the range guard a drag can cross into the completed section whose
+items are not part of the reorderable list.
+
+**Reference implementation**:
+- `app/src/main/java/fun/han1997/dianmao/MainActivity.kt` — quadrant detail
+  LazyColumn (header + `QuadrantDetailIntro` + "未完成" label + open tasks +
+  collapsed completed group)
+
+---
+
+## Pattern: Capture Auto-Focus and IME Save in Add Panels
+
+**Problem**: An add-task sheet that opens without focus forces a tap before
+typing, and an IME Done that only clears focus wastes the primary capture
+gesture. Mainstream capture flows (Todoist/TickTick/Things) focus the title on
+open and commit via the keyboard action.
+
+**Contracts**:
+- In add mode, request focus on the title field via `FocusRequester` inside
+  `LaunchedEffect(visible)` with a short delay (compositional settle), gated to
+  `!isEditing`. Edit mode must NOT auto-focus.
+- IME `Done` on the title field: in add mode, run the same save path as the
+  save button (save-and-continue capture); in edit mode, only clear focus.
+- Guard the save action against blank titles — the IME path must behave
+  identically to the button path (no double-save, same validation).
+- Keep the save-feedback pill behavior unchanged: panel stays open, fields
+  cleared, pill auto-dismisses after 2200ms.
+
+**Good**:
+```kotlin
+val titleFocusRequester = remember { FocusRequester() }
+
+LaunchedEffect(visible, editingTask?.id) {
+    if (visible && !isEditing) {
+        kotlinx.coroutines.delay(220)
+        titleFocusRequester.requestFocus()
+    }
+}
+
+OutlinedTextField(
+    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+    keyboardActions = KeyboardActions(
+        onDone = {
+            if (!isEditing) saveTask() else focusManager.clearFocus()
+        }
+    ),
+    modifier = Modifier.focusRequester(titleFocusRequester)
+)
+```
+
+**Bad**:
+```kotlin
+// Auto-focuses in edit mode too — surprising and hides existing content intent.
+LaunchedEffect(visible) { titleFocusRequester.requestFocus() }
+
+// IME Done silently saves in edit mode, doubling the button's role.
+onDone = { saveTask() }
+```
+
+**Why**: Capture speed is a product principle ("capture before classification").
+The keyboard should be up on the first frame in add mode, and the keyboard's
+primary action should commit the capture. Edit mode is a "refine" flow —
+focus and Done behave conservatively there.
+
+**Reference implementation**:
+- `app/src/main/java/fun/han1997/dianmao/MainActivity.kt` — `AddTaskPanel`
+  title field + `LaunchedEffect(visible, editingTask?.id)` auto-focus
+
+**Verification**:
+- Open add sheet from FAB: keyboard is up, cursor in title field.
+- Open edit sheet from a task: no auto-focus, no keyboard.
+- Type title, tap IME Done in add mode: task saves, sheet stays open, pill
+  shows, next draft keeps the quadrant.
+- Edit mode IME Done: keyboard hides, no save.
 
 ---
 
@@ -271,9 +407,10 @@ If each path has its own dismiss logic, they can diverge and cause inconsistent 
 
 **Example**:
 ```kotlin
-// Centralized dismiss
+// Centralized dismiss — one mutation covering all task-panel state
 fun dismissTaskPanel() {
-    taskPanelState = TaskPanelState.Closed
+    showAddSheet = false
+    taskForEdit = null
 }
 
 // All paths use the same mutation
@@ -712,8 +849,10 @@ than others for no semantic reason.
 - All three overlay panels must use `Card` with `SheetShape` (22dp top corners)
   and `cardElevation(6.dp)` — not `Surface` with `PanelShape` or
   `tonalElevation`.
-- All three must include a 38×4dp drag handle in `outline` at 0.34 alpha,
-  centered at the top of the card content.
+- Bottom-docked panels (`AddTaskPanel`, `BackupPanel`) must include a 38×4dp
+  drag handle in `outline` at 0.34 alpha, centered at the top of the card
+  content. `ArchivedPanel` is a centered card that cannot be dragged, so it
+  omits the handle (updated 2026-09; DESIGN.md matches).
 - All three must use `windowInsetsPadding(WindowInsets.safeDrawing)` inside the
   card so content is not clipped by status bar or navigation bar.
 - Panel heights may differ by purpose: `AddTaskPanel` 90%, `BackupPanel` 88%,
