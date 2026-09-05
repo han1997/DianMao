@@ -1159,3 +1159,37 @@ Relaxed spacing tokens across screens/rows/sections/sheets (screen 20dp, row 12d
 ### Next Steps
 
 - None - task complete
+
+
+## Session 35: WebDAV folder backup and format v4
+
+**Date**: 2026-09-05
+**Task**: WebDAV folder backup and format v4
+**Branch**: `master`
+
+### Summary
+
+WebDAV backup now treats the configured URL as a directory: resolveBackupFileUrl/webDavCollectionUrls pure helpers in backup/WebDavUrl.kt, per-level MKCOL before upload (non-fatal), fixed file name dianmao-backup-latest.json, legacy .json file URLs still work. Backup format upgraded to v4: ISO-8601 timestamps, app metadata block, summary counts, quadrant/repeat label companions; v3 payloads still import. BackupPanel copy updated to directory semantics.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `4c69005` | (see git log) |
+| `a5143a9` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
