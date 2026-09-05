@@ -14,13 +14,17 @@ class WebDavBackupClient {
             require(settings.url.isNotBlank()) { "WebDAV URL is empty" }
             ensureDirectoryExists(settings)
             val fileUrl = resolveBackupFileUrl(settings.url)
+            val body = payload.toByteArray(StandardCharsets.UTF_8)
             val connection = openConnection(settings, "PUT", fileUrl).apply {
                 doOutput = true
                 setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                // Fixed-length body: chunked transfer-encoding is rejected by
+                // some NAS WebDAV firmwares (Synology/QNAP) with 400/411.
+                setFixedLengthStreamingMode(body.size)
             }
             try {
                 connection.outputStream.use { output ->
-                    output.write(payload.toByteArray(StandardCharsets.UTF_8))
+                    output.write(body)
                 }
                 connection.requireSuccess()
             } finally {
