@@ -115,14 +115,10 @@ components:
   task-form-section:
     backgroundColor: "{colors.surface-variant}"
     rounded: "{rounded.panel}"
-  sheet-add-task:
-    backgroundColor: "{colors.raised-surface}"
-    rounded: "{rounded.sheet-top}"
-    height: "90%"
-  sheet-backup:
-    backgroundColor: "{colors.raised-surface}"
-    rounded: "{rounded.sheet-top}"
-    height: "88%"
+  fullscreen-secondary:
+    backgroundColor: "{colors.app-surface}"
+    rounded: "{rounded.inline-14}"
+    content-width-cap: "600dp"
   chip-summary:
     rounded: "{rounded.chip}"
     padding: "9dp 7dp"
@@ -205,7 +201,7 @@ The palette is restrained: warm terracotta for action and priority, calendar blu
 ### Hierarchy
 - **Display** (SemiBold, 27sp, 33sp line-height): Reserved for screen titles. Currently defined but not yet applied; the live screen titles (app header, sheet titles) use Title Large. Document this step as the canonical top-of-screen size and migrate titles onto it as the UI evolves. Not for marketing-style hero text inside daily screens.
 - **Headline** (Bold, varies by context): Section headers in detail views, calendar stat numbers. Applied as weight overrides on headlineSmall/headlineMedium, not as a separate scale step.
-- **Title Large** (SemiBold, 20sp, 26sp line-height): Sheet titles ("新增事项", "备份与恢复", "归档事项"), app header ("DianMao"), and detail-screen headings.
+- **Title Large** (SemiBold, 20sp, 26sp line-height): Secondary-destination titles ("新增事项", "备份与恢复", "归档事项"), app header ("DianMao"), and detail-screen headings.
 - **Title Medium** (SemiBold 16sp / Medium 15sp, 22sp line-height): Task row titles (15sp Medium for density), form section headers, date picker labels.
 - **Body Large** (Normal/Medium, 16sp, 24sp line-height, 0.1sp tracking): Task descriptions, completion notes, text fields. Keep long notes readable rather than compressed.
 - **Body Medium** (Normal, 14sp, 20sp line-height, 0.1sp tracking): Secondary body text, metadata explanations.
@@ -223,23 +219,23 @@ The palette is restrained: warm terracotta for action and priority, calendar blu
 Flat by default, layered only when structure requires it. Depth comes from tonal surface differences and spacing; shadows appear on floating actions, bottom sheets, menus, and dragged task items. A task row at rest is a flat surface with a faint border, never a floating card.
 
 ### Elevation Vocabulary
-- **Rest (0dp)**: Task row cards, detail stat cards, quadrant board. No shadow. Depth implied by tonal surface difference and a quiet border at 0.14–0.18 alpha.
-- **Sheet (6dp)**: Add-task, backup, and archived panels. Material `cardElevation` on the overlay Card.
+- **Rest (0dp)**: Task row cards, detail stat cards, quadrant board, full-screen secondary destinations. No shadow. Depth implied by tonal surface difference and a quiet border at 0.14–0.18 alpha.
+- **Sheet (6dp)**: Removed from the primary flows — add/edit, backup, archive, and recurring history are now full-screen destinations (see Components). A 6dp sheet Card still wraps form dialogs such as the completion-note and time picker.
 - **Drag (8dp)**: Dragged task item. `graphicsLayer.shadowElevation` rises to 8dp while the item is held, returns to 0 at rest; scale nudges to 1.02.
-- **Task detail bottom bar (8dp shadow + 2dp tonal)**: The fixed action bar at the foot of `TaskDetailScreen`. The only place shadow and tonal elevation stack.
-- **Tonal (2dp)**: `ArchivedPanel` Surface. Uses `tonalElevation`, not shadow.
+- **Task detail bottom bar (8dp shadow + 2dp tonal)**: The fixed action bar at the foot of `TaskDetailScreen`. The only place shadow and tonal elevation stack. The full-screen add/edit form reuses the same fixed bottom action bar treatment for its save button.
+- **Tonal (2dp)**: Retired from the archived card (now full screen); kept for the full-screen form bottom bars that need a subtle separation from scrolling content.
 
 ### Motion Vocabulary
 
 State changes only. No orchestrated entrances, no scroll-driven sequences, no decorative choreography. Default `FastOutSlowInEasing` (cubic-bezier(0.4, 0, 0.2, 1)) on every animated value; no custom beziers. Durations sit in the 140–280ms comfort band (relaxed 2026-09 from the original 120–220ms for a smoother feel; the state-change-only principle is unchanged).
 
-- **Sheet enter** (200ms fade + 280ms slide, 1/4 travel): AddTaskPanel, BackupPanel, ArchivedPanel. Paired `fadeIn` + `slideInVertically`.
+- **Sheet enter** (200ms fade + 280ms slide, 1/4 travel): Retained for legacy sheet contexts; no longer used by the primary add/backup/archive surfaces, which are full-screen destinations that swap like task detail (no entrance choreography).
 - **Sheet exit** (160ms fade + 220ms slide, 1/4 travel): Mirror of enter, faster. The asymmetry (faster exit than enter) is deliberate — users perceive exits as less important than entrances.
 - **Quadrant pane tint** (200ms `animateColorAsState`): Background color reacts to data changes (completion state, open count). Not a click animation — clicking a quadrant navigates immediately.
 - **Task completion scale** (180ms, 0.985 vs 1.0): Subtle shrink on the row when marked done. Reads as a quiet "settled" gesture, not a celebration.
 - **Save-feedback reveal** (140ms fade + 180ms slide, 1/3 travel): Capture-first save pill appears under the title field. Auto-clears after 2200ms.
 - **Collapsed group reveal** (220ms fade + 220ms slide, 1/4 travel in; 160ms fade + 180ms slide out): The task-detail completion history group and the quadrant-detail completed group expand/collapse in place. Only these two collapsibles are registered; do not add more choreographed reveals.
-- **Detail body expansion** (220ms fade + 220ms slide, 1/4 travel in; 160ms fade + 180ms slide out): The AddTaskPanel 子事项 section expands from a collapsed row. Same state-change vocabulary, no spring, no bounce.
+- **Detail body expansion** (220ms fade + 220ms slide, 1/4 travel in; 160ms fade + 180ms slide out): The task-detail completion-history and quadrant-detail completed group expand from a collapsed row. Same state-change vocabulary, no spring, no bounce.
 - **Drag lift** (instant, no tween): `graphicsLayer.shadowElevation` jumps to 8dp and scale to 1.02 on drag start; returns to 0 at drop. No easing — drag tracks the finger.
 - **Drag commit debounce** (50ms): Delay before persisting reorder, to coalesce rapid swaps.
 - **List item placement** (default `animateItemPlacement`): Reordered items glide into their new slot. Uses Material default duration/easing; do not override.
@@ -270,7 +266,8 @@ Confident and restrained. Every interactive element feels native and unhurried. 
 
 ### Cards / Containers
 - **Task Row Card:** RowShape (12dp), 0dp elevation, quiet border at 0.18 alpha. Raised surface (#FFFCF9) background for active tasks, surfaceVariant at 0.38 alpha for completed tasks.
-- **Bottom Sheet (add-task / backup / archived):** SheetShape (22dp top corners), 6dp elevation. Raised surface background. Heights vary by panel: AddTaskPanel fills 90% of viewport, BackupPanel fills 88%, ArchivedPanel fills 75% and is centered rather than bottom-docked. AddTaskPanel and BackupPanel keep the 38×4dp drag handle in outline at 0.34 alpha; ArchivedPanel is a centered card that cannot be dragged, so it omits the handle.
+- **Full-Screen Secondary Destination:** Backup/settings, archive, add/edit task, and recurring completion history are full-screen surfaces like `TaskDetailScreen` — edge-to-edge app-background `Surface` with a single `windowInsetsPadding(safeDrawing)` content column and a quiet anchored top bar (back `IconButton` + optional tonal leading `IconTile` + title/subtitle + trailing actions). Content width is capped at 600dp and centered on large/expanded windows so forms read as a focused column instead of stretching edge to edge. No sheet card, no drag handle, no dimming scrim over the underlying screen. Shared scaffold: `FullScreenScaffold` in `ui/components/FullScreenScaffold.kt`.
+- **Bottom Sheet (form dialogs only):** SheetShape (22dp top corners), 6dp elevation card still wraps the completion-note form and the time picker dialog. The add/edit, backup, archived, and recurring-history sheets were replaced by full-screen destinations (updated 2026-09); the drag handle and 90%/88%/75% sheet heights no longer apply.
 - **Quadrant Panel (home board):** PanelShape (18dp radius), no shadow. Quadrant color at 0.045 alpha as a background tint, animated over 200ms on data change. Outer board surface carries a quiet border at 0.14 alpha. A 12dp color dot anchors the quadrant label; the open-count number sits top-right in the quadrant color.
 - **Quadrant Detail Header / Empty State:** Inline 14dp radius. Quadrant color at 0.08 alpha as a background tint. This is the only place the 8% tint shows up; the home board stays at 4.5%. The header is a single sticky row (back + 12dp quadrant dot + title + open count) with a quiet border at 0.16 alpha — never a shadow when stuck. The quadrant description and stat dots live in a non-tinted intro block above the list so the 8% tint area stays small.
 - **Task Form Section:** PanelShape (18dp), surfaceVariant at 0.26 alpha, quiet border at 0.14 alpha.
@@ -279,24 +276,24 @@ Confident and restrained. Every interactive element feels native and unhurried. 
 
 ### Inputs / Fields
 - **Style:** RowShape (12dp). Surface background for both focused and unfocused states. No filled container contrast.
-- **Focus:** Primary accent at 0.45 alpha for the focused indicator line. Unfocused indicator at 0.18 alpha of outline. On the add-task sheet the focused indicator is the accent moment — the title field carries no emphasized container tint.
+- **Focus:** Primary accent at 0.45 alpha for the focused indicator line. Unfocused indicator at 0.18 alpha of outline. On the add/edit form the focused indicator is the accent moment — the title field carries no emphasized container tint.
 - **Disabled:** SurfaceVariant at 0.18 alpha for container, outline at 0.10 alpha for indicator.
-- **Capture-First Pattern:** Quick-capture field visible immediately on the add-task sheet; metadata lives in one chip row beneath it, and heavier editors (subtasks) stay collapsed below.
+- **Capture-First Pattern:** Quick-capture field visible immediately at the top of the full-screen add/edit form; metadata lives in one chip row beneath it, and heavier editors (subtasks) sit lower in the same scrolling column.
 - **Capture Auto-Focus:** In add mode the title field requests focus on open (`FocusRequester` + short delay) so the keyboard is up on the first frame. Edit mode does not auto-focus.
-- **IME Done Save:** On the add-task sheet the keyboard Done action saves and continues capture (same as the save button). In edit mode Done only clears focus.
-- **Password Visibility Toggle:** Secret fields show a trailing eye toggle that swaps `PasswordVisualTransformation` for plain text. The toggle resets to hidden when the panel reopens.
+- **IME Done Save:** On the add form the keyboard Done action saves and continues capture (same as the save button). In edit mode Done only clears focus.
+- **Password Visibility Toggle:** Secret fields show a trailing eye toggle that swaps `PasswordVisualTransformation` for plain text. The toggle resets to hidden when the destination reopens.
 
 ### Chips
 - **Style:** ChipShape (8dp). Compact and semantic. Summary pills, "今日" badge, meta chips, quadrant labels.
 - **State:** Selected chips use terracotta container background with on-container ink. Unselected remain neutral with quiet border.
-- **Metadata Chip Row (AddTaskPanel):** One FlowRow of FilterChips under the title field: quadrant (with 12dp ColorDot), date, time, calendar, alarm, repeat. Each chip shows its current value or "未设置"; tapping opens the existing picker or menu. Dependency chains are expressed as disabled chips: calendar/alarm need a date, repeat needs a date plus alarm. Repeat opens a dropdown menu rather than cycling values.
+- **Metadata Chip Row (add/edit form):** One FlowRow of FilterChips under the title field: quadrant (with 12dp ColorDot), date, time, calendar, alarm, repeat. Each chip shows its current value or "未设置"; tapping opens the existing picker or menu. Dependency chains are expressed as disabled chips: calendar/alarm need a date, repeat needs a date plus alarm. Repeat opens a dropdown menu rather than cycling values.
 - **Quadrant Dots:** 12dp circles in quadrant color, used as visual anchors inside chips and list items.
 
 ### Detail Page Patterns
 - **Hero (TaskDetailScreen):** Completion checkbox and title share one line; a quadrant chip (12dp dot + shortTitle) sits beneath. Metadata reads as full-width icon rows inside a TaskFormSection — each row shows a verb when unset ("添加提醒") and the value when set (To Do's verb-becomes-value pattern). Calendar-linked rows use calendar blue (secondary) for scheduling semantics only.
 - **Sticky Slim Header (QuadrantDetailScreen):** One row: back + 12dp quadrant dot + title + open count, tinted at 0.08 alpha with a quiet border. No shadow at rest.
 - **Sectioned List:** Label Medium section headers ("未完成" expanded, "已完成" collapsed with count). Completed rows keep the completed-row treatment (surfaceVariant 0.38 alpha, border 0.12).
-- **Settings-Page Backup Panel:** Scrolling structure: sync status header card (WebDAV host parsed from the URL + connection state chip) → 本地备份 → WebDAV 配置 (pure form with one trailing 保存设置 text action) → 云端同步 → status line last. Exactly one filled primary button is visible ("上传备份"; "导出本地" takes the primary slot only when cloud is unconfigured).
+- **Settings-Page Backup Screen (full-screen):** Scrolling structure inside the full-screen destination: sync status header card (WebDAV host parsed from the URL + connection state chip) → 本地备份 → WebDAV 配置 (pure form with one trailing 保存设置 text action) → 云端同步 → status line last. Exactly one filled primary button is visible ("上传备份"; "导出本地" takes the primary slot only when cloud is unconfigured).
 - **Meta-Enriched Archive Row:** ColorDot + full-contrast title (onSurface) + one Label Medium meta line (quadrant shortTitle · due date · completion note preview, ellipsized) + explicit Unarchive button. Header carries a count ("归档事项 · N").
 
 ### Dialogs
@@ -311,14 +308,14 @@ Confident and restrained. Every interactive element feels native and unhurried. 
 
 ### Navigation
 - **Main Scaffold:** Single-screen layout with FAB. No side navigation, no drawer.
-- **Sheets:** ModalBottomSheet for task detail (skipPartiallyExpanded). Manual Card sheets for add/edit and backup at 90% height.
-- **Back:** BackHandler for panel, detail, and backup navigation. Standard Android back gesture supported.
+- **Full-screen destinations:** Task detail, backup/settings, archive, add/edit task, and recurring history all render as full-screen branches in the root Box, layered by the `resolveInAppBackTarget` priority model. Each owns its safe area via `FullScreenScaffold`.
+- **Back:** BackHandler for destination navigation. Standard Android back gesture supported. Each destination's top-bar back routes through the same centralized dismiss mutation as the system-back branch.
 
 ### Quiet Border Pattern
 A signature DianMao pattern. Borders use the outline color at low alpha (0.10-0.22) instead of full-strength outlines. This creates structure without heaviness. The default is 0.22 alpha; completed items drop to 0.12. Time-sensitive lanes use 0.14. If the border reads as a hard line, the alpha is too high.
 
 ### Capture-First Save Pattern
-A signature DianMao flow. When the user saves a newly-created task from `AddTaskPanel`, the panel does NOT dismiss. Instead it shows a small save-feedback pill ("已保存到 [quadrant], 可继续记录") in `primaryContainer` at 0.54 alpha with a quiet border at 0.08 alpha, clears the title and detail fields, and stays open so the user can capture the next item. The feedback auto-dismisses after 2200ms. This is the visual expression of "capture before classification": the user keeps flow, structure lands quietly.
+A signature DianMao flow. When the user saves a newly-created task from the add/edit form, the screen does NOT dismiss. Instead it shows a small save-feedback pill ("已保存到 [quadrant], 可继续记录") in `primaryContainer` at 0.54 alpha with a quiet border at 0.08 alpha, clears the title and detail fields, and stays open so the user can capture the next item. The feedback auto-dismisses after 2200ms. This is the visual expression of "capture before classification": the user keeps flow, structure lands quietly.
 
 ## 6. Do's and Don'ts
 
