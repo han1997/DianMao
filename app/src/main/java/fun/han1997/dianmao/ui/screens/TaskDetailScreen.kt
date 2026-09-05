@@ -813,7 +813,9 @@ fun RecurringTaskHistoryPanel(
             Button(
                 onClick = { onComplete(task) },
                 enabled = canComplete,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                shape = RowShape,
+                contentPadding = PaddingValues(vertical = 12.dp)
             ) {
                 Icon(Icons.Rounded.DoneAll, contentDescription = null)
                 Spacer(modifier = Modifier.width(8.dp))

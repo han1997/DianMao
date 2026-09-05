@@ -7,6 +7,8 @@ import `fun`.han1997.dianmao.data.TaskSubTask
 import `fun`.han1997.dianmao.data.TaskUiModel
 import `fun`.han1997.dianmao.data.normalizedTimeSettings
 import `fun`.han1997.dianmao.ColorDot
+import `fun`.han1997.dianmao.DianMaoDatePickerDialog
+import `fun`.han1997.dianmao.DianMaoTimePickerDialog
 import `fun`.han1997.dianmao.HeaderActionButton
 import `fun`.han1997.dianmao.IconTile
 import `fun`.han1997.dianmao.InlineButtonIcon
@@ -15,8 +17,6 @@ import `fun`.han1997.dianmao.midnightMillis
 import `fun`.han1997.dianmao.minutesOfDay
 import `fun`.han1997.dianmao.TaskSaveOutcome
 import `fun`.han1997.dianmao.nextSubTaskId
-import `fun`.han1997.dianmao.showDatePicker
-import `fun`.han1997.dianmao.showTimePicker
 import `fun`.han1997.dianmao.quietBorder
 import `fun`.han1997.dianmao.quietTextFieldColors
 import androidx.compose.animation.AnimatedVisibility
@@ -130,6 +130,8 @@ internal fun AddTaskPanel(
     var isSaving by rememberSaveable { mutableStateOf(false) }
     var subTasksExpanded by rememberSaveable { mutableStateOf(false) }
     var repeatMenuExpanded by rememberSaveable { mutableStateOf(false) }
+    var showDatePickerDialog by rememberSaveable { mutableStateOf(false) }
+    var showTimePickerDialog by rememberSaveable { mutableStateOf(false) }
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     val keyboard = LocalSoftwareKeyboardController.current
@@ -334,16 +336,7 @@ internal fun AddTaskPanel(
                         }
                         FilterChip(
                             selected = dueDateMillis != null,
-                            onClick = {
-                                showDatePicker(
-                                    context = context,
-                                    currentMillis = dueDateMillis,
-                                    onSelected = { selected ->
-                                        dueDateMillis = selected
-                                        if (dueTimeMinutes == null) dueTimeMinutes = 9 * 60
-                                    }
-                                )
-                            },
+                            onClick = { showDatePickerDialog = true },
                             label = {
                                 val currentDate = dueDateMillis
                                 Text(
@@ -367,13 +360,7 @@ internal fun AddTaskPanel(
                         FilterChip(
                             selected = dueTimeMinutes != null,
                             enabled = dueDateMillis != null,
-                            onClick = {
-                                showTimePicker(
-                                    context = context,
-                                    currentMinutes = dueTimeMinutes,
-                                    onSelected = { dueTimeMinutes = it }
-                                )
-                            },
+                            onClick = { showTimePickerDialog = true },
                             label = {
                                 val currentTime = dueTimeMinutes
                                 Text(
@@ -598,33 +585,56 @@ internal fun AddTaskPanel(
                                 ) {
                                     Column(
                                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp)
-                                    ) {
-                                        SubTaskEditor(
-                                            subTasks = subTasks,
-                                            draft = subTaskDraft,
-                                            onDraftChange = { subTaskDraft = it },
-                                            onAdd = { addSubTask() },
-                                            onTitleChange = { id, newTitle ->
-                                                subTasks = subTasks.map { item ->
-                                                    if (item.id == id) item.copy(title = newTitle) else item
-                                                }
-                                            },
-                                            onCheckedChange = { id, checked ->
-                                                subTasks = subTasks.map { item ->
-                                                    if (item.id == id) item.copy(completed = checked) else item
-                                                }
-                                            },
-                                            onDelete = { id ->
-                                                subTasks = subTasks.filterNot { it.id == id }
-                                            }
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
+                                     ) {
+                                         SubTaskEditor(
+                                             subTasks = subTasks,
+                                             draft = subTaskDraft,
+                                             onDraftChange = { subTaskDraft = it },
+                                             onAdd = { addSubTask() },
+                                             onTitleChange = { id, newTitle ->
+                                                 subTasks = subTasks.map { item ->
+                                                     if (item.id == id) item.copy(title = newTitle) else item
+                                                 }
+                                             },
+                                             onCheckedChange = { id, checked ->
+                                                 subTasks = subTasks.map { item ->
+                                                     if (item.id == id) item.copy(completed = checked) else item
+                                                 }
+                                             },
+                                             onDelete = { id ->
+                                                 subTasks = subTasks.filterNot { it.id == id }
+                                             }
+                                         )
+                                     }
+                                 }
+                             }
+                         }
+                     }
+                 }
+             }
+         }
+     }
+
+     if (showDatePickerDialog) {
+         DianMaoDatePickerDialog(
+             selectedDateMillis = dueDateMillis,
+             onDismiss = { showDatePickerDialog = false },
+             onConfirm = { selected ->
+                 dueDateMillis = selected.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                 if (dueTimeMinutes == null) dueTimeMinutes = 9 * 60
+                 showDatePickerDialog = false
+             }
+         )
+     }
+
+     if (showTimePickerDialog) {
+         DianMaoTimePickerDialog(
+             initialMinutesOfDay = dueTimeMinutes,
+             onDismiss = { showTimePickerDialog = false },
+             onConfirm = { selected ->
+                 dueTimeMinutes = selected
+                 showTimePickerDialog = false
+             }
+         )
+     }
+ }

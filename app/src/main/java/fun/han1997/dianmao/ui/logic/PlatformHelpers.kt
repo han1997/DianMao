@@ -9,8 +9,6 @@ import `fun`.han1997.dianmao.data.TaskRepository
 import `fun`.han1997.dianmao.data.TaskSubTask
 import `fun`.han1997.dianmao.data.TaskUiModel
 import android.Manifest
-import android.app.DatePickerDialog
-import android.app.TimePickerDialog
 import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.compose.foundation.lazy.items
@@ -19,7 +17,6 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.Calendar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -162,53 +159,6 @@ internal fun seedTaskEntities(): List<TaskEntity> {
             updatedAtMillis = now
         )
     )
-}
-
-internal fun showDatePicker(
-    context: android.content.Context,
-    currentMillis: Long?,
-    onSelected: (Long) -> Unit
-) {
-    val calendar = Calendar.getInstance().apply {
-        if (currentMillis != null) timeInMillis = currentMillis
-    }
-    DatePickerDialog(
-        context,
-        { _, year, month, dayOfMonth ->
-            val selected = Calendar.getInstance().apply {
-                set(Calendar.YEAR, year)
-                set(Calendar.MONTH, month)
-                set(Calendar.DAY_OF_MONTH, dayOfMonth)
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }
-            onSelected(selected.timeInMillis)
-        },
-        calendar.get(Calendar.YEAR),
-        calendar.get(Calendar.MONTH),
-        calendar.get(Calendar.DAY_OF_MONTH)
-    ).show()
-}
-
-internal fun showTimePicker(
-    context: android.content.Context,
-    currentMinutes: Int?,
-    onSelected: (Int) -> Unit
-) {
-    val calendar = Calendar.getInstance()
-    val hour = currentMinutes?.div(60) ?: calendar.get(Calendar.HOUR_OF_DAY)
-    val minute = currentMinutes?.rem(60) ?: calendar.get(Calendar.MINUTE)
-    TimePickerDialog(
-        context,
-        { _, selectedHour, selectedMinute ->
-            onSelected(selectedHour * 60 + selectedMinute)
-        },
-        hour,
-        minute,
-        true
-    ).show()
 }
 
 internal fun webDavHost(url: String): String? {
