@@ -1125,3 +1125,37 @@ Restructured secondary/capture UI per mainstream to-do app patterns: TaskDetail 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 34: UI comfort: spacing, motion, file split
+
+**Date**: 2026-09-05
+**Task**: UI comfort: spacing, motion, file split
+**Branch**: `master`
+
+### Summary
+
+Relaxed spacing tokens across screens/rows/sections/sheets (screen 20dp, row 12dp, section 14dp, sheet 16dp) and lengthened state-change animations into a 140-280ms comfort band (sheets 200/280ms in, 160/220ms out) per DESIGN.md updates. Split the 5312-line MainActivity.kt into layered packages: ui/theme, ui/components, ui/logic, ui/screens, ui/panels - MainActivity now holds only the Activity entry and DianMaoApp assembly with zero behavior change; removed 3 dead composables. Captured the PowerShell UTF-8 mojibake gotcha into quality-guidelines spec.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `5575c1f` | (see git log) |
+| `9b88b4f` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 33
+- **Total Sessions**: 34
 - **Last Active**: 2026-09-05
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1127 | Active |
+| `journal-1.md` | ~1161 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 34 | 2026-09-05 | UI comfort: spacing, motion, file split | `5575c1f`, `9b88b4f` | `master` |
 | 33 | 2026-09-05 | UI polish: secondary and capture pages | `eb5e05d`, `6fc555f` | `master` |
 | 32 | 2026-08-19 | 继续完善核心任务体验 | `83fbe25` | `master` |
 | 31 | 2026-08-19 | UI 与业务逻辑进一步优化 | `a9ada80` | `master` |
