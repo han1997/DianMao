@@ -1,5 +1,17 @@
 # Changelog
 
+- Converted secondary overlay panels into full-screen destinations consistent
+  with the home screen's warm paper visual language: backup/settings, archive,
+  add/edit task, and recurring completion history now render as full-screen
+  surfaces with a quiet anchored top bar, single safe-area column, and centered
+  600dp content cap on large windows — replacing the dimmed bottom-sheet cards
+  and drag-handle chrome. A shared `FullScreenScaffold` component owns the
+  top-bar, safe-area, and width-cap contract so the destinations cannot drift.
+  Short confirmations (delete, uncomplete-recurring, delete completion record),
+  the completion-note form, and the date/time pickers remain compact themed
+  dialogs. Back priority and task behavior are unchanged; DESIGN.md now
+  documents the full-screen presentation contract.
+
 - Fixed task detail content overlapping the status bar: the full-screen
   detail surface now applies system safe-area insets to its header, scrolling
   content, and bottom actions while keeping its background edge-to-edge.

@@ -65,7 +65,6 @@ import androidx.compose.material.icons.rounded.Repeat
 import androidx.compose.material.icons.rounded.Replay
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -76,19 +75,16 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -712,7 +708,6 @@ fun CompletionItem(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecurringTaskHistoryPanel(
     task: TaskUiModel,
@@ -724,98 +719,106 @@ fun RecurringTaskHistoryPanel(
     onUpdateCompletionNote: (Long, String?) -> Unit = { _, _ -> }
 ) {
     val completions by repository.observeCompletions(task.id).collectAsState(initial = emptyList())
-    val scope = rememberCoroutineScope()
     var canComplete by remember { mutableStateOf(false) }
 
     LaunchedEffect(task) {
         canComplete = repository.canCompleteInCurrentCycle(task)
     }
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    FullScreenScaffold(
+        title = "完成历史",
+        subtitle = task.title,
+        leadingIcon = Icons.Rounded.History,
+        leadingIconTint = MaterialTheme.colorScheme.primary,
+        onBack = onDismiss,
+        actions = {
+            HeaderActionButton(
+                icon = Icons.Rounded.Edit,
+                contentDescription = "编辑",
+                onClick = { onEdit(task) },
+                tint = MaterialTheme.colorScheme.primary,
+                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.50f)
+            )
+        }
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp)
+                .fillMaxSize()
+                .padding(top = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Header
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = task.title,
-                    style = MaterialTheme.typography.headlineSmall,
-                    modifier = Modifier.weight(1f)
-                )
-                IconButton(onClick = { onEdit(task) }) {
-                    Icon(Icons.Rounded.Edit, contentDescription = "编辑")
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
             // Task info
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                verticalAlignment = Alignment.CenterVertically
+            Surface(
+                color = task.quadrant.color.copy(alpha = 0.08f),
+                shape = RowShape,
+                border = quietBorder(0.12f)
             ) {
-                AssistChip(
-                    onClick = {},
-                    label = { Text(task.quadrant.label) },
-                    leadingIcon = {
-                        Box(
-                            modifier = Modifier
-                                .size(12.dp)
-                                .background(
-                                    Color(task.quadrant.colorInt()),
-                                    shape = CircleShape
-                                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 11.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    IconTile(
+                        icon = Icons.Rounded.CheckCircle,
+                        contentDescription = null,
+                        tint = task.quadrant.color,
+                        containerColor = task.quadrant.color.copy(alpha = 0.10f),
+                        iconSize = 16.dp
+                    )
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        Text(
+                            text = task.quadrant.shortTitle,
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                fontWeight = FontWeight.Medium,
+                                letterSpacing = 0.sp
+                            ),
+                            color = task.quadrant.color.copy(alpha = 0.9f),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = task.repeatRule.label,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
-                )
-                Text(
-                    text = task.repeatRule.label,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Stats
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "${task.completionCount}",
-                        style = MaterialTheme.typography.headlineMedium
-                    )
-                    Text(
-                        text = "总完成次数",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "${completions.size}",
-                        style = MaterialTheme.typography.headlineMedium
-                    )
-                    Text(
-                        text = "历史记录",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            text = "${task.completionCount}",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "总完成",
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                letterSpacing = 0.sp
+                            ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f)
+                        )
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            text = "${completions.size}",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "历史",
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                letterSpacing = 0.sp
+                            ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f)
+                        )
+                    }
                 }
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
 
             // Complete button
             Button(
@@ -823,32 +826,53 @@ fun RecurringTaskHistoryPanel(
                 enabled = canComplete,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RowShape,
-                contentPadding = PaddingValues(vertical = 12.dp)
+                contentPadding = PaddingValues(vertical = 13.dp)
             ) {
-                Icon(Icons.Rounded.DoneAll, contentDescription = null)
+                InlineButtonIcon(
+                    icon = Icons.Rounded.DoneAll,
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    containerColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.12f)
+                )
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(if (canComplete) "完成本次" else "本周期已完成")
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // History section
-            Text(
-                text = "完成历史",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
-
+            // History list
             if (completions.isEmpty()) {
-                Text(
-                    text = "暂无完成记录",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(vertical = 32.dp)
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        IconTile(
+                            icon = Icons.Rounded.History,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.68f),
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.48f),
+                            iconSize = 22.dp,
+                            modifier = Modifier.size(44.dp)
+                        )
+                        Text(
+                            text = if (task.repeatRule != RepeatRule.None) {
+                                "完成循环事项后,这里会记录每次完成"
+                            } else {
+                                "暂无完成记录"
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
+                        )
+                    }
+                }
             } else {
                 LazyColumn(
-                    modifier = Modifier.heightIn(max = 400.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     items(completions, key = { it.id }) { completion ->
@@ -860,8 +884,6 @@ fun RecurringTaskHistoryPanel(
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
