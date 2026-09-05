@@ -352,7 +352,12 @@ private fun DianMaoApp() {
                 }
             },
             floatingActionButton = {
-                if (taskForDetail == null) {
+                // Home surface only, and never while an overlay panel is
+                // open — the FAB lives above the content layer and would
+                // otherwise float over the panel and block its content.
+                if (activePriority == null && taskForDetail == null &&
+                    !showBackupPanel && !showArchivedPanel && !isTaskPanelVisible
+                ) {
                     FloatingActionButton(
                         onClick = { showAddSheet = true },
                         containerColor = MaterialTheme.colorScheme.primary,
