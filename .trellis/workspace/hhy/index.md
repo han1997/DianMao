@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 37
+- **Total Sessions**: 38
 - **Last Active**: 2026-09-05
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1263 | Active |
+| `journal-1.md` | ~1297 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 38 | 2026-09-05 | WebDAV 400 root cause: legacy file target, probe + migrate to directory | `ce3ae60`, `e65f060` | `master` |
 | 37 | 2026-09-05 | WebDAV 400 fix: URL percent-encoding + fixed-length PUT | `434be72`, `61d4d1a` | `master` |
 | 36 | 2026-09-05 | Global UI consistency: M3 pickers | `c3b1811`, `51145f7` | `master` |
 | 35 | 2026-09-05 | WebDAV folder backup and format v4 | `4c69005`, `a5143a9` | `master` |

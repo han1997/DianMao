@@ -1261,3 +1261,37 @@ Diagnosed WebDAV upload 400 on Synology/QNAP: raw non-ASCII/space path bytes in 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 38: WebDAV 400 root cause: legacy file target, probe + migrate to directory
+
+**Date**: 2026-09-05
+**Task**: WebDAV 400 root cause: legacy file target, probe + migrate to directory
+**Branch**: `master`
+
+### Summary
+
+ADB + curl reproduction against the QNAP NAS showed /webdav/DianMao was a legacy 15KB v3 backup FILE, not a directory: PUT into its interior and MKCOL beneath it both return 400. Replaced the file-fallback with a one-time migration: single PROPFIND Depth:0 probe (MISSING/COLLECTION/LEGACY_FILE), verified DianMao backup content (dianmao.tasks marker) then DELETE -> MKCOL -> PUT into DianMao/dianmao-backup-latest.json; non-backup files are never deleted. Also fixed HttpURLConnection's method whitelist rejecting PROPFIND/MKCOL via reflective method set (previously hidden by the silent MKCOL catch). Verified on device: NAS now has DianMao/ collection containing the v4 backup. Spec updated with probe-and-migrate contract.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ce3ae60` | (see git log) |
+| `e65f060` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
