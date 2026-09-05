@@ -1328,3 +1328,36 @@ Removed the home date tagline row and the redundant home chip (header now one ro
 ### Next Steps
 
 - None - task complete
+
+
+## Session 40: Unified top toast feedback replacing per-panel status lines
+
+**Date**: 2026-09-05
+**Task**: Unified top toast feedback replacing per-panel status lines
+**Branch**: `master`
+
+### Summary
+
+Replaced the scattered feedback channels with one top toast: custom SnackbarHost anchored TopCenter (status bars inset + 72dp, aligned near the DianMao header row), themed as a quiet surface card with hairline border and semantic icon (secondary check / error close) matching the app's visual language. Deleted the BackupPanel bottom status line component and its status parameter plus the backupStatus state in MainActivity; all backup results (WebDAV save/upload/restore, local export/import) now flow through the same top toast as the other ~30 app notifications. assembleDebug green, user verified position on device.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e8206ea` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
