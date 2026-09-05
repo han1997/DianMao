@@ -11,7 +11,7 @@ rules that future agents must follow when changing DianMao.
 | [Directory Structure](./directory-structure.md) | Android module layout, package ownership, source/test placement | Active |
 | [Database Guidelines](./database-guidelines.md) | Room schema, migrations, backup codec, recurring completion contracts | Active |
 | [Error Handling](./error-handling.md) | Permission-gated platform calls, reminders, WebDAV failure behavior | Active |
-| [Compose Patterns](./compose-patterns.md) | BackHandler state capture, overlay navigation, compact accessible layout | Active |
+| [Compose Patterns](./compose-patterns.md) | BackHandler state capture, overlay navigation, edge-to-edge safe areas, compact accessible layout | Active |
 | [Quality Guidelines](./quality-guidelines.md) | Required checks, testing strategy, data/platform/Compose review rules | Active |
 | [Logging Guidelines](./logging-guidelines.md) | Privacy-safe Android logging conventions | Active |
 

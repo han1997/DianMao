@@ -848,6 +848,43 @@ TodayDashboard(
 
 ---
 
+## Pattern: Full-Screen Safe-Area Ownership
+
+**Scope**: Full-screen sibling surfaces in the root `Box` of `MainActivity.kt`,
+including `TaskDetailScreen` in `ui/screens/TaskDetailScreen.kt`.
+
+**Contracts**:
+- `MainActivity` opts into edge-to-edge rendering and sets Scaffold
+  `contentWindowInsets = WindowInsets(0, 0, 0, 0)`. Each full-screen content
+  branch owns its safe area; home/quadrant inset modifiers do not protect a
+  sibling detail surface.
+- Keep the outer background `Surface` full-screen. Apply
+  `windowInsetsPadding(WindowInsets.safeDrawing)` once to its content container,
+  enclosing the header, scrolling body, and bottom actions.
+- Use Compose inset consumption rather than fixed status-bar heights or manual
+  repeated padding. Do not change the shared Scaffold insets to fix one screen.
+
+```kotlin
+Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.safeDrawing)
+    ) {
+        // Header, weighted scroll content, bottom actions.
+    }
+}
+```
+
+**Verification**: Open details from home and quadrant views. Check that the back,
+edit, and title elements clear the status bar/cutout, bottom actions clear both
+navigation modes, long content still scrolls, and returning from edit adds no
+extra inset. Include a landscape/cutout check for horizontal safe areas. JVM
+logic tests cannot verify these Android layout bounds; use device/Compose UI
+checks and explicitly record when runtime verification is unavailable.
+
+---
+
 ## Pattern: Overlay Panel Visual Consistency
 
 **Problem**: DianMao has three overlay panels (`AddTaskPanel`, `BackupPanel`,

@@ -1,5 +1,9 @@
 # Changelog
 
+- Fixed task detail content overlapping the status bar: the full-screen
+  detail surface now applies system safe-area insets to its header, scrolling
+  content, and bottom actions while keeping its background edge-to-edge.
+
 - Replaced the system date and time dialogs with Material 3 Compose pickers
   that inherit the app theme: the add-task sheet now opens a themed calendar
   date picker and a 24-hour time picker in a matching card dialog, and the
