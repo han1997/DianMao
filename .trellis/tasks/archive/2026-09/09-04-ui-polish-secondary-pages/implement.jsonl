@@ -1,0 +1,9 @@
+{"file": ".trellis/tasks/09-04-ui-polish-secondary-pages/prd.md", "reason": "Task requirements: confirmed structural layout options per screen, acceptance criteria, and constraints"}
+{"file": ".trellis/tasks/09-04-ui-polish-secondary-pages/research/task-detail-page-patterns.md", "reason": "TaskDetailScreen 方案 B 与 QuadrantDetailScreen 方案 B 的具体结构规格（hero/verb rows/折叠完成组/sticky 头）"}
+{"file": ".trellis/tasks/09-04-ui-polish-secondary-pages/research/add-task-capture-patterns.md", "reason": "AddTaskPanel 方案 A sticky 捕获头 + chips 行规格，自动聚焦/紧凑标题/IME Done 行为细节"}
+{"file": ".trellis/tasks/09-04-ui-polish-secondary-pages/research/settings-dialog-patterns.md", "reason": "BackupPanel A1 / ArchivedPanel B1 / 对话框改造规格，含 status string-match 契约注意事项"}
+{"file": "DESIGN.md", "reason": "Design system tokens and named rules (10% accent, quiet border alphas, flat elevation, motion vocabulary, component specs) that must not be violated"}
+{"file": ".trellis/spec/backend/compose-patterns.md", "reason": "Project Compose conventions: BackHandler state capture, overlay navigation, compact accessible layout"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Required Gradle checks (testDebugUnitTest, lintDebug, assembleDebug) and review rules"}
+{"file": ".trellis/spec/guides/overlay-navigation-thinking-guide.md", "reason": "TaskDetail/quadrant detail/add sheet are stacked UI states — back behavior must stay correct when restructuring"}
+{"file": ".trellis/spec/guides/code-reuse-thinking-guide.md", "reason": "Reuse existing components (TaskFormSection, FormSettingBlock, ToggleRow, IconTile, HeaderActionButton) instead of duplicating"}

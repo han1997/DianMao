@@ -1,0 +1,8 @@
+{"file": ".trellis/tasks/09-04-ui-polish-secondary-pages/prd.md", "reason": "Acceptance criteria checklist and out-of-scope boundaries (no business logic/data changes, status: String? contract preserved)"}
+{"file": "DESIGN.md", "reason": "Verify named rules compliance: 10% accent rule, quadrant tint alphas (4.5%/8%), quiet borders 0.10-0.22, no shadows at rest, 120-220ms state-change-only motion"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "Required checks: testDebugUnitTest, lintDebug, assembleDebug, git diff --check"}
+{"file": ".trellis/spec/backend/compose-patterns.md", "reason": "Verify Compose conventions kept: BackHandler, overlay navigation, accessibility"}
+{"file": ".trellis/spec/guides/overlay-navigation-thinking-guide.md", "reason": "Verify back behavior across stacked screens after restructure"}
+{"file": ".trellis/tasks/09-04-ui-polish-secondary-pages/research/task-detail-page-patterns.md", "reason": "Reference for verifying TaskDetail/QuadrantDetail implement the confirmed Option B structure"}
+{"file": ".trellis/tasks/09-04-ui-polish-secondary-pages/research/add-task-capture-patterns.md", "reason": "Reference for verifying AddTaskPanel Option A (sticky head, chips row, auto-focus, IME save)"}
+{"file": ".trellis/tasks/09-04-ui-polish-secondary-pages/research/settings-dialog-patterns.md", "reason": "Reference for verifying BackupPanel A1 / ArchivedPanel B1 / dialog changes and status contract preservation"}
