@@ -80,8 +80,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import androidx.compose.runtime.getValue
 
 @Composable
@@ -98,7 +96,6 @@ internal fun AppHeader(
     val openTasks = tasks.count { !it.completed }
     val timedTasks = tasks.count { !it.completed && (it.useAlarm || it.useCalendar) }
     val completedTasks = tasks.count { it.completed }
-    val today = LocalDate.now().format(DateTimeFormatter.ofPattern("M月d日"))
     val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(searchVisible) {
@@ -117,49 +114,17 @@ internal fun AppHeader(
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             AppCompassMark()
-            Column(
+            Text(
+                text = "DianMao",
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(3.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Text(
-                        text = "DianMao",
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.sp
-                        ),
-                        color = MaterialTheme.colorScheme.onBackground,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Surface(
-                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
-                        contentColor = MaterialTheme.colorScheme.primary,
-                        shape = ChipShape
-                    ) {
-                        Text(
-                            text = "主页",
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = FontWeight.Medium,
-                                letterSpacing = 0.1.sp
-                            )
-                        )
-                    }
-                }
-                Text(
-                    text = "$today · 捕获在前，按时间和象限扫读",
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        letterSpacing = 0.05.sp
-                    ),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.82f),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.sp
+                ),
+                color = MaterialTheme.colorScheme.onBackground,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
             HeaderActionButton(
                 icon = if (searchVisible) Icons.Rounded.Close else Icons.Rounded.Search,
                 contentDescription = if (searchVisible) "关闭搜索" else "搜索",

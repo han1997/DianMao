@@ -87,7 +87,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
@@ -243,7 +242,6 @@ internal fun AddTaskPanel(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFF211815).copy(alpha = 0.16f))
                 .clickable(
                     indication = null,
                     interactionSource = remember { MutableInteractionSource() },

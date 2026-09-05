@@ -292,6 +292,7 @@ private fun DianMaoApp() {
     Surface(color = MaterialTheme.colorScheme.background) {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
+            contentWindowInsets = WindowInsets(0, 0, 0, 0),
             snackbarHost = { SnackbarHost(snackbarHostState) },
             floatingActionButton = {
                 if (taskForDetail == null) {
@@ -314,13 +315,13 @@ private fun DianMaoApp() {
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding)
-                    .windowInsetsPadding(WindowInsets.safeDrawing)
             ) {
                 if (activePriority == null) {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(start = 20.dp, top = 0.dp, end = 20.dp, bottom = 18.dp),
+                            .windowInsetsPadding(WindowInsets.safeDrawing)
+                            .padding(start = 20.dp, top = 4.dp, end = 20.dp, bottom = 18.dp),
                         verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
                         AppHeader(
@@ -393,6 +394,7 @@ private fun DianMaoApp() {
                         state = listState,
                         modifier = Modifier
                             .fillMaxSize()
+                            .windowInsetsPadding(WindowInsets.safeDrawing)
                             .pointerInput(Unit) {
                                 detectDragGesturesAfterLongPress(
                                     onDragStart = { offset ->
@@ -422,7 +424,7 @@ private fun DianMaoApp() {
                                     }
                                 )
                             },
-                        contentPadding = PaddingValues(start = 18.dp, top = 6.dp, end = 18.dp, bottom = 112.dp),
+                        contentPadding = PaddingValues(start = 18.dp, top = 10.dp, end = 18.dp, bottom = 112.dp),
                         verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
                         activePriority?.let { priority ->
