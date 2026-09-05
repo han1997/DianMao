@@ -54,13 +54,18 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -68,6 +73,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.CheckCircle
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -76,6 +83,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -88,6 +96,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import kotlinx.coroutines.CancellationException
@@ -136,7 +145,6 @@ private fun DianMaoApp() {
     var taskForDelete by remember { mutableStateOf<TaskUiModel?>(null) }
     var taskForUncompletion by remember { mutableStateOf<TaskUiModel?>(null) }
     var taskForDetail by remember { mutableStateOf<TaskUiModel?>(null) }
-    var backupStatus by rememberSaveable { mutableStateOf<String?>(null) }
     var homeSmartView by rememberSaveable { mutableStateOf(HomeSmartView.Quadrants) }
     var homeSearchQuery by rememberSaveable { mutableStateOf("") }
     var homeSearchVisible by rememberSaveable { mutableStateOf(false) }
@@ -170,13 +178,12 @@ private fun DianMaoApp() {
     ) { uri ->
         if (uri != null) {
             scope.launch {
-                backupStatus = "正在导出本地备份"
                 runCatching {
                     writeTextToUri(context, uri, repository.exportBackupJson())
                 }.onSuccess {
-                    backupStatus = "本地备份已导出"
+                    snackbarHostState.showSnackbar("本地备份已导出")
                 }.onFailure { error ->
-                    backupStatus = "导出失败：${error.message.orEmpty()}"
+                    snackbarHostState.showSnackbar("导出失败：${error.message.orEmpty()}")
                 }
             }
         }
@@ -186,15 +193,14 @@ private fun DianMaoApp() {
     ) { uri ->
         if (uri != null) {
             scope.launch {
-                backupStatus = "正在恢复本地备份"
                 runCatching {
                     val count = repository.importBackupJson(readTextFromUri(context, uri))
                     restoreReminderSchedules(repository, scheduler)
                     count
                 }.onSuccess { count ->
-                    backupStatus = "已从本地备份恢复 $count 个事项"
+                    snackbarHostState.showSnackbar("已从本地备份恢复 $count 个事项")
                 }.onFailure { error ->
-                    backupStatus = "恢复失败：${error.message.orEmpty()}"
+                    snackbarHostState.showSnackbar("恢复失败：${error.message.orEmpty()}")
                 }
             }
         }
@@ -293,7 +299,58 @@ private fun DianMaoApp() {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
-            snackbarHost = { SnackbarHost(snackbarHostState) },
+            snackbarHost = {
+                // Top-anchored host: feedback like upload results is more
+                // noticeable above the FAB and never blocked by the keyboard.
+                // The toast reuses the app's quiet surface language — light
+                // card, hairline border, semantic icon — instead of the M3
+                // inverse-surface bar, so it reads as part of the app.
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .windowInsetsPadding(WindowInsets.statusBars)
+                        .padding(top = 72.dp, start = 20.dp, end = 20.dp),
+                    contentAlignment = Alignment.TopCenter
+                ) {
+                    SnackbarHost(snackbarHostState) { data ->
+                        val isError = data.visuals.message.contains("失败")
+                        val toastTint = if (isError) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.secondary
+                        }
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RowShape,
+                            color = MaterialTheme.colorScheme.surface,
+                            border = quietBorder(0.16f),
+                            shadowElevation = 4.dp
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 11.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                IconTile(
+                                    icon = if (isError) Icons.Rounded.Close else Icons.Rounded.CheckCircle,
+                                    contentDescription = null,
+                                    tint = toastTint,
+                                    containerColor = toastTint.copy(alpha = 0.10f),
+                                    iconSize = 15.dp
+                                )
+                                Text(
+                                    text = data.visuals.message,
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontWeight = FontWeight.Medium,
+                                        letterSpacing = 0.sp
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                        }
+                    }
+                }
+            },
             floatingActionButton = {
                 if (taskForDetail == null) {
                     FloatingActionButton(
@@ -336,7 +393,6 @@ private fun DianMaoApp() {
                             },
                             onQueryChanged = { homeSearchQuery = it },
                             onOpenBackup = {
-                                backupStatus = null
                                 showBackupPanel = true
                             },
                             onOpenArchived = {
@@ -668,7 +724,6 @@ private fun DianMaoApp() {
                 BackupPanel(
                     visible = showBackupPanel,
                     initialSettings = webDavSettings,
-                    status = backupStatus,
                     onDismiss = { showBackupPanel = false },
                     onLocalExport = {
                         localBackupExportLauncher.launch(defaultBackupFileName())
@@ -679,25 +734,23 @@ private fun DianMaoApp() {
                     onSaveWebDav = { settings ->
                         webDavSettings = settings
                         backupSettingsStore.saveWebDavSettings(settings)
-                        backupStatus = "WebDAV 设置已保存"
+                        scope.launch { snackbarHostState.showSnackbar("WebDAV 设置已保存") }
                     },
                     onUploadWebDav = { settings ->
                         scope.launch {
-                            backupStatus = "正在上传 WebDAV 备份"
                             runCatching {
                                 backupSettingsStore.saveWebDavSettings(settings)
                                 webDavSettings = settings
                                 webDavClient.upload(settings, repository.exportBackupJson())
                             }.onSuccess {
-                                backupStatus = "WebDAV 备份已上传"
+                                snackbarHostState.showSnackbar("WebDAV 备份已上传")
                             }.onFailure { error ->
-                                backupStatus = "上传失败：${error.message.orEmpty()}"
+                                snackbarHostState.showSnackbar("上传失败：${error.message.orEmpty()}")
                             }
                         }
                     },
                     onRestoreWebDav = { settings ->
                         scope.launch {
-                            backupStatus = "正在从 WebDAV 恢复"
                             runCatching {
                                 backupSettingsStore.saveWebDavSettings(settings)
                                 webDavSettings = settings
@@ -705,9 +758,9 @@ private fun DianMaoApp() {
                                 restoreReminderSchedules(repository, scheduler)
                                 count
                             }.onSuccess { count ->
-                                backupStatus = "已从 WebDAV 恢复 $count 个事项"
+                                snackbarHostState.showSnackbar("已从 WebDAV 恢复 $count 个事项")
                             }.onFailure { error ->
-                                backupStatus = "恢复失败：${error.message.orEmpty()}"
+                                snackbarHostState.showSnackbar("恢复失败：${error.message.orEmpty()}")
                             }
                         }
                     }

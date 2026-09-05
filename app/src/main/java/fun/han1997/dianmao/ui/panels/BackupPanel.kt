@@ -89,7 +89,6 @@ import androidx.compose.runtime.setValue
 internal fun BackupPanel(
     visible: Boolean,
     initialSettings: WebDavSettings,
-    status: String?,
     onDismiss: () -> Unit,
     onLocalExport: () -> Unit,
     onLocalImport: () -> Unit,
@@ -414,58 +413,6 @@ internal fun BackupPanel(
                                 )
                                 Spacer(Modifier.width(6.dp))
                                 Text("下载恢复")
-                            }
-                        }
-
-                        // Status line pinned last
-                        if (!status.isNullOrBlank()) {
-                            val isError = status.contains("失败")
-                            val isUpload = status.contains("上传")
-                            val isDownload = status.contains("下载") || status.contains("从 WebDAV 恢复") || status.contains("从本地备份恢复")
-                            val isExport = status.contains("导出")
-                            val isSave = status.contains("设置已保存")
-                            val statusIcon = when {
-                                isError -> Icons.Rounded.Close
-                                isUpload -> Icons.Rounded.CloudUpload
-                                isDownload -> Icons.Rounded.CloudDownload
-                                isExport -> Icons.Rounded.FileUpload
-                                isSave -> Icons.Rounded.Save
-                                else -> Icons.Rounded.CloudUpload
-                            }
-                            val statusTint = if (isError) {
-                                MaterialTheme.colorScheme.error
-                            } else {
-                                MaterialTheme.colorScheme.onSecondaryContainer
-                            }
-                            Surface(
-                                color = if (isError) {
-                                    MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.62f)
-                                } else {
-                                    MaterialTheme.colorScheme.secondaryContainer
-                                },
-                                contentColor = statusTint,
-                                shape = RowShape,
-                                border = quietBorder(0.08f)
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 9.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    IconTile(
-                                        icon = statusIcon,
-                                        contentDescription = null,
-                                        tint = statusTint,
-                                        containerColor = statusTint.copy(alpha = 0.10f),
-                                        iconSize = 14.dp
-                                    )
-                                    Text(
-                                        text = status,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
                             }
                         }
                     }
