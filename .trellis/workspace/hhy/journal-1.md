@@ -1528,3 +1528,38 @@ Cross-surface visual consistency pass after the full-screen conversion. Extracte
 ### Next Steps
 
 - None - task complete
+
+
+## Session 46: Calendar ring linkage and picker fixes via adb debugging
+
+**Date**: 2026-09-06
+**Task**: Calendar ring linkage and picker fixes via adb debugging
+**Branch**: `master`
+
+### Summary
+
+Debugged on the user's OPPO X8 Ultra via adb and fixed the calendar-alarm linkage chain. Root cause found by comparing provider data: OPPO/ColorOS's per-event 响铃 switch is the non-AOSP force_reminder column (verified writable through the standard calendar provider; DianMao events had it 0 while a manually-rung event had 1). Fixes: date picker preselects today and drops its redundant M3 title/headline for a compact dialog; CalendarWriter mirrors useAlarm onto force_reminder as a best-effort update; 响铃提醒 became 开启日历响铃, a sub-switch of 同步到系统日历 (parent off clears it; repeat depends on it); DianMao's local AlarmManager notification pipeline was fully removed (scheduler, receivers, boot restore, channels, manifest permissions, dead DAO/repo code) with repeat-cycle advancement covered by the existing startup reset. Checks: testDebugUnitTest, lintDebug, assembleDebug, git diff --check all green; APK installed on device for user verification.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `05a7b58` | (see git log) |
+| `89e386c` | (see git log) |
+| `d27bda2` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
