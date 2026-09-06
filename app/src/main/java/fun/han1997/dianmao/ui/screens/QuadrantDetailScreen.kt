@@ -65,7 +65,7 @@ internal fun QuadrantDetailHeader(
 
     Surface(
         color = quadrant.color.copy(alpha = 0.08f),
-        shape = RoundedCornerShape(14.dp),
+        shape = InlineShape,
         border = quietBorder(0.16f)
     ) {
         Row(
@@ -80,11 +80,7 @@ internal fun QuadrantDetailHeader(
                 contentDescription = "返回四象限",
                 onClick = onBack
             )
-            Box(
-                modifier = Modifier
-                    .size(12.dp)
-                    .background(quadrant.color, CircleShape)
-            )
+            ColorDot(quadrant.color)
             Text(
                 modifier = Modifier.weight(1f),
                 text = quadrant.title,
@@ -95,11 +91,8 @@ internal fun QuadrantDetailHeader(
             )
             Text(
                 text = "$openTasks 未完成",
-                style = MaterialTheme.typography.labelMedium.copy(
-                    fontWeight = FontWeight.Medium,
-                    letterSpacing = 0.sp
-                ),
-                color = quadrant.color.copy(alpha = 0.85f),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1
             )
         }
@@ -157,7 +150,7 @@ internal fun QuadrantDetailSectionLabel(
             text = text,
             style = MaterialTheme.typography.labelMedium.copy(
                 fontWeight = FontWeight.Medium,
-                letterSpacing = 0.05.sp
+                letterSpacing = 0.sp
             ),
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -216,7 +209,7 @@ internal fun QuadrantDetailCompletedGroup(
                     modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.labelMedium.copy(
                         fontWeight = FontWeight.Medium,
-                        letterSpacing = 0.05.sp
+                        letterSpacing = 0.sp
                     ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -265,7 +258,7 @@ internal fun QuadrantDetailCompletedGroup(
 internal fun QuadrantDetailEmptyState(quadrant: TaskPriority) {
     Surface(
         color = quadrant.color.copy(alpha = 0.07f),
-        shape = RoundedCornerShape(14.dp),
+        shape = InlineShape,
         border = quietBorder(0.12f)
     ) {
         Column(

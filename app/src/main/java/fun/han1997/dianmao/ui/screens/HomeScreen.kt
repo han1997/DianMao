@@ -106,7 +106,7 @@ internal fun AppHeader(
 
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(7.dp)
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -117,10 +117,7 @@ internal fun AppHeader(
             Text(
                 text = "DianMao",
                 modifier = Modifier.weight(1f),
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.sp
-                ),
+                style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onBackground,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -143,8 +140,8 @@ internal fun AppHeader(
         }
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(7.dp),
-            verticalArrangement = Arrangement.spacedBy(5.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             SummaryPill(value = openTasks.toString(), label = "未完成", color = MaterialTheme.colorScheme.primary)
             SummaryPill(value = timedTasks.toString(), label = "定时", color = MaterialTheme.colorScheme.secondary)
@@ -218,12 +215,12 @@ internal fun TimeFocusLane(
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.07f),
+        color = MaterialTheme.colorScheme.surface,
         shape = RowShape,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.16f))
+        border = quietBorder(0.14f)
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 13.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Row(
@@ -264,7 +261,7 @@ internal fun TimeFocusLane(
                     color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.82f)
                 )
             }
-            Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 focusItems.forEach { item ->
                     TimeFocusRow(
                         item = item,
@@ -297,12 +294,12 @@ internal fun TimeFocusRow(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 48.dp)
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.76f), RowShape)
+            .background(color.copy(alpha = 0.07f), RowShape)
             .border(1.dp, color.copy(alpha = 0.12f), RowShape)
             .clickable(onClick = onClick, role = Role.Button)
             .padding(horizontal = 10.dp, vertical = 8.dp),
         verticalAlignment = Alignment.Top,
-        horizontalArrangement = Arrangement.spacedBy(9.dp)
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Surface(
             color = color.copy(alpha = 0.10f),
@@ -318,7 +315,7 @@ internal fun TimeFocusRow(
         }
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(5.dp)
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Text(
                 text = item.task.title,
@@ -461,7 +458,7 @@ internal fun QuadrantPane(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .background(paneColor, shape = RoundedCornerShape(18.dp))
+            .background(paneColor, shape = PanelShape)
             .clickable { onSelected(quadrant) }
             .verticalScroll(rememberScrollState())
             .padding(10.dp),
@@ -477,11 +474,8 @@ internal fun QuadrantPane(
                     Spacer(Modifier.width(5.dp))
                     Text(
                         text = quadrant.title,
-                        style = MaterialTheme.typography.labelMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.1.sp
-                        ),
-                        color = quadrant.color,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -489,7 +483,7 @@ internal fun QuadrantPane(
                 Text(
                     text = quadrant.description,
                     style = MaterialTheme.typography.labelSmall.copy(
-                        letterSpacing = 0.02.sp
+                        letterSpacing = 0.sp
                     ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                     maxLines = 1,
@@ -504,10 +498,7 @@ internal fun QuadrantPane(
                 Text(
                     text = "$openCount 项",
                     modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.sp
-                    ),
+                    style = MaterialTheme.typography.labelMedium,
                     maxLines = 1
                 )
             }
@@ -522,10 +513,9 @@ internal fun QuadrantPane(
                 Text(
                     text = "另有 ${tasks.size - visibleTasks.size} 项，点开查看",
                     style = MaterialTheme.typography.labelSmall.copy(
-                        fontWeight = FontWeight.Medium,
-                        letterSpacing = 0.sp
+                        fontWeight = FontWeight.Medium
                     ),
-                    color = quadrant.color.copy(alpha = 0.72f),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -547,7 +537,7 @@ internal fun EmptyQuadrantHint(quadrant: TaskPriority) {
         Text(
             text = "暂无${quadrant.shortTitle}事项",
             style = MaterialTheme.typography.labelMedium.copy(
-                letterSpacing = 0.05.sp
+                letterSpacing = 0.sp
             ),
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.68f)
         )

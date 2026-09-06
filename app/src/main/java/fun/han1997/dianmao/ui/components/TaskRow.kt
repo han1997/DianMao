@@ -86,11 +86,6 @@ internal fun TaskRow(
     var canComplete by remember { mutableStateOf(true) }
     var actionsExpanded by remember { mutableStateOf(false) }
     val displayedDueLabel = dueLabelOverride ?: task.dueLabel
-    val rowAccent = if (task.completed) {
-        MaterialTheme.colorScheme.outline.copy(alpha = 0.30f)
-    } else {
-        task.quadrant.color.copy(alpha = 0.78f)
-    }
     val scale by animateFloatAsState(
         targetValue = if (task.completed) 0.985f else 1f,
         animationSpec = tween(durationMillis = 180),
@@ -106,11 +101,11 @@ internal fun TaskRow(
             .fillMaxWidth()
             .scale(scale),
         colors = CardDefaults.cardColors(
-            containerColor = if (task.completed) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.30f) else MaterialTheme.colorScheme.surface
+            containerColor = if (task.completed) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.38f) else MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         shape = RowShape,
-        border = quietBorder(if (task.completed) 0.10f else 0.14f)
+        border = quietBorder(if (task.completed) 0.12f else 0.16f)
     ) {
         Row(
             modifier = Modifier
@@ -118,13 +113,6 @@ internal fun TaskRow(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.Top
         ) {
-            Box(
-                modifier = Modifier
-                    .padding(top = 4.dp, end = 9.dp)
-                    .width(3.dp)
-                    .height(38.dp)
-                    .background(rowAccent, RoundedCornerShape(999.dp))
-            )
             Box(
                 modifier = Modifier
                     .size(48.dp)
@@ -150,7 +138,7 @@ internal fun TaskRow(
                     .semantics {
                         contentDescription = "查看事项详情：${task.title}"
                     },
-                verticalArrangement = Arrangement.spacedBy(7.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Text(
                     text = task.title,
@@ -172,7 +160,7 @@ internal fun TaskRow(
                 }
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.spacedBy(5.dp)
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     if (showQuadrantMeta) {
                         CompactMeta(
@@ -202,18 +190,12 @@ internal fun TaskRow(
                 }
             }
             Box {
-                    IconButton(
+                    HeaderActionButton(
+                        icon = Icons.Rounded.MoreVert,
+                        contentDescription = "更多事项操作",
                         onClick = { actionsExpanded = true },
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        IconTile(
-                            icon = Icons.Rounded.MoreVert,
-                            contentDescription = "更多事项操作",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.50f),
-                            iconSize = 18.dp
-                        )
-                    }
+                        iconSize = 18.dp
+                    )
                     DropdownMenu(
                         expanded = actionsExpanded,
                         onDismissRequest = { actionsExpanded = false }
@@ -305,13 +287,13 @@ internal fun SubTaskProgressSummary(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(4.dp)
-                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(999.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant, PillShape)
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth(progress.coerceIn(0f, 1f))
                     .height(4.dp)
-                    .background(color.copy(alpha = 0.82f), RoundedCornerShape(999.dp))
+                    .background(color.copy(alpha = 0.82f), PillShape)
             )
         }
     }

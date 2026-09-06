@@ -1,5 +1,21 @@
 # Changelog
 
+- Cross-surface visual-consistency pass over every screen: non-scheduling
+  tonal buttons and selected chips now use the terracotta container instead of
+  inheriting calendar blue from Material defaults (subtask add, archive,
+  priority chips); cloud-sync status and completion-history accents moved to
+  neutral ink; a warm error pair (#9C3B2E / #F3DAD5) replaced the stock
+  Material red; all compact dialogs (delete, uncomplete-recurring, completion
+  note, delete-completion) share one branded container with the warm paper
+  scrim, panel card, hairline border, and red destructive confirms; the
+  task-detail screen rides the shared full-screen scaffold (600dp centered
+  cap); duplicated icon buttons, quadrant dots, and empty-state patterns were
+  unified; the theme typography now defines the full scale with zero letter
+  spacing everywhere; task rows dropped their saturated side stripe; the time
+  focus lane returned to a raised neutral container with per-row tints; home
+  stat pills were neutralized; shape tokens (InlineShape/PillShape) and
+  spacing rhythm were normalized; DESIGN.md was updated to match.
+
 - Laid the four quadrant priority chips in the add/edit form out on a single
   evenly spaced row instead of letting them wrap.
 

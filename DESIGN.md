@@ -42,25 +42,25 @@ typography:
     fontSize: "16sp"
     fontWeight: 400
     lineHeight: "24sp"
-    letterSpacing: "0.1sp"
+    letterSpacing: "0sp"
   body-medium:
     fontFamily: "system-ui, sans-serif"
     fontSize: "14sp"
     fontWeight: 400
     lineHeight: "20sp"
-    letterSpacing: "0.1sp"
+    letterSpacing: "0sp"
   label-large:
     fontFamily: "system-ui, sans-serif"
     fontSize: "14sp"
     fontWeight: 500
     lineHeight: "18sp"
-    letterSpacing: "0.1sp"
+    letterSpacing: "0sp"
   label-medium:
     fontFamily: "system-ui, sans-serif"
     fontSize: "12sp"
     fontWeight: 500
     lineHeight: "16sp"
-    letterSpacing: "0.05sp"
+    letterSpacing: "0sp"
 rounded:
   panel: "18dp"
   sheet-top: "22dp"
@@ -148,7 +148,7 @@ The interface sits between TickTick's practical task density and Google Calendar
 - Android-native Material 3 foundation with warm personal accent.
 - Fast capture first, structured refinement second.
 - Restrained color: terracotta accent below 10% of any task screen surface.
-- Flat-by-default elevation; shadows only for sheets, menus, drag state, and the task-detail bottom action bar.
+- Flat-by-default elevation; shadows only for menus, drag state, and the 6dp form-dialog cards. Bottom action bars are frameless — primary actions sit directly on the page background.
 - Confident, restrained components that feel native and unhurried.
 - Light-scheme only. The Compose theme defines a single `lightColorScheme`; dark mode currently falls back to Material 3 defaults rather than a hand-tuned dark palette. The XML app theme flips `windowLightStatusBar` and the navigation-bar color at night, but in-app surfaces stay light. A proper `darkColorScheme` is a future task; until then, design new surfaces to read correctly on the light palette.
 
@@ -167,6 +167,11 @@ The palette is restrained: warm terracotta for action and priority, calendar blu
 - **Calendar On** (#F8FCFF): Text on calendar blue backgrounds.
 - **Calendar Container** (#DCEAF4): Light blue wash for calendar chip surfaces.
 - **Calendar On Container** (#071F31): Deep navy text inside calendar containers.
+
+### Error (warm)
+- **Warm Error** (#9C3B2E): Desaturated brick red in the terracotta family for destructive actions, overdue markers, and error states. Replaces the stock Material red, which reads cool-foreign next to the warm paper palette.
+- **Warm Error Container** (#F3DAD5): Light warm wash behind destructive icon containers and error toasts.
+- **Tonal semantics rule:** because the theme maps `secondaryContainer` to calendar blue, every tonal button or selected chip that is NOT a scheduling semantic must set its colors explicitly to the terracotta container (`primaryContainer`). Default-colored tonal controls render blue — that blue is reserved for date/time/calendar semantics only. Cloud-sync status, archive actions, and subtask add buttons are terracotta or neutral, never blue.
 
 ### Neutral
 - **App Surface** (#F8F8F5): The default screen background. Warm near-white with just enough tint to avoid sterile coolness. Warmth comes from the accent, not the canvas.
@@ -203,10 +208,10 @@ The palette is restrained: warm terracotta for action and priority, calendar blu
 - **Headline** (Bold, varies by context): Section headers in detail views, calendar stat numbers. Applied as weight overrides on headlineSmall/headlineMedium, not as a separate scale step.
 - **Title Large** (SemiBold, 20sp, 26sp line-height): Secondary-destination titles ("新增事项", "备份与恢复", "归档事项"), app header ("DianMao"), and detail-screen headings.
 - **Title Medium** (SemiBold 16sp / Medium 15sp, 22sp line-height): Task row titles (15sp Medium for density), form section headers, date picker labels.
-- **Body Large** (Normal/Medium, 16sp, 24sp line-height, 0.1sp tracking): Task descriptions, completion notes, text fields. Keep long notes readable rather than compressed.
-- **Body Medium** (Normal, 14sp, 20sp line-height, 0.1sp tracking): Secondary body text, metadata explanations.
-- **Label Large** (Medium, 14sp, 18sp line-height, 0.1sp tracking): Buttons ("添加", "取消"), tonal button text, prominent status text.
-- **Label Medium** (Medium, 12sp, 16sp line-height, 0.05sp tracking): Quadrant chips, summary pills, date badges, compact meta text. Never all-caps.
+- **Body Large** (Normal/Medium, 16sp, 24sp line-height, 0sp tracking): Task descriptions, completion notes, text fields. Keep long notes readable rather than compressed.
+- **Body Medium** (Normal, 14sp, 20sp line-height, 0sp tracking): Secondary body text, metadata explanations.
+- **Label Large** (Medium, 14sp, 18sp line-height, 0sp tracking): Buttons ("添加", "取消"), tonal button text, prominent status text.
+- **Label Medium** (Medium, 12sp, 16sp line-height, 0sp tracking): Quadrant chips, summary pills, date badges, compact meta text. Never all-caps.
 
 ### Named Rules
 
@@ -222,8 +227,7 @@ Flat by default, layered only when structure requires it. Depth comes from tonal
 - **Rest (0dp)**: Task row cards, detail stat cards, quadrant board, full-screen secondary destinations. No shadow. Depth implied by tonal surface difference and a quiet border at 0.14–0.18 alpha.
 - **Sheet (6dp)**: Removed from the primary flows — add/edit, backup, archive, and recurring history are now full-screen destinations (see Components). A 6dp sheet Card still wraps form dialogs such as the completion-note and time picker.
 - **Drag (8dp)**: Dragged task item. `graphicsLayer.shadowElevation` rises to 8dp while the item is held, returns to 0 at rest; scale nudges to 1.02.
-- **Task detail bottom bar (8dp shadow + 2dp tonal)**: The fixed action bar at the foot of `TaskDetailScreen`. The only place shadow and tonal elevation stack. The full-screen add/edit form reuses the same fixed bottom action bar treatment for its save button.
-- **Tonal (2dp)**: Retired from the archived card (now full screen); kept for the full-screen form bottom bars that need a subtle separation from scrolling content.
+- **Task detail bottom bar (frameless)**: The action bar at the foot of `TaskDetailScreen` and the add/edit form's save button sit directly on the page background with no tonal/shadow frame — one frameless treatment shared by all full-screen destinations.
 
 ### Motion Vocabulary
 
@@ -306,8 +310,15 @@ Confident and restrained. Every interactive element feels native and unhurried. 
 - **Meta-Enriched Archive Row:** ColorDot + full-contrast title (onSurface) + one Label Medium meta line (quadrant shortTitle · due date · completion note preview, ellipsized) + explicit Unarchive button. Header carries a count ("归档事项 · N").
 
 ### Dialogs
-- **Two-button confirms** (delete, uncomplete-recurring) use `AlertDialog` with TextButton actions; destructive confirm keeps the error color and the text names the exact object.
-- **Form dialogs** (completion note) use a freeform `Dialog` + Card container per official M3 guidance, with TextButton actions right-aligned.
+- **One dialog family.** All compact dialogs (two-button confirms, the
+  completion-note form) render inside the shared `QuietDialogContainer`
+  (`ui/components/QuietDialogContainer.kt`): a full-window warm paper scrim
+  (`#211815` at 0.16 alpha) with tap-to-dismiss, a centered `PanelShape` Card on
+  the raised surface with a quiet hairline border and 6dp elevation, an optional
+  tonal `IconTile` header, and right-aligned TextButton actions. This is the
+  same chrome the date/time pickers use, so every modal reads as one family.
+- **Destructive confirms** keep the error color on the confirm TextButton and
+  the text names the exact object.
 - **Dismiss actions are TextButton**, never outlined — outlined dismiss adds a third visual weight to a two-button dialog.
 
 ### Date & Time Pickers
