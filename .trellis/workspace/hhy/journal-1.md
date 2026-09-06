@@ -1461,3 +1461,37 @@ Converted backup/settings, archive, add/edit task, and recurring completion hist
 ### Next Steps
 
 - None - task complete
+
+
+## Session 44: Polish add/edit form settings and pickers
+
+**Date**: 2026-09-06
+**Task**: Polish add/edit form settings and pickers
+**Branch**: `master`
+
+### Summary
+
+Restyled the full-screen add/edit task form for legibility and cohesion. Replaced the flat chip FlowRow with two grouped TaskFormSection cards: 优先级 (quadrant chips unchanged) and 时间与提醒 (five verb→value setting rows with one-line explanations, hairline dividers, M3 Switches for calendar/alarm toggles, and explicit disabled-dependency reasons like 需先设置到期日). Unified both date and time pickers into a shared BrandedPickerDialog (warm #211815@16% scrim, centered PanelShape card, quiet border, app action row) while keeping native M3 DatePicker/TimePicker controls. Refined the bottom save bar to match the task-detail action vocabulary. Checks: testDebugUnitTest, lintDebug, assembleDebug, git diff --check all green. Updated CHANGELOG + DESIGN.md.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b9c1bfb` | (see git log) |
+| `803f1c6` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
