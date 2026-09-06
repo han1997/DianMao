@@ -32,7 +32,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -281,16 +280,16 @@ internal fun AddTaskPanel(
                     icon = Icons.Rounded.Inventory2,
                     iconTint = priority.color
                 ) {
-                    FlowRow(
+                    Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(7.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         TaskPriority.entries.forEach { item ->
                             FilterChip(
                                 selected = item == priority,
                                 onClick = { priority = item },
-                                label = { Text(item.shortTitle) },
+                                modifier = Modifier.weight(1f),
+                                label = { Text(item.shortTitle, maxLines = 1) },
                                 leadingIcon = { ColorDot(item.color) }
                             )
                         }

@@ -1,5 +1,8 @@
 # Changelog
 
+- Laid the four quadrant priority chips in the add/edit form out on a single
+  evenly spaced row instead of letting them wrap.
+
 - Removed the tonal frame around the task-detail bottom action bar: the
   complete/archive/delete actions now sit directly on the page background,
   matching the add/edit form's frameless save button.
