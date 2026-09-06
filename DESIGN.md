@@ -278,7 +278,7 @@ Confident and restrained. Every interactive element feels native and unhurried. 
 - **Style:** RowShape (12dp). Surface background for both focused and unfocused states. No filled container contrast.
 - **Focus:** Primary accent at 0.45 alpha for the focused indicator line. Unfocused indicator at 0.18 alpha of outline. On the add/edit form the focused indicator is the accent moment — the title field carries no emphasized container tint.
 - **Disabled:** SurfaceVariant at 0.18 alpha for container, outline at 0.10 alpha for indicator.
-- **Capture-First Pattern:** Quick-capture field visible immediately at the top of the full-screen add/edit form; metadata lives in one chip row beneath it, and heavier editors (subtasks) sit lower in the same scrolling column.
+- **Capture-First Pattern:** Quick-capture field visible immediately at the top of the full-screen add/edit form; priority and time/reminder settings sit in labeled sections beneath it, and heavier editors (subtasks) sit lower in the same scrolling column.
 - **Capture Auto-Focus:** In add mode the title field requests focus on open (`FocusRequester` + short delay) so the keyboard is up on the first frame. Edit mode does not auto-focus.
 - **IME Done Save:** On the add form the keyboard Done action saves and continues capture (same as the save button). In edit mode Done only clears focus.
 - **Password Visibility Toggle:** Secret fields show a trailing eye toggle that swaps `PasswordVisualTransformation` for plain text. The toggle resets to hidden when the destination reopens.
@@ -286,7 +286,16 @@ Confident and restrained. Every interactive element feels native and unhurried. 
 ### Chips
 - **Style:** ChipShape (8dp). Compact and semantic. Summary pills, "今日" badge, meta chips, quadrant labels.
 - **State:** Selected chips use terracotta container background with on-container ink. Unselected remain neutral with quiet border.
-- **Metadata Chip Row (add/edit form):** One FlowRow of FilterChips under the title field: quadrant (with 12dp ColorDot), date, time, calendar, alarm, repeat. Each chip shows its current value or "未设置"; tapping opens the existing picker or menu. Dependency chains are expressed as disabled chips: calendar/alarm need a date, repeat needs a date plus alarm. Repeat opens a dropdown menu rather than cycling values.
+- **Add/Edit setting sections (full-screen form):** Settings are grouped under
+  labeled `TaskFormSection` cards. "优先级" holds the four quadrant FilterChips
+  (12dp ColorDot). "时间与提醒" holds five verb→value setting rows (到期日 /
+  提醒时间 / 同步系统日历 / 响铃提醒 / 重复), each with a one-line subtitle that
+  explains the setting, and the disabled rows state the dependency reason
+  ("需先设置到期日") instead of silently dimming. Value rows show the current
+  value once set and the verb when unset ("添加到期日"); the two boolean rows
+  (calendar, alarm) use a trailing M3 `Switch`; repeat opens a dropdown. Rows
+  are separated by hairline dividers and follow the task-detail "verb becomes
+  value" dialect so form and detail read the same language.
 - **Quadrant Dots:** 12dp circles in quadrant color, used as visual anchors inside chips and list items.
 
 ### Detail Page Patterns
@@ -302,8 +311,18 @@ Confident and restrained. Every interactive element feels native and unhurried. 
 - **Dismiss actions are TextButton**, never outlined — outlined dismiss adds a third visual weight to a two-button dialog.
 
 ### Date & Time Pickers
-- **Date:** M3 `DatePickerDialog` + `DatePicker` (calendar mode) in `ui/components/DateTimePickers.kt`. Inherits DianMaoTheme; confirm/cancel are TextButton ("确定"/"取消"). Converts between the app's local-midnight convention and the picker's UTC-midnight state explicitly.
-- **Time:** M3 `TimePicker` (24-hour) inside a freeform `Dialog` + Card (PanelShape) container — there is no M3 TimePickerDialog composable. TextButton actions right-aligned.
+- Both pickers share one branded dialog container in
+  `ui/components/DateTimePickers.kt` (`BrandedPickerDialog`): a full-window warm
+  paper scrim (`#211815` at 0.16 alpha) with tap-to-dismiss, a centered
+  `PanelShape` Card on the raised surface with a quiet hairline border and 6dp
+  elevation, and an app-styled action row. The underlying control stays the
+  Material 3 `DatePicker` / `TimePicker` (native control, branded surface).
+- **Date:** M3 `DatePicker` (calendar mode). Title "选择到期日". Converts between
+  the app's local-midnight convention and the picker's UTC-midnight state
+  explicitly; confirm/cancel are TextButton ("确定"/"取消").
+- **Time:** M3 `TimePicker` (24-hour). Title "选择提醒时间". TextButton actions
+  right-aligned. No M3 TimePickerDialog composable exists; the shared branded
+  wrapper replaces the old plain-card container.
 - The legacy `android.app.DatePickerDialog`/`TimePickerDialog` are removed; all pickers are Compose M3 and theme-consistent.
 
 ### Navigation
