@@ -747,7 +747,6 @@ private fun DianMaoApp() {
 
     taskForUncompletion?.let { task ->
         UncompleteRecurringTaskDialog(
-            task = task,
             onDismiss = { taskForUncompletion = null },
             onConfirm = {
                 scope.launch {

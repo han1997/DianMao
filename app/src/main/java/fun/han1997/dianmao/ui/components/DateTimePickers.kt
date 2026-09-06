@@ -48,7 +48,6 @@ import java.time.ZoneOffset
  * app-styled action row. The underlying control stays the Material 3
  * `DatePicker` / `TimePicker` (native control, branded surface).
  */
-private val warmScrimColor = Color(0xFF211815).copy(alpha = 0.16f)
 
 @Composable
 private fun BrandedPickerDialog(
@@ -92,7 +91,8 @@ private fun BrandedPickerDialog(
                     ),
                 shape = PanelShape,
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                border = quietBorder(0.12f)
             ) {
                 Column(
                     modifier = Modifier.padding(
