@@ -1,5 +1,15 @@
 # Changelog
 
+- Reworked the calendar-alarm linkage: 响铃提醒 is now 开启日历响铃, a
+  sub-switch of 同步到系统日历 that only controls the system-calendar event's
+  audible reminder (including OPPO/ColorOS's per-event 响铃 switch via the
+  force_reminder column); the master 同步到系统日历 switch creates a quiet
+  calendar event on its own. DianMao no longer schedules its own AlarmManager
+  notifications — the local reminder pipeline (receivers, notification
+  channel, boot restore, exact-alarm permission) was removed, and repeat
+  cycles now advance on app start via the existing expired-cycle reset.
+  Repeat options stay dependent on the calendar ring toggle.
+
 - Fixed three add/edit workflow issues: the date picker now preselects today
   when no due date is set yet (instead of opening unselected); the date picker
   dialog gives the Material 3 calendar enough horizontal room (its design width

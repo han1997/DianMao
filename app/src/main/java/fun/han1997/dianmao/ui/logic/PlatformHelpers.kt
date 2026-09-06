@@ -1,6 +1,5 @@
 package `fun`.han1997.dianmao
 
-import `fun`.han1997.dianmao.alerts.ReminderScheduler
 import `fun`.han1997.dianmao.calendar.CalendarWriter
 import `fun`.han1997.dianmao.data.QuadrantType
 import `fun`.han1997.dianmao.data.RepeatRule
@@ -75,12 +74,6 @@ internal suspend fun readTextFromUri(context: android.content.Context, uri: Uri)
         context.contentResolver.openInputStream(uri)?.bufferedReader(Charsets.UTF_8)?.use { reader ->
             reader.readText()
         } ?: error("无法读取备份文件")
-    }
-}
-
-internal suspend fun restoreReminderSchedules(repository: TaskRepository, scheduler: ReminderScheduler) {
-    repository.restoreScheduledReminders().forEach { task ->
-        scheduler.schedule(task)
     }
 }
 

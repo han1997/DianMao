@@ -11,6 +11,9 @@ import `fun`.han1997.dianmao.data.TaskUiModel
 import java.util.TimeZone
 
 private const val IMMEDIATE_REMINDER_MINUTES = 0
+// ColorOS (OPPO/OnePlus) calendar extension column controlling whether an
+// event forces an audible reminder ("响铃"). Absent on AOSP providers.
+private const val FORCE_REMINDER_COLUMN = "force_reminder"
 private val IMMEDIATE_ALERT_REMINDER = ReminderConfig(
     method = CalendarContract.Reminders.METHOD_ALERT,
     minutes = IMMEDIATE_REMINDER_MINUTES
@@ -51,7 +54,23 @@ object CalendarWriter {
         } else {
             clearReminder(resolver, eventId)
         }
+        // ColorOS (OPPO/OnePlus) exposes its per-event "响铃" (force reminder)
+        // switch as a provider column named force_reminder. It is not part of
+        // AOSP, so mirror the alarm toggle onto it as a best-effort update —
+        // on devices without the column this is silently ignored.
+        setColorOsForceReminder(resolver, eventId, task.useAlarm)
         return eventId
+    }
+
+    private fun setColorOsForceReminder(resolver: ContentResolver, eventId: Long, enabled: Boolean) {
+        runCatching {
+            resolver.update(
+                ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, eventId),
+                ContentValues().apply { put(FORCE_REMINDER_COLUMN, if (enabled) 1 else 0) },
+                null,
+                null
+            )
+        }
     }
 
     private fun insertEvent(resolver: ContentResolver, values: ContentValues): Long? {

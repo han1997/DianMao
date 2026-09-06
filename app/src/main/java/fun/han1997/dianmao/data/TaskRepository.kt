@@ -309,45 +309,6 @@ class TaskRepository(context: Context) {
         return tasks.size
     }
 
-    suspend fun restoreScheduledReminders(nowMillis: Long = System.currentTimeMillis()): List<TaskUiModel> {
-        return dao.findActiveAlarmTasks().mapNotNull { task ->
-            val dueAt = task.dueAtMillis ?: return@mapNotNull null
-            when {
-                task.repeatRule != RepeatRule.None && dueAt <= nowMillis -> {
-                    val nextDue = RepeatReminderCalculator.nextFutureDueAfter(dueAt, task.repeatRule, nowMillis)
-                    updateTaskDue(task, nextDue).toUiModel()
-                }
-                dueAt > nowMillis -> task.toUiModel()
-                else -> null
-            }
-        }
-    }
-
-    suspend fun advanceRepeatAfterReminder(taskId: Long): TaskUiModel? {
-        val existing = dao.findById(taskId) ?: return null
-        val currentDue = existing.dueAtMillis ?: return null
-        if (existing.repeatRule == RepeatRule.None || !existing.useAlarm || existing.completed) return null
-        val nextDue = RepeatReminderCalculator.nextFutureDueAfter(
-            currentMillis = currentDue,
-            repeatRule = existing.repeatRule,
-            nowMillis = System.currentTimeMillis()
-        )
-        return updateTaskDue(existing, nextDue).toUiModel()
-    }
-
-    private suspend fun updateTaskDue(task: TaskEntity, nextDue: Long): TaskEntity {
-        val updated = task.copy(
-            dueLabel = DateTimeFormatters.labelFor(
-                dateMillis = midnightMillis(nextDue),
-                minutesOfDay = minutesOfDay(nextDue)
-            ),
-            dueAtMillis = nextDue,
-            updatedAtMillis = System.currentTimeMillis()
-        )
-        dao.update(updated)
-        return updated
-    }
-
     private fun midnightMillis(timestamp: Long): Long {
         return Instant.ofEpochMilli(timestamp)
             .atZone(ZoneId.systemDefault())

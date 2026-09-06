@@ -346,7 +346,7 @@ internal fun AddTaskPanel(
                     )
                     SettingDivider()
 
-                    // 同步系统日历 (toggle)
+                    // 同步系统日历 (toggle, master switch)
                     SettingRow(
                         icon = Icons.Rounded.CalendarMonth,
                         title = if (useCalendar) "已同步到系统日历" else "同步到系统日历",
@@ -359,6 +359,7 @@ internal fun AddTaskPanel(
                         enabled = hasDate,
                         onClick = {
                             useCalendar = !useCalendar
+                            if (!useCalendar) useAlarm = false
                             if (useCalendar) onRequestCalendarPermission()
                         },
                         trailing = {
@@ -375,17 +376,19 @@ internal fun AddTaskPanel(
                     )
                     SettingDivider()
 
-                    // 响铃提醒 (toggle)
+                    // 日历响铃 (toggle, sub-switch of 同步到系统日历)
+                    val alarmReady = hasDate && useCalendar
                     SettingRow(
                         icon = Icons.Rounded.Alarm,
-                        title = if (useAlarm) "响铃提醒已开启" else "开启响铃提醒",
+                        title = if (useAlarm) "日历响铃已开启" else "开启日历响铃",
                         subtitle = when {
-                            useAlarm -> "到期时发出通知提醒"
+                            useAlarm -> "日程到点在系统日历响铃"
                             !hasDate -> "需先设置到期日"
-                            else -> "到点提醒我"
+                            !useCalendar -> "需先同步到系统日历"
+                            else -> "开启后系统日历日程带响铃"
                         },
                         iconTint = if (useAlarm) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.58f),
-                        enabled = hasDate,
+                        enabled = alarmReady,
                         onClick = {
                             useAlarm = !useAlarm
                             if (!useAlarm) repeatRule = RepeatRule.None
@@ -394,7 +397,7 @@ internal fun AddTaskPanel(
                             Switch(
                                 checked = useAlarm,
                                 onCheckedChange = null,
-                                enabled = hasDate,
+                                enabled = alarmReady,
                                 colors = SwitchDefaults.colors(
                                     checkedTrackColor = MaterialTheme.colorScheme.primary
                                 )
@@ -405,7 +408,7 @@ internal fun AddTaskPanel(
 
                     // 重复
                     Box {
-                        val repeatReady = hasDate && useAlarm
+                        val repeatReady = hasDate && useCalendar && useAlarm
                         val repeatText = if (repeatRule == RepeatRule.None) null else repeatRule.label
                         SettingRow(
                             icon = Icons.Rounded.Repeat,
@@ -413,7 +416,8 @@ internal fun AddTaskPanel(
                             subtitle = when {
                                 repeatText != null -> "点按修改重复规则"
                                 !hasDate -> "需先设置到期日"
-                                !useAlarm -> "需先开启响铃提醒"
+                                !useCalendar -> "需先同步到系统日历"
+                                !useAlarm -> "需先开启日历响铃"
                                 else -> "可设为每天、每周或每月"
                             },
                             iconTint = if (repeatReady) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.58f),

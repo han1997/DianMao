@@ -1,7 +1,5 @@
 package `fun`.han1997.dianmao
 
-import `fun`.han1997.dianmao.alerts.ReminderScheduler
-import `fun`.han1997.dianmao.alerts.TaskNotificationChannels
 import `fun`.han1997.dianmao.backup.BackupSettingsStore
 import `fun`.han1997.dianmao.backup.WebDavBackupClient
 import `fun`.han1997.dianmao.data.RepeatRule
@@ -19,7 +17,6 @@ import `fun`.han1997.dianmao.defaultBackupFileName
 import `fun`.han1997.dianmao.deleteCalendarEvent
 import `fun`.han1997.dianmao.openCalendarReminder
 import `fun`.han1997.dianmao.readTextFromUri
-import `fun`.han1997.dianmao.restoreReminderSchedules
 import `fun`.han1997.dianmao.saveOrOpenCalendarEvent
 import `fun`.han1997.dianmao.seedTaskEntities
 import `fun`.han1997.dianmao.writeTextToUri
@@ -41,8 +38,6 @@ import `fun`.han1997.dianmao.RecurringTaskHistoryPanel
 import `fun`.han1997.dianmao.TaskDetailScreen
 import `fun`.han1997.dianmao.DianMaoTheme
 import android.Manifest
-import android.content.pm.PackageManager
-import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -97,7 +92,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -108,7 +102,6 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        TaskNotificationChannels.ensure(this)
 
         setContent {
             DianMaoTheme {
@@ -123,17 +116,12 @@ class MainActivity : ComponentActivity() {
 private fun DianMaoApp() {
     val context = LocalContext.current
     val repository = remember(context) { TaskRepository(context.applicationContext) }
-    val scheduler = remember(context) { ReminderScheduler(context.applicationContext) }
     val backupSettingsStore = remember(context) { BackupSettingsStore(context.applicationContext) }
     val webDavClient = remember { WebDavBackupClient() }
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val activeTasks by repository.activeTasks.collectAsState(initial = emptyList())
     val archivedTasks by repository.archivedTasks.collectAsState(initial = emptyList())
-
-    LaunchedEffect(Unit) {
-        repository.resetExpiredCycleTasks()
-    }
 
     var activePriority by rememberSaveable { mutableStateOf<TaskPriority?>(null) }
     var showAddSheet by rememberSaveable { mutableStateOf(false) }
@@ -167,9 +155,6 @@ private fun DianMaoApp() {
         }
     }
     var webDavSettings by remember { mutableStateOf(backupSettingsStore.loadWebDavSettings()) }
-    val notificationPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { }
     val calendarPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { }
@@ -195,7 +180,6 @@ private fun DianMaoApp() {
             scope.launch {
                 runCatching {
                     val count = repository.importBackupJson(readTextFromUri(context, uri))
-                    restoreReminderSchedules(repository, scheduler)
                     count
                 }.onSuccess { count ->
                     snackbarHostState.showSnackbar("已从本地备份恢复 $count 个事项")
@@ -206,9 +190,9 @@ private fun DianMaoApp() {
         }
     }
 
-    LaunchedEffect(repository, scheduler) {
+    LaunchedEffect(repository) {
         repository.seedIfEmpty(seedTaskEntities())
-        restoreReminderSchedules(repository, scheduler)
+        repository.resetExpiredCycleTasks()
     }
 
     val quadrantDetailTasks = remember(activeTasks, activePriority) {
@@ -232,9 +216,6 @@ private fun DianMaoApp() {
                 scope.launch {
                     try {
                         repository.toggleCompleted(target, false)
-                        if (target.useAlarm && target.dueAtMillis != null && target.repeatRule != RepeatRule.Count) {
-                            scheduler.schedule(target.copy(completed = false))
-                        }
                         snackbarHostState.showSnackbar("事项已标为未完成")
                     } catch (error: Exception) {
                         if (error is CancellationException) throw error
@@ -255,18 +236,6 @@ private fun DianMaoApp() {
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
                 snackbarHostState.showSnackbar("归档失败：${error.message ?: "请稍后重试"}")
-            }
-        }
-    }
-
-    val unarchiveTask: (TaskUiModel) -> Unit = { target ->
-        scope.launch {
-            try {
-                repository.unarchiveTask(target.id)
-                snackbarHostState.showSnackbar("事项已恢复")
-            } catch (error: Exception) {
-                if (error is CancellationException) throw error
-                snackbarHostState.showSnackbar("恢复失败：${error.message ?: "请稍后重试"}")
             }
         }
     }
@@ -623,28 +592,6 @@ private fun DianMaoApp() {
                             checkNotNull(saved) { "事项不存在，可能已被删除" }
 
                             val sideEffectFailures = mutableListOf<String>()
-                            if (previousTask != null) {
-                                try {
-                                    scheduler.cancel(previousTask.id)
-                                } catch (error: Exception) {
-                                    if (error is CancellationException) throw error
-                                    sideEffectFailures += "旧提醒清理失败"
-                                }
-                            }
-                            if (saved.useAlarm) {
-                                try {
-                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                                        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-                                    ) {
-                                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                                    }
-                                    scheduler.schedule(saved)
-                                } catch (error: Exception) {
-                                    if (error is CancellationException) throw error
-                                    sideEffectFailures += "响铃提醒同步失败"
-                                }
-                            }
-
                             if (saved.useCalendar) {
                                 try {
                                     val eventId = saveOrOpenCalendarEvent(context, saved)
@@ -760,7 +707,6 @@ private fun DianMaoApp() {
                                 backupSettingsStore.saveWebDavSettings(settings)
                                 webDavSettings = settings
                                 val count = repository.importBackupJson(webDavClient.download(settings))
-                                restoreReminderSchedules(repository, scheduler)
                                 count
                             }.onSuccess { count ->
                                 snackbarHostState.showSnackbar("已从 WebDAV 恢复 $count 个事项")
@@ -797,25 +743,8 @@ private fun DianMaoApp() {
             onSave = { note ->
                 scope.launch {
                     try {
-                        val updated = repository.saveCompletionNote(task.id, note)
-                        var reminderFailure = false
-                        try {
-                            if (!task.completed) scheduler.cancel(task.id)
-                            if (!task.completed && updated != null && updated.useAlarm && updated.dueAtMillis != null) {
-                                scheduler.schedule(task.copy(
-                                    dueAtMillis = updated.dueAtMillis,
-                                    dueLabel = updated.dueLabel,
-                                    completed = updated.completed
-                                ))
-                            }
-                        } catch (error: Exception) {
-                            if (error is CancellationException) throw error
-                            reminderFailure = true
-                        }
-                        snackbarHostState.showSnackbar(
-                            if (reminderFailure) "完成心得已保存；提醒重新调度失败"
-                            else "完成心得已保存"
-                        )
+                        repository.saveCompletionNote(task.id, note)
+                        snackbarHostState.showSnackbar("完成心得已保存")
                     } catch (error: Exception) {
                         if (error is CancellationException) throw error
                         snackbarHostState.showSnackbar("完成失败：${error.message ?: "请稍后重试"}")
@@ -832,12 +761,7 @@ private fun DianMaoApp() {
             onDismiss = { taskForDelete = null },
             onConfirm = {
                 scope.launch {
-                    var reminderFailure = false
                     var calendarFailure = false
-                    try { scheduler.cancel(task.id) } catch (error: Exception) {
-                        if (error is CancellationException) throw error
-                        reminderFailure = true
-                    }
                     try {
                         if (!deleteCalendarEvent(context, task.calendarEventId)) {
                             calendarFailure = true
@@ -849,7 +773,6 @@ private fun DianMaoApp() {
                     try {
                         repository.deleteTask(task.id)
                         val failures = listOfNotNull(
-                            if (reminderFailure) "提醒清理失败" else null,
                             if (calendarFailure) "日历清理失败" else null
                         )
                         snackbarHostState.showSnackbar(
@@ -873,9 +796,6 @@ private fun DianMaoApp() {
                 scope.launch {
                     try {
                         repository.toggleCompleted(task, false)
-                        if (task.useAlarm && task.dueAtMillis != null && task.repeatRule != RepeatRule.Count) {
-                            scheduler.schedule(task.copy(completed = false))
-                        }
                         snackbarHostState.showSnackbar("事项已恢复为未完成")
                     } catch (error: Exception) {
                         if (error is CancellationException) throw error
