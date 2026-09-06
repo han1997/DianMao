@@ -120,42 +120,35 @@ internal fun TaskDetailScreen(
     val completions by repository.observeCompletions(task.id).collectAsState(initial = emptyList())
     val listState = rememberLazyListState()
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
+    FullScreenScaffold(
+        title = "事项详情",
+        subtitle = task.quadrant.shortTitle,
+        leadingIcon = Icons.Rounded.Inventory2,
+        leadingIconTint = task.quadrant.color,
+        onBack = onBack,
+        actions = {
+            HeaderActionButton(
+                icon = Icons.Rounded.Edit,
+                contentDescription = "编辑",
+                onClick = onEdit,
+                tint = MaterialTheme.colorScheme.primary,
+                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.50f)
+            )
+        }
     ) {
-        // The edge-to-edge Scaffold leaves each screen responsible for its safe area.
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .padding(top = 2.dp, bottom = 2.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Top bar — shared with the other full-screen destinations.
-            FullScreenTopBar(
-                title = "事项详情",
-                subtitle = task.quadrant.shortTitle,
-                leadingIcon = Icons.Rounded.Inventory2,
-                leadingIconTint = task.quadrant.color,
-                onBack = onBack,
-                actions = {
-                    HeaderActionButton(
-                        icon = Icons.Rounded.Edit,
-                        contentDescription = "编辑",
-                        onClick = onEdit,
-                        tint = MaterialTheme.colorScheme.primary,
-                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.50f)
-                    )
-                }
-            )
-
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 20.dp),
-                contentPadding = PaddingValues(top = 14.dp, bottom = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier
+                .weight(1f),
+            contentPadding = PaddingValues(top = 14.dp, bottom = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
                 // Hero: completion checkbox + title on one line (To Do/Things pattern)
                 item {
                     Row(
@@ -201,16 +194,12 @@ internal fun TaskDetailScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(12.dp)
-                                .background(task.quadrant.color, CircleShape)
-                        )
+                        ColorDot(task.quadrant.color)
                         Text(
                             text = task.quadrant.shortTitle,
                             style = MaterialTheme.typography.labelMedium.copy(
                                 fontWeight = FontWeight.Medium,
-                                letterSpacing = 0.05.sp
+                                letterSpacing = 0.sp
                             ),
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -329,7 +318,7 @@ internal fun TaskDetailScreen(
                                         modifier = Modifier
                                             .size(6.dp)
                                             .background(
-                                                MaterialTheme.colorScheme.secondary,
+                                                MaterialTheme.colorScheme.onSurfaceVariant,
                                                 CircleShape
                                             )
                                     )
@@ -363,14 +352,14 @@ internal fun TaskDetailScreen(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 14.dp),
+                    .padding(vertical = 6.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Button(
                     onClick = { onToggleComplete(task) },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RowShape,
-                    contentPadding = PaddingValues(vertical = 12.dp),
+                    contentPadding = PaddingValues(vertical = 13.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary
@@ -395,14 +384,14 @@ internal fun TaskDetailScreen(
                             modifier = Modifier.weight(1f),
                             shape = RowShape,
                             colors = ButtonDefaults.filledTonalButtonColors(
-                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                         ) {
                             InlineButtonIcon(
                                 icon = Icons.Rounded.Archive,
-                                tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                containerColor = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.10f)
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                containerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.10f)
                             )
                             Spacer(Modifier.width(6.dp))
                             Text("归档")
@@ -415,19 +404,13 @@ internal fun TaskDetailScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    IconButton(
+                    HeaderActionButton(
+                        icon = Icons.Rounded.Delete,
+                        contentDescription = "删除",
                         onClick = { onDelete(task) },
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        IconTile(
-                            icon = Icons.Rounded.Delete,
-                            contentDescription = "删除",
-                            tint = MaterialTheme.colorScheme.error,
-                            containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.10f),
-                            iconSize = 20.dp,
-                            modifier = Modifier.size(34.dp)
-                        )
-                    }
+                        tint = MaterialTheme.colorScheme.error,
+                        containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.10f)
+                    )
                 }
             }
         }
@@ -505,7 +488,7 @@ internal fun CompletionHistoryGroup(
                     modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.labelMedium.copy(
                         fontWeight = FontWeight.Medium,
-                        letterSpacing = 0.05.sp
+                        letterSpacing = 0.sp
                     ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -567,8 +550,11 @@ fun CompletionItem(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        shape = RowShape,
+        border = quietBorder(0.12f),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -588,31 +574,23 @@ fun CompletionItem(
                         overflow = TextOverflow.Ellipsis
                     )
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(
+                    HeaderActionButton(
+                        icon = Icons.Rounded.Edit,
+                        contentDescription = "编辑备注",
                         onClick = {
                             editNoteText = completion.note.orEmpty()
                             isEditingNote = true
                         },
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Icon(
-                            Icons.Rounded.Edit,
-                            contentDescription = "编辑备注",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                    IconButton(
+                        iconSize = 16.dp
+                    )
+                    HeaderActionButton(
+                        icon = Icons.Rounded.Delete,
+                        contentDescription = "删除",
                         onClick = { showDeleteDialog = true },
-                        modifier = Modifier.size(48.dp)
-                    ) {
-                        Icon(
-                            Icons.Rounded.Delete,
-                            contentDescription = "删除",
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
+                        tint = MaterialTheme.colorScheme.error,
+                        containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.10f),
+                        iconSize = 16.dp
+                    )
                 }
             }
             if (isEditingNote) {
@@ -663,26 +641,27 @@ fun CompletionItem(
     }
 
     if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text("删除完成记录") },
-            text = { Text("确定要删除这条完成记录吗？") },
-            confirmButton = {
+        QuietDialogContainer(
+            onDismiss = { showDeleteDialog = false },
+            title = "删除完成记录",
+            leadingIcon = Icons.Rounded.Delete,
+            leadingIconTint = MaterialTheme.colorScheme.error,
+            actions = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("取消")
+                }
                 TextButton(
                     onClick = {
                         onDelete()
                         showDeleteDialog = false
                     }
                 ) {
-                    Text("删除")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("取消")
+                    Text("删除", color = MaterialTheme.colorScheme.error)
                 }
             }
-        )
+        ) {
+            Text("确定要删除这条完成记录吗？")
+        }
     }
 }
 

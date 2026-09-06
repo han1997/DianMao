@@ -22,6 +22,10 @@ internal fun DianMaoTheme(content: @Composable () -> Unit) {
         onSecondary = Color(0xFFF8FCFF),
         secondaryContainer = Color(0xFFDCEAF4),
         onSecondaryContainer = Color(0xFF071F31),
+        error = Color(0xFF9C3B2E),
+        onError = Color(0xFFFFFBFA),
+        errorContainer = Color(0xFFF3DAD5),
+        onErrorContainer = Color(0xFF3A100A),
         background = Color(0xFFF8F8F5),
         onBackground = Color(0xFF1E211F),
         surface = Color(0xFFFFFCF9),
@@ -40,6 +44,12 @@ internal fun DianMaoTheme(content: @Composable () -> Unit) {
                 fontWeight = FontWeight.SemiBold,
                 letterSpacing = 0.sp
             ),
+            headlineSmall = androidx.compose.ui.text.TextStyle(
+                fontSize = 24.sp,
+                lineHeight = 30.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 0.sp
+            ),
             titleLarge = androidx.compose.ui.text.TextStyle(
                 fontSize = 20.sp,
                 lineHeight = 26.sp,
@@ -52,29 +62,47 @@ internal fun DianMaoTheme(content: @Composable () -> Unit) {
                 fontWeight = FontWeight.SemiBold,
                 letterSpacing = 0.sp
             ),
+            titleSmall = androidx.compose.ui.text.TextStyle(
+                fontSize = 14.sp,
+                lineHeight = 20.sp,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 0.sp
+            ),
             bodyLarge = androidx.compose.ui.text.TextStyle(
                 fontSize = 16.sp,
                 lineHeight = 24.sp,
                 fontWeight = FontWeight.Normal,
-                letterSpacing = 0.1.sp
+                letterSpacing = 0.sp
             ),
             bodyMedium = androidx.compose.ui.text.TextStyle(
                 fontSize = 14.sp,
                 lineHeight = 20.sp,
                 fontWeight = FontWeight.Normal,
-                letterSpacing = 0.1.sp
+                letterSpacing = 0.sp
             ),
-            labelMedium = androidx.compose.ui.text.TextStyle(
+            bodySmall = androidx.compose.ui.text.TextStyle(
                 fontSize = 12.sp,
                 lineHeight = 16.sp,
-                fontWeight = FontWeight.Medium,
-                letterSpacing = 0.05.sp
+                fontWeight = FontWeight.Normal,
+                letterSpacing = 0.sp
             ),
             labelLarge = androidx.compose.ui.text.TextStyle(
                 fontSize = 14.sp,
                 lineHeight = 18.sp,
                 fontWeight = FontWeight.Medium,
-                letterSpacing = 0.1.sp
+                letterSpacing = 0.sp
+            ),
+            labelMedium = androidx.compose.ui.text.TextStyle(
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+                fontWeight = FontWeight.Medium,
+                letterSpacing = 0.sp
+            ),
+            labelSmall = androidx.compose.ui.text.TextStyle(
+                fontSize = 11.sp,
+                lineHeight = 15.sp,
+                fontWeight = FontWeight.Medium,
+                letterSpacing = 0.sp
             )
         ),
         content = content
@@ -98,6 +126,11 @@ internal fun quietTextFieldColors() = TextFieldDefaults.colors(
 
 internal val PanelShape = RoundedCornerShape(18.dp)
 internal val SheetShape = RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)
+internal val InlineShape = RoundedCornerShape(14.dp)
 internal val RowShape = RoundedCornerShape(12.dp)
 internal val ChipShape = RoundedCornerShape(8.dp)
 internal val IconTileShape = RoundedCornerShape(14.dp)
+internal val PillShape = RoundedCornerShape(999.dp)
+
+/** DESIGN.md "scrim": the app's warm dim color for overlays and dialogs. */
+internal val warmScrimColor = Color(0xFF211815).copy(alpha = 0.16f)

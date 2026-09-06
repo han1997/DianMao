@@ -63,6 +63,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -207,7 +208,7 @@ internal fun AddTaskPanel(
                 if (isEditing) {
                     onDismiss()
                 } else {
-                    saveFeedback = "已保存到 ${priority.shortTitle},可继续记录"
+                    saveFeedback = "已保存到 ${priority.shortTitle}，可继续记录"
                     title = ""
                     dueDateMillis = null
                     dueTimeMinutes = null
@@ -224,7 +225,7 @@ internal fun AddTaskPanel(
     if (visible) {
         FullScreenScaffold(
             title = panelTitle,
-            subtitle = if (isEditing) "更新事项内容与安排" else "先记录一件事,稍后再分类整理",
+            subtitle = if (isEditing) "更新事项内容与安排" else "先记录一件事，稍后再分类整理",
             leadingIcon = if (isEditing) Icons.Rounded.Edit else Icons.Rounded.Add,
             leadingIconTint = MaterialTheme.colorScheme.primary,
             onBack = onDismiss,
@@ -276,7 +277,7 @@ internal fun AddTaskPanel(
                 // Priority section: quadrant choice, unchanged control, grouped.
                 TaskFormSection(
                     title = "优先级",
-                    subtitle = "放入四象限,决定它的颜色与归类",
+                    subtitle = "放入四象限，决定它的颜色与归类",
                     icon = Icons.Rounded.Inventory2,
                     iconTint = priority.color
                 ) {
@@ -290,7 +291,11 @@ internal fun AddTaskPanel(
                                 onClick = { priority = item },
                                 modifier = Modifier.weight(1f),
                                 label = { Text(item.shortTitle, maxLines = 1) },
-                                leadingIcon = { ColorDot(item.color) }
+                                leadingIcon = { ColorDot(item.color) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
                             )
                         }
                     }
@@ -386,7 +391,7 @@ internal fun AddTaskPanel(
                             !useCalendar -> "需先同步到系统日历"
                             else -> "开启后系统日历日程带响铃"
                         },
-                        iconTint = if (useAlarm) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.58f),
+                        iconTint = if (useAlarm) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.58f),
                         enabled = alarmReady,
                         onClick = {
                             useAlarm = !useAlarm
@@ -398,7 +403,8 @@ internal fun AddTaskPanel(
                                 onCheckedChange = null,
                                 enabled = alarmReady,
                                 colors = SwitchDefaults.colors(
-                                    checkedTrackColor = MaterialTheme.colorScheme.primary
+                                    checkedTrackColor = MaterialTheme.colorScheme.secondary,
+                                    checkedThumbColor = MaterialTheme.colorScheme.surface
                                 )
                             )
                         }

@@ -4,6 +4,7 @@ import `fun`.han1997.dianmao.data.TaskPriority
 import `fun`.han1997.dianmao.quietBorder
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -95,11 +96,18 @@ internal fun IconTile(
     tint: Color,
     modifier: Modifier = Modifier,
     containerColor: Color = tint.copy(alpha = 0.10f),
-    iconSize: androidx.compose.ui.unit.Dp = 18.dp
+    iconSize: androidx.compose.ui.unit.Dp = 18.dp,
+    shape: Shape? = null
 ) {
+    // Explicit tile sizes keep the three scales deliberate: compact 20dp
+    // (inline meta chips), standard 30dp (sections and rows), header 34dp.
+    val tileSize = when {
+        iconSize <= 14.dp -> 20.dp
+        else -> 30.dp
+    }
     Surface(
-        modifier = modifier.size(if (iconSize <= 14.dp) 20.dp else 30.dp),
-        shape = if (iconSize <= 14.dp) ChipShape else IconTileShape,
+        modifier = modifier.size(tileSize),
+        shape = shape ?: if (iconSize <= 14.dp) ChipShape else IconTileShape,
         color = containerColor,
         contentColor = tint
     ) {
@@ -119,20 +127,25 @@ internal fun HeaderActionButton(
     icon: ImageVector,
     contentDescription: String,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
     tint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-    containerColor: Color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.50f)
+    containerColor: Color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.50f),
+    buttonSize: androidx.compose.ui.unit.Dp = 48.dp,
+    iconSize: androidx.compose.ui.unit.Dp = 20.dp,
+    tileShape: Shape = IconTileShape
 ) {
     IconButton(
         onClick = onClick,
-        modifier = Modifier.size(48.dp)
+        modifier = modifier.size(buttonSize)
     ) {
         IconTile(
             icon = icon,
             contentDescription = contentDescription,
             tint = tint,
             containerColor = containerColor,
-            iconSize = 20.dp,
-            modifier = Modifier.size(34.dp)
+            iconSize = iconSize,
+            modifier = Modifier.size(34.dp),
+            shape = tileShape
         )
     }
 }
@@ -153,10 +166,10 @@ internal fun InlineButtonIcon(
 }
 
 @Composable
-internal fun ColorDot(color: Color) {
+internal fun ColorDot(color: Color, modifier: Modifier = Modifier, size: androidx.compose.ui.unit.Dp = 12.dp) {
     Box(
-        modifier = Modifier
-            .size(10.dp)
+        modifier = modifier
+            .size(size)
             .background(color, CircleShape)
             .border(1.2.dp, MaterialTheme.colorScheme.surface.copy(alpha = if (color.luminance() < 0.5f) 0.38f else 0.72f), CircleShape)
     )
@@ -248,7 +261,7 @@ internal fun InlineStatDot(count: Int, label: String, color: Color) {
 internal fun SummaryPill(value: String, label: String, color: Color, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
-            .background(color.copy(alpha = 0.08f), ChipShape)
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.34f), ChipShape)
             .padding(horizontal = 7.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -256,22 +269,16 @@ internal fun SummaryPill(value: String, label: String, color: Color, modifier: M
         Box(
             modifier = Modifier
                 .size(6.dp)
-                .background(color.copy(alpha = 0.78f), CircleShape)
+                .background(color, CircleShape)
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.labelMedium.copy(
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 0.sp
-            ),
-            color = color
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurface
         )
         Text(
             text = label,
-            style = MaterialTheme.typography.labelSmall.copy(
-                fontWeight = FontWeight.Medium,
-                letterSpacing = 0.sp
-            ),
+            style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.76f)
         )
     }

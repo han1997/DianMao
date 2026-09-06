@@ -27,6 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -211,12 +212,16 @@ internal fun SubTaskEditor(
                 enabled = draft.isNotBlank(),
                 modifier = Modifier.heightIn(min = 56.dp),
                 shape = RowShape,
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                ),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp)
             ) {
                 InlineButtonIcon(
                     icon = Icons.Rounded.Add,
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                    containerColor = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.10f)
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    containerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.10f)
                 )
                 Spacer(Modifier.width(4.dp))
                 Text("添加")
@@ -280,16 +285,13 @@ internal fun SubTaskEditRow(
                 textStyle = MaterialTheme.typography.bodyMedium,
                 colors = quietTextFieldColors()
             )
-            IconButton(
+            HeaderActionButton(
+                icon = Icons.Rounded.Delete,
+                contentDescription = "删除子事项",
                 onClick = onDelete,
-                modifier = Modifier.size(48.dp)
-            ) {
-                Icon(
-                    Icons.Rounded.Delete,
-                    contentDescription = "删除子事项",
-                    tint = MaterialTheme.colorScheme.error.copy(alpha = 0.82f)
-                )
-            }
+                tint = MaterialTheme.colorScheme.error,
+                containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.10f)
+            )
         }
     }
 }

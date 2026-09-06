@@ -132,15 +132,15 @@ internal fun BackupPanel(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 13.dp),
+                                .padding(horizontal = 12.dp, vertical = 14.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             IconTile(
                                 icon = Icons.Rounded.CloudUpload,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.secondary,
-                                containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.10f),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                containerColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.10f),
                                 iconSize = 18.dp
                             )
                             Column(
@@ -171,12 +171,12 @@ internal fun BackupPanel(
                                 }
                                 Surface(
                                     color = if (webDavReady) {
-                                        MaterialTheme.colorScheme.secondary.copy(alpha = 0.10f)
+                                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.54f)
                                     } else {
                                         MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.48f)
                                     },
                                     contentColor = if (webDavReady) {
-                                        MaterialTheme.colorScheme.secondary
+                                        MaterialTheme.colorScheme.onPrimaryContainer
                                     } else {
                                         MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
                                     },
@@ -281,21 +281,18 @@ internal fun BackupPanel(
                                     PasswordVisualTransformation()
                                 },
                                 trailingIcon = {
-                                    IconButton(
+                                    HeaderActionButton(
+                                        icon = if (passwordVisible) {
+                                            Icons.Rounded.VisibilityOff
+                                        } else {
+                                            Icons.Rounded.Visibility
+                                        },
+                                        contentDescription = if (passwordVisible) "隐藏密码" else "显示密码",
                                         onClick = { passwordVisible = !passwordVisible },
-                                        modifier = Modifier.size(40.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = if (passwordVisible) {
-                                                Icons.Rounded.VisibilityOff
-                                            } else {
-                                                Icons.Rounded.Visibility
-                                            },
-                                            contentDescription = if (passwordVisible) "隐藏密码" else "显示密码",
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                    }
+                                        modifier = Modifier.size(40.dp),
+                                        iconSize = 18.dp,
+                                        tileShape = ChipShape
+                                    )
                                 },
                                 shape = RowShape,
                                 colors = quietTextFieldColors()
@@ -360,7 +357,7 @@ internal fun ArchivedPanel(
     if (visible) {
         FullScreenScaffold(
             title = if (tasks.isEmpty()) "归档事项" else "归档事项 · ${tasks.size}",
-            subtitle = "查看已归档的旧事项,恢复后回到待办",
+            subtitle = "查看已归档的旧事项，恢复后回到待办",
             leadingIcon = Icons.Rounded.Archive,
             leadingIconTint = MaterialTheme.colorScheme.primary,
             onBack = onDismiss
