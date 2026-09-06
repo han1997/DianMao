@@ -358,80 +358,75 @@ internal fun TaskDetailScreen(
                 }
             }
 
-            // Bottom action bar
-            Surface(
-                tonalElevation = 2.dp,
-                shadowElevation = 8.dp,
-                color = MaterialTheme.colorScheme.surface
+            // Bottom action bar: actions sit directly on the page background
+            // (no tonal frame), matching the add/edit form's save button.
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 14.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                Button(
+                    onClick = { onToggleComplete(task) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RowShape,
+                    contentPadding = PaddingValues(vertical = 12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
                 ) {
-                    Button(
-                        onClick = { onToggleComplete(task) },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RowShape,
-                        contentPadding = PaddingValues(vertical = 12.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary
-                        )
-                    ) {
-                        InlineButtonIcon(
-                            icon = if (task.completed) Icons.Rounded.Replay else Icons.Rounded.DoneAll,
-                            tint = MaterialTheme.colorScheme.onPrimary,
-                            containerColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.12f)
-                        )
-                        Spacer(Modifier.width(6.dp))
-                        Text(if (task.completed) "标为未完成" else "完成")
-                    }
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        if (task.completed) {
-                            FilledTonalButton(
-                                onClick = { onArchive(task) },
-                                modifier = Modifier.weight(1f),
-                                shape = RowShape,
-                                colors = ButtonDefaults.filledTonalButtonColors(
-                                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer
-                                )
-                            ) {
-                                InlineButtonIcon(
-                                    icon = Icons.Rounded.Archive,
-                                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                                    containerColor = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.10f)
-                                )
-                                Spacer(Modifier.width(6.dp))
-                                Text("归档")
-                            }
-                        } else {
-                            Text(
-                                text = "删除会先要求确认",
-                                modifier = Modifier.weight(1f),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                    InlineButtonIcon(
+                        icon = if (task.completed) Icons.Rounded.Replay else Icons.Rounded.DoneAll,
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        containerColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.12f)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(if (task.completed) "标为未完成" else "完成")
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (task.completed) {
+                        FilledTonalButton(
+                            onClick = { onArchive(task) },
+                            modifier = Modifier.weight(1f),
+                            shape = RowShape,
+                            colors = ButtonDefaults.filledTonalButtonColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer
                             )
-                        }
-                        IconButton(
-                            onClick = { onDelete(task) },
-                            modifier = Modifier.size(48.dp)
                         ) {
-                            IconTile(
-                                icon = Icons.Rounded.Delete,
-                                contentDescription = "删除",
-                                tint = MaterialTheme.colorScheme.error,
-                                containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.10f),
-                                iconSize = 20.dp,
-                                modifier = Modifier.size(34.dp)
+                            InlineButtonIcon(
+                                icon = Icons.Rounded.Archive,
+                                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                                containerColor = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.10f)
                             )
+                            Spacer(Modifier.width(6.dp))
+                            Text("归档")
                         }
+                    } else {
+                        Text(
+                            text = "删除会先要求确认",
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    IconButton(
+                        onClick = { onDelete(task) },
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        IconTile(
+                            icon = Icons.Rounded.Delete,
+                            contentDescription = "删除",
+                            tint = MaterialTheme.colorScheme.error,
+                            containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.10f),
+                            iconSize = 20.dp,
+                            modifier = Modifier.size(34.dp)
+                        )
                     }
                 }
             }

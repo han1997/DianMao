@@ -1,5 +1,9 @@
 # Changelog
 
+- Removed the tonal frame around the task-detail bottom action bar: the
+  complete/archive/delete actions now sit directly on the page background,
+  matching the add/edit form's frameless save button.
+
 - Unified operation feedback across every page: the global notice is now an
   overlay anchored to the same top position on all screens instead of the
   Material 3 Scaffold snackbar slot, which shifted with the FAB's presence
