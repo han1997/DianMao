@@ -85,15 +85,17 @@ internal fun FullScreenScaffold(
 }
 
 @Composable
-private fun FullScreenTopBar(
+internal fun FullScreenTopBar(
     title: String,
-    subtitle: String?,
-    leadingIcon: ImageVector?,
-    leadingIconTint: androidx.compose.ui.graphics.Color,
     onBack: () -> Unit,
-    actions: @Composable () -> Unit
+    modifier: Modifier = Modifier,
+    subtitle: String? = null,
+    leadingIcon: ImageVector? = null,
+    leadingIconTint: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.primary,
+    actions: @Composable () -> Unit = {}
 ) {
     Surface(
+        modifier = modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surface,
         border = quietBorder(0.10f)
     ) {

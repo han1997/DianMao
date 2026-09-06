@@ -48,7 +48,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Alarm
 import androidx.compose.material.icons.rounded.Archive
 import androidx.compose.material.icons.rounded.CalendarMonth
@@ -131,30 +130,14 @@ internal fun TaskDetailScreen(
                 .fillMaxSize()
                 .windowInsetsPadding(WindowInsets.safeDrawing)
         ) {
-            // Top bar
-            Surface(
-                color = MaterialTheme.colorScheme.surface,
-                border = quietBorder(0.10f)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    HeaderActionButton(
-                        icon = Icons.AutoMirrored.Rounded.ArrowBack,
-                        contentDescription = "返回",
-                        onClick = onBack
-                    )
-                    Text(
-                        text = "事项详情",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Medium,
-                        modifier = Modifier.weight(1f),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
+            // Top bar — shared with the other full-screen destinations.
+            FullScreenTopBar(
+                title = "事项详情",
+                subtitle = task.quadrant.shortTitle,
+                leadingIcon = Icons.Rounded.Inventory2,
+                leadingIconTint = task.quadrant.color,
+                onBack = onBack,
+                actions = {
                     HeaderActionButton(
                         icon = Icons.Rounded.Edit,
                         contentDescription = "编辑",
@@ -163,7 +146,7 @@ internal fun TaskDetailScreen(
                         containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.50f)
                     )
                 }
-            }
+            )
 
             LazyColumn(
                 state = listState,
@@ -444,7 +427,7 @@ internal fun TaskDetailScreen(
                                 icon = Icons.Rounded.Delete,
                                 contentDescription = "删除",
                                 tint = MaterialTheme.colorScheme.error,
-                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.10f),
                                 iconSize = 20.dp,
                                 modifier = Modifier.size(34.dp)
                             )

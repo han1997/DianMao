@@ -518,39 +518,26 @@ internal fun AddTaskPanel(
                 )
             }
 
-            // Bottom action bar: fixed save button above the IME.
-            Surface(
-                tonalElevation = 2.dp,
-                shadowElevation = 8.dp,
-                color = MaterialTheme.colorScheme.surface,
-                modifier = Modifier.imePadding()
+            // Bottom action bar: the primary save button sits directly on the
+            // page background (no tonal frame), pushed above the IME.
+            Button(
+                onClick = { saveTask() },
+                enabled = title.isNotBlank() && !isSaving,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 50.dp)
+                    .imePadding(),
+                shape = RowShape,
+                contentPadding = PaddingValues(vertical = 12.dp, horizontal = 18.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 0.dp, vertical = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Button(
-                        onClick = { saveTask() },
-                        enabled = title.isNotBlank() && !isSaving,
-                        modifier = Modifier
-                            .weight(1f)
-                            .heightIn(min = 50.dp),
-                        shape = RowShape,
-                        contentPadding = PaddingValues(vertical = 12.dp, horizontal = 18.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                    ) {
-                        InlineButtonIcon(
-                            icon = Icons.Rounded.Check,
-                            tint = MaterialTheme.colorScheme.onPrimary,
-                            containerColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.12f)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(if (isSaving) "正在保存..." else saveButtonText)
-                    }
-                }
+                InlineButtonIcon(
+                    icon = Icons.Rounded.Check,
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    containerColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.12f)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(if (isSaving) "正在保存..." else saveButtonText)
             }
         }
         }

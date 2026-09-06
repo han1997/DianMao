@@ -1,5 +1,13 @@
 # Changelog
 
+- Unified the full-screen destination chrome: the task-detail top bar now
+  reuses the shared `FullScreenTopBar` used by backup/archive/add-edit/history
+  (same quiet surface row, SemiBold title, subtitle slot, tonal leading icon)
+  instead of a hand-drawn variant, and the task-detail delete control now uses
+  the app's low-alpha semantic icon container instead of a solid error fill.
+  The add/edit form's save button sits directly on the page background without
+  a tonal frame, matching the other floating primary actions.
+
 - Polished the add/edit task form and picker chrome: the five time settings
   (date, time, system-calendar, alarm, repeat) now sit in a grouped
   "时间与提醒" section with verb→value rows, a one-line explanation each, and
