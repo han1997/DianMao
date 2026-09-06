@@ -1,5 +1,14 @@
 # Changelog
 
+- Fixed three add/edit workflow issues: the date picker now preselects today
+  when no due date is set yet (instead of opening unselected); the date picker
+  dialog gives the Material 3 calendar enough horizontal room (its design width
+  is 360dp) so the date grid no longer renders cramped on phone screens; and
+  system-calendar events only carry an alert reminder when the task's 响铃提醒
+  is enabled — syncing to the calendar with the alarm off now writes a quiet
+  event (HAS_ALARM=0, no Reminders row), and turning the alarm off on an
+  existing synced task clears its calendar reminder.
+
 - Unified the full-screen destination chrome: the task-detail top bar now
   reuses the shared `FullScreenTopBar` used by backup/archive/add-edit/history
   (same quiet surface row, SemiBold title, subtitle slot, tonal leading icon)

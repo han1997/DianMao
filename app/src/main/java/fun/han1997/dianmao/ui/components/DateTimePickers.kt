@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DatePicker
@@ -56,8 +57,15 @@ private fun BrandedPickerDialog(
     title: String,
     confirmLabel: String = "确定",
     onConfirm: () -> Unit,
+    wideContent: Boolean = false,
     content: @Composable () -> Unit
 ) {
+    // The Material 3 DatePicker is designed at 360dp of content width. Wide
+    // content (the date picker) must not be squeezed by card margins or its
+    // date grid renders cramped; give it near-full-width chrome instead.
+    val cardHorizontalPadding = if (wideContent) 0.dp else 24.dp
+    val columnHorizontalPadding = if (wideContent) 0.dp else 20.dp
+    val columnVerticalPadding = if (wideContent) 12.dp else 16.dp
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
@@ -75,9 +83,10 @@ private fun BrandedPickerDialog(
         ) {
             Card(
                 modifier = Modifier
+                    .widthIn(min = 0.dp, max = if (wideContent) 376.dp else 360.dp)
                     .fillMaxWidth()
                     .windowInsetsPadding(WindowInsets.safeDrawing)
-                    .padding(horizontal = 24.dp)
+                    .padding(horizontal = cardHorizontalPadding)
                     .clickable(
                         indication = null,
                         interactionSource = remember { MutableInteractionSource() },
@@ -88,7 +97,10 @@ private fun BrandedPickerDialog(
                 elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
             ) {
                 Column(
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+                    modifier = Modifier.padding(
+                        horizontal = columnHorizontalPadding,
+                        vertical = columnVerticalPadding
+                    ),
                     verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)
                 ) {
                     Text(
@@ -134,10 +146,12 @@ internal fun DianMaoDatePickerDialog(
     onDismiss: () -> Unit,
     onConfirm: (LocalDate) -> Unit
 ) {
-    val initialStateMillis = selectedDateMillis?.let { localMidnightToUtcMillis(it) }
+    val initialStateMillis = (selectedDateMillis ?: todayMidnightMillis())
+        .let { localMidnightToUtcMillis(it) }
     val state = rememberDatePickerState(initialSelectedDateMillis = initialStateMillis)
     BrandedPickerDialog(
         title = "选择到期日",
+        wideContent = true,
         onDismiss = onDismiss,
         onConfirm = {
             val utcMillis = state.selectedDateMillis
@@ -179,6 +193,10 @@ internal fun DianMaoTimePickerDialog(
 private fun localMidnightToUtcMillis(localMidnightMillis: Long): Long {
     val localDate = Instant.ofEpochMilli(localMidnightMillis).atZone(ZoneId.systemDefault()).toLocalDate()
     return localDate.atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+}
+
+private fun todayMidnightMillis(): Long {
+    return LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
 }
 
 private fun utcMillisToLocalDate(utcMillis: Long): LocalDate {

@@ -43,7 +43,14 @@ object CalendarWriter {
             insertEvent(resolver, values) ?: return null
         }
 
-        setReminder(resolver, eventId, calendar.allowedReminderMethods)
+        // A system-calendar event only carries an alert reminder when the
+        // task's own alarm is enabled. Syncing to the calendar without an
+        // alarm must produce a quiet event (HAS_ALARM=0 and no Reminders row).
+        if (task.useAlarm) {
+            setReminder(resolver, eventId, calendar.allowedReminderMethods)
+        } else {
+            clearReminder(resolver, eventId)
+        }
         return eventId
     }
 
@@ -54,8 +61,7 @@ object CalendarWriter {
         return uri?.let(ContentUris::parseId)
     }
 
-    private fun setReminder(resolver: ContentResolver, eventId: Long, allowedReminderMethods: Set<Int>?) {
-        // Remove existing reminders for this event, then add one
+    private fun clearReminder(resolver: ContentResolver, eventId: Long) {
         runCatching {
             resolver.delete(
                 CalendarContract.Reminders.CONTENT_URI,
@@ -63,6 +69,11 @@ object CalendarWriter {
                 arrayOf(eventId.toString())
             )
         }
+    }
+
+    private fun setReminder(resolver: ContentResolver, eventId: Long, allowedReminderMethods: Set<Int>?) {
+        // Remove existing reminders for this event, then add one
+        clearReminder(resolver, eventId)
 
         val attempts = reminderConfigsToTry(allowedReminderMethods)
         for (attempt in attempts) {
@@ -118,7 +129,9 @@ object CalendarWriter {
             putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, dueAt)
             putExtra(CalendarContract.EXTRA_EVENT_END_TIME, dueAt + EVENT_DURATION_MILLIS)
             putExtra(CalendarContract.EXTRA_EVENT_ALL_DAY, false)
-            reminderIntentExtras().forEach { (key, value) -> putExtra(key, value) }
+            if (task.useAlarm) {
+                reminderIntentExtras().forEach { (key, value) -> putExtra(key, value) }
+            }
             repeatRuleToRRule(task.repeatRule)?.let { putExtra(CalendarContract.Events.RRULE, it) }
         }
     }
@@ -131,7 +144,9 @@ object CalendarWriter {
                     ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, eventId),
                     "vnd.android.cursor.item/event"
                 )
-                reminderIntentExtras().forEach { (key, value) -> putExtra(key, value) }
+                if (task.useAlarm) {
+                    reminderIntentExtras().forEach { (key, value) -> putExtra(key, value) }
+                }
             }
         }
         return buildInsertIntent(task)
@@ -173,7 +188,7 @@ object CalendarWriter {
             put(CalendarContract.Events.DTEND, dueAt + EVENT_DURATION_MILLIS)
             put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().id)
             put(CalendarContract.Events.DESCRIPTION, "DianMao")
-            put(CalendarContract.Events.HAS_ALARM, 1)
+            put(CalendarContract.Events.HAS_ALARM, if (task.useAlarm) 1 else 0)
             val rRule = repeatRuleToRRule(task.repeatRule)
             if (rRule == null) {
                 putNull(CalendarContract.Events.RRULE)
