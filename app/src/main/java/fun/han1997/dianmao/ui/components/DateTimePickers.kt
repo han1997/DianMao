@@ -1,10 +1,20 @@
 package `fun`.han1997.dianmao
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -13,16 +23,105 @@ import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.ZoneOffset
 
 /**
- * DianMao date picker: Material 3 DatePickerDialog themed by DianMaoTheme.
+ * Shared branded container for date/time selection dialogs.
+ *
+ * Both the date and the time pickers render inside this app-owned chrome so
+ * they read as one control family: a warm paper scrim
+ * ([warmScrimColor], DESIGN.md "scrim") over the whole window, a centered
+ * `PanelShape` card on the raised surface with a quiet hairline border, and an
+ * app-styled action row. The underlying control stays the Material 3
+ * `DatePicker` / `TimePicker` (native control, branded surface).
+ */
+private val warmScrimColor = Color(0xFF211815).copy(alpha = 0.16f)
+
+@Composable
+private fun BrandedPickerDialog(
+    onDismiss: () -> Unit,
+    title: String,
+    confirmLabel: String = "确定",
+    onConfirm: () -> Unit,
+    content: @Composable () -> Unit
+) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(warmScrimColor)
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() },
+                    onClick = onDismiss
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .windowInsetsPadding(WindowInsets.safeDrawing)
+                    .padding(horizontal = 24.dp)
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() },
+                        onClick = {}
+                    ),
+                shape = PanelShape,
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
+                    verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(
+                        text = title,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = 0.sp
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    content()
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = androidx.compose.foundation.layout.Arrangement.End
+                    ) {
+                        TextButton(onClick = onDismiss) {
+                            Text("取消")
+                        }
+                        TextButton(onClick = onConfirm) {
+                            Text(confirmLabel)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * DianMao date picker: Material 3 DatePicker inside the shared branded
+ * container.
  *
  * [selectedDateMillis] uses the app's local-midnight convention (the same
  * semantics as the persisted dueAtMillis date part). M3's picker state works
@@ -37,23 +136,13 @@ internal fun DianMaoDatePickerDialog(
 ) {
     val initialStateMillis = selectedDateMillis?.let { localMidnightToUtcMillis(it) }
     val state = rememberDatePickerState(initialSelectedDateMillis = initialStateMillis)
-    DatePickerDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    val utcMillis = state.selectedDateMillis
-                    if (utcMillis != null) {
-                        onConfirm(utcMillisToLocalDate(utcMillis))
-                    }
-                }
-            ) {
-                Text("确定")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("取消")
+    BrandedPickerDialog(
+        title = "选择到期日",
+        onDismiss = onDismiss,
+        onConfirm = {
+            val utcMillis = state.selectedDateMillis
+            if (utcMillis != null) {
+                onConfirm(utcMillisToLocalDate(utcMillis))
             }
         }
     ) {
@@ -62,9 +151,8 @@ internal fun DianMaoDatePickerDialog(
 }
 
 /**
- * DianMao time picker: Material 3 TimePicker (24-hour) inside a freeform
- * Dialog + Card container, per official M3 guidance — there is no
- * TimePickerDialog composable.
+ * DianMao time picker: Material 3 TimePicker (24-hour) inside the shared
+ * branded container.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,33 +167,12 @@ internal fun DianMaoTimePickerDialog(
         initialMinute = initial % 60,
         is24Hour = true
     )
-    Dialog(onDismissRequest = onDismiss) {
-        Card(
-            shape = PanelShape,
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
-        ) {
-            androidx.compose.foundation.layout.Column(
-                modifier = Modifier.padding(20.dp)
-            ) {
-                TimePicker(state = state)
-                androidx.compose.foundation.layout.Row(
-                    modifier = Modifier.padding(top = 4.dp)
-                ) {
-                    androidx.compose.foundation.layout.Spacer(
-                        modifier = Modifier.weight(1f)
-                    )
-                    TextButton(onClick = onDismiss) {
-                        Text("取消")
-                    }
-                    TextButton(
-                        onClick = { onConfirm(state.hour * 60 + state.minute) }
-                    ) {
-                        Text("确定")
-                    }
-                }
-            }
-        }
+    BrandedPickerDialog(
+        title = "选择提醒时间",
+        onDismiss = onDismiss,
+        onConfirm = { onConfirm(state.hour * 60 + state.minute) }
+    ) {
+        TimePicker(state = state)
     }
 }
 

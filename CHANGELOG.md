@@ -1,5 +1,15 @@
 # Changelog
 
+- Polished the add/edit task form and picker chrome: the five time settings
+  (date, time, system-calendar, alarm, repeat) now sit in a grouped
+  "时间与提醒" section with verb→value rows, a one-line explanation each, and
+  explicit dependency reasons when disabled ("需先设置到期日"), matching the
+  task-detail "事项信息" dialect; priority keeps its own grouped chip section.
+  Date and time pickers both open in a shared branded dialog container (warm
+  paper scrim, panel card, quiet hairline border) instead of stock Material 3
+  chrome, and the bottom save bar was tightened to the detail screen's action
+  vocabulary.
+
 - Converted secondary overlay panels into full-screen destinations consistent
   with the home screen's warm paper visual language: backup/settings, archive,
   add/edit task, and recurring completion history now render as full-screen

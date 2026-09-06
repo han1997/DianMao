@@ -26,7 +26,10 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -35,6 +38,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
@@ -45,12 +49,14 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Alarm
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.Inventory2
 import androidx.compose.material.icons.rounded.Repeat
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material3.Button
@@ -62,6 +68,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -75,6 +83,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -265,149 +274,178 @@ internal fun AddTaskPanel(
                     colors = quietTextFieldColors()
                 )
 
-                // Metadata chip row: quadrant / date / time / calendar / alarm / repeat
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(7.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                // Priority section: quadrant choice, unchanged control, grouped.
+                TaskFormSection(
+                    title = "优先级",
+                    subtitle = "放入四象限,决定它的颜色与归类",
+                    icon = Icons.Rounded.Inventory2,
+                    iconTint = priority.color
                 ) {
-                    TaskPriority.entries.forEach { item ->
-                        FilterChip(
-                            selected = item == priority,
-                            onClick = { priority = item },
-                            label = { Text(item.shortTitle) },
-                            leadingIcon = { ColorDot(item.color) }
-                        )
+                    FlowRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(7.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        TaskPriority.entries.forEach { item ->
+                            FilterChip(
+                                selected = item == priority,
+                                onClick = { priority = item },
+                                label = { Text(item.shortTitle) },
+                                leadingIcon = { ColorDot(item.color) }
+                            )
+                        }
                     }
-                    FilterChip(
-                        selected = dueDateMillis != null,
-                        onClick = { showDatePickerDialog = true },
-                        label = {
-                            val currentDate = dueDateMillis
-                            Text(
-                                if (currentDate == null) {
-                                    "未设置"
-                                } else {
-                                    Instant.ofEpochMilli(currentDate)
-                                        .atZone(ZoneId.systemDefault())
-                                        .toLocalDate()
-                                        .format(DateTimeFormatter.ofPattern("M月d日"))
-                                }
-                            )
+                }
+
+                // Time & reminder section: five self-explanatory setting rows.
+                TaskFormSection(
+                    title = "时间与提醒",
+                    subtitle = "到期日决定时间、日历、响铃与重复是否可用",
+                    icon = Icons.Rounded.Schedule,
+                    iconTint = MaterialTheme.colorScheme.secondary
+                ) {
+                    val hasDate = dueDateMillis != null
+                    val dateText = dueDateMillis?.let {
+                        Instant.ofEpochMilli(it)
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDate()
+                            .format(DateTimeFormatter.ofPattern("M月d日 EEEE"))
+                    }
+
+                    // 到期日
+                    SettingRow(
+                        icon = Icons.Rounded.CalendarMonth,
+                        title = dateText ?: "添加到期日",
+                        subtitle = if (dateText != null) {
+                            "点按修改到期日"
+                        } else {
+                            "为该事项选一天"
                         },
-                        leadingIcon = {
-                            InlineButtonIcon(
-                                icon = Icons.Rounded.CalendarMonth,
-                                tint = MaterialTheme.colorScheme.secondary
-                            )
-                        }
+                        iconTint = MaterialTheme.colorScheme.secondary,
+                        onClick = { showDatePickerDialog = true }
                     )
-                    FilterChip(
-                        selected = dueTimeMinutes != null,
-                        enabled = dueDateMillis != null,
-                        onClick = { showTimePickerDialog = true },
-                        label = {
-                            val currentTime = dueTimeMinutes
-                            Text(
-                                if (currentTime == null) {
-                                    "未设置"
-                                } else {
-                                    val hour = currentTime / 60
-                                    val minute = currentTime % 60
-                                    "${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}"
-                                }
-                            )
+                    SettingDivider()
+
+                    // 提醒时间
+                    val timeText = dueTimeMinutes?.let { minutes ->
+                        val hour = minutes / 60
+                        val minute = minutes % 60
+                        "${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}"
+                    }
+                    SettingRow(
+                        icon = Icons.Rounded.Schedule,
+                        title = timeText ?: "添加提醒时间",
+                        subtitle = when {
+                            timeText != null -> "点按修改提醒时间"
+                            !hasDate -> "需先设置到期日"
+                            else -> "选择当天提醒的几点几分"
                         },
-                        leadingIcon = {
-                            InlineButtonIcon(
-                                icon = Icons.Rounded.Schedule,
-                                tint = if (dueDateMillis != null) {
-                                    MaterialTheme.colorScheme.secondary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.58f)
-                                }
-                            )
-                        }
+                        iconTint = if (hasDate) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.58f),
+                        enabled = hasDate,
+                        onClick = { showTimePickerDialog = true }
                     )
-                    FilterChip(
-                        selected = useCalendar,
-                        enabled = dueDateMillis != null,
+                    SettingDivider()
+
+                    // 同步系统日历 (toggle)
+                    SettingRow(
+                        icon = Icons.Rounded.CalendarMonth,
+                        title = if (useCalendar) "已同步到系统日历" else "同步到系统日历",
+                        subtitle = when {
+                            useCalendar -> "到期日会写入系统日历"
+                            !hasDate -> "需先设置到期日"
+                            else -> "在系统日历中创建日程"
+                        },
+                        iconTint = if (useCalendar) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.58f),
+                        enabled = hasDate,
                         onClick = {
                             useCalendar = !useCalendar
                             if (useCalendar) onRequestCalendarPermission()
                         },
-                        label = { Text(if (useCalendar) "日历" else "未设置") },
-                        leadingIcon = {
-                            InlineButtonIcon(
-                                icon = Icons.Rounded.CalendarMonth,
-                                tint = if (dueDateMillis != null) {
-                                    MaterialTheme.colorScheme.secondary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.58f)
-                                }
+                        trailing = {
+                            Switch(
+                                checked = useCalendar,
+                                onCheckedChange = null,
+                                enabled = hasDate,
+                                colors = SwitchDefaults.colors(
+                                    checkedTrackColor = MaterialTheme.colorScheme.secondary,
+                                    checkedThumbColor = MaterialTheme.colorScheme.surface
+                                )
                             )
                         }
                     )
-                    FilterChip(
-                        selected = useAlarm,
-                        enabled = dueDateMillis != null,
+                    SettingDivider()
+
+                    // 响铃提醒 (toggle)
+                    SettingRow(
+                        icon = Icons.Rounded.Alarm,
+                        title = if (useAlarm) "响铃提醒已开启" else "开启响铃提醒",
+                        subtitle = when {
+                            useAlarm -> "到期时发出通知提醒"
+                            !hasDate -> "需先设置到期日"
+                            else -> "到点提醒我"
+                        },
+                        iconTint = if (useAlarm) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.58f),
+                        enabled = hasDate,
                         onClick = {
                             useAlarm = !useAlarm
                             if (!useAlarm) repeatRule = RepeatRule.None
                         },
-                        label = { Text(if (useAlarm) "响铃" else "未设置") },
-                        leadingIcon = {
-                            InlineButtonIcon(
-                                icon = Icons.Rounded.Alarm,
-                                tint = if (dueDateMillis != null) {
-                                    MaterialTheme.colorScheme.secondary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.58f)
-                                }
+                        trailing = {
+                            Switch(
+                                checked = useAlarm,
+                                onCheckedChange = null,
+                                enabled = hasDate,
+                                colors = SwitchDefaults.colors(
+                                    checkedTrackColor = MaterialTheme.colorScheme.primary
+                                )
                             )
                         }
                     )
-                    FilterChip(
-                        selected = repeatRule != RepeatRule.None,
-                        enabled = dueDateMillis != null && useAlarm,
-                        onClick = { repeatMenuExpanded = true },
-                        label = { Text(if (repeatRule == RepeatRule.None) "未设置" else repeatRule.label) },
-                        leadingIcon = {
-                            InlineButtonIcon(
-                                icon = Icons.Rounded.Repeat,
-                                tint = if (dueDateMillis != null && useAlarm) {
-                                    MaterialTheme.colorScheme.secondary
-                                } else {
-                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.58f)
-                                }
-                            )
-                        }
-                    )
-                }
-                DropdownMenu(
-                    expanded = repeatMenuExpanded,
-                    onDismissRequest = { repeatMenuExpanded = false }
-                ) {
-                    RepeatRule.entries.forEach { rule ->
-                        DropdownMenuItem(
-                            text = { Text(rule.label) },
-                            leadingIcon = if (rule == repeatRule) {
-                                {
-                                    Icon(
-                                        imageVector = Icons.Rounded.Check,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                            } else {
-                                null
+                    SettingDivider()
+
+                    // 重复
+                    Box {
+                        val repeatReady = hasDate && useAlarm
+                        val repeatText = if (repeatRule == RepeatRule.None) null else repeatRule.label
+                        SettingRow(
+                            icon = Icons.Rounded.Repeat,
+                            title = repeatText ?: "不重复",
+                            subtitle = when {
+                                repeatText != null -> "点按修改重复规则"
+                                !hasDate -> "需先设置到期日"
+                                !useAlarm -> "需先开启响铃提醒"
+                                else -> "可设为每天、每周或每月"
                             },
-                            onClick = {
-                                repeatRule = rule
-                                repeatMenuExpanded = false
-                            }
+                            iconTint = if (repeatReady) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.58f),
+                            enabled = repeatReady,
+                            onClick = { repeatMenuExpanded = true }
                         )
+                        DropdownMenu(
+                            expanded = repeatMenuExpanded,
+                            onDismissRequest = { repeatMenuExpanded = false }
+                        ) {
+                            RepeatRule.entries.forEach { rule ->
+                                DropdownMenuItem(
+                                    text = { Text(rule.label) },
+                                    leadingIcon = if (rule == repeatRule) {
+                                        {
+                                            Icon(
+                                                imageVector = Icons.Rounded.Check,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                    } else {
+                                        null
+                                    },
+                                    onClick = {
+                                        repeatRule = rule
+                                        repeatMenuExpanded = false
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -490,16 +528,18 @@ internal fun AddTaskPanel(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 0.dp, vertical = 14.dp)
+                        .padding(horizontal = 0.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Button(
                         onClick = { saveTask() },
                         enabled = title.isNotBlank() && !isSaving,
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 52.dp),
+                            .weight(1f)
+                            .heightIn(min = 50.dp),
                         shape = RowShape,
-                        contentPadding = PaddingValues(vertical = 13.dp),
+                        contentPadding = PaddingValues(vertical = 12.dp, horizontal = 18.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
                         InlineButtonIcon(
@@ -538,4 +578,99 @@ internal fun AddTaskPanel(
             )
         }
     }
+}
+
+/**
+ * Interactive verb→value row used inside the 时间与提醒 setting section.
+ *
+ * Mirrors the task-detail "verb becomes value" dialect: the [title] is the
+ * action verb while unset and the current value once set; [subtitle] carries
+ * one line of explanation (or the dependency reason when [enabled] is false).
+ * Toggle rows pass a [trailing] [Switch]; value rows fall back to a quiet
+ * chevron.
+ */
+@Composable
+private fun SettingRow(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    subtitle: String,
+    iconTint: androidx.compose.ui.graphics.Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    trailing: (@Composable () -> Unit)? = null
+) {
+    val mutedTint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (enabled) 0.72f else 0.5f)
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 56.dp)
+            .clickable(
+                enabled = enabled,
+                role = Role.Button,
+                onClick = onClick
+            )
+            .padding(horizontal = 4.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        IconTile(
+            icon = icon,
+            contentDescription = null,
+            tint = iconTint,
+            containerColor = iconTint.copy(alpha = 0.10f),
+            iconSize = 17.dp
+        )
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = if (enabled) FontWeight.Medium else FontWeight.Normal,
+                    letterSpacing = 0.sp
+                ),
+                color = if (enabled) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                },
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 0.sp),
+                color = mutedTint,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        if (trailing != null) {
+            trailing()
+        } else {
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                contentDescription = null,
+                tint = if (enabled) {
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                },
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun SettingDivider() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 4.dp, end = 4.dp)
+            .height(1.dp)
+            .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.14f))
+    )
 }
