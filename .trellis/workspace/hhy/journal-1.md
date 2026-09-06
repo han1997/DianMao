@@ -1495,3 +1495,36 @@ Restyled the full-screen add/edit task form for legibility and cohesion. Replace
 ### Next Steps
 
 - None - task complete
+
+
+## Session 45: Unify full-screen top bar and icon containers
+
+**Date**: 2026-09-06
+**Task**: Unify full-screen top bar and icon containers
+**Branch**: `master`
+
+### Summary
+
+Cross-surface visual consistency pass after the full-screen conversion. Extracted the shared FullScreenTopBar (quiet surface row, SemiBold title, subtitle slot, tonal leading icon) from FullScreenScaffold as an internal component and made TaskDetailScreen reuse it instead of its hand-drawn top bar, dropping the old Medium-weight title variant. TaskDetail's delete button now uses the app-standard low-alpha semantic icon container (error at 0.10 alpha) instead of a solid errorContainer fill. Also folded in an inline change that removed the tonal+shadow frame around the add/edit form's save button so it sits directly on the page background like the other floating primary actions. Intentional exceptions preserved: Home title Bold, QuadrantDetail tinted scrollable header, TaskDetail multi-action bottom bar. Checks: testDebugUnitTest, lintDebug, assembleDebug, git diff --check all green. Updated CHANGELOG.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `0df0ce3` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
