@@ -1563,3 +1563,41 @@ Debugged on the user's OPPO X8 Ultra via adb and fixed the calendar-alarm linkag
 ### Next Steps
 
 - None - task complete
+
+
+## Session 47: Global notice overlay, frameless action bars, and full UI consistency pass
+
+**Date**: 2026-09-07
+**Task**: Global notice overlay, frameless action bars, and full UI consistency pass
+**Branch**: `master`
+
+### Summary
+
+Three focused fixes then a full cross-surface consistency pass. (1) Global operation notice moved out of the M3 Scaffold snackbar slot (which shifted with FAB presence) into a fixed top overlay drawn above all content, now dismissable by tapping the card. (2) Task-detail bottom actions and the add/edit save button share one frameless treatment; quadrant priority chips laid out on a single evenly spaced row. (3) Comprehensive audit (two parallel explorations over all 9 UI files against DESIGN.md) drove: warm error pair #9C3B2E/#F3DAD5 replacing stock Material red; non-scheduling tonal buttons and selected chips given explicit terracotta colors instead of inheriting calendar-blue secondaryContainer; a shared QuietDialogContainer (warm #211815@16% scrim, PanelShape card, hairline border, red destructive confirms) adopted by all four compact dialogs and the pickers; TaskDetailScreen migrated onto FullScreenScaffold (600dp cap); ColorDot standardized at 12dp; five hand-rolled icon buttons unified onto HeaderActionButton; theme typography extended to the full M3 scale with zero letter spacing; task rows dropped the 3dp saturated side stripe; time-focus lane returned to raised neutral container with per-row tints; home stat pills neutralized; InlineShape/PillShape tokens added; spacing rhythm normalized; DESIGN.md synced. Checks: testDebugUnitTest, lintDebug, assembleDebug, git diff --check all green; APK installed on device.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `4c7e368` | (see git log) |
+| `0d6d7b4` | (see git log) |
+| `20abbfb` | (see git log) |
+| `a31c6e9` | (see git log) |
+| `b62353c` | (see git log) |
+| `e3e3455` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

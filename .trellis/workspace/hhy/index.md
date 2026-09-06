@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 46
-- **Last Active**: 2026-09-06
+- **Total Sessions**: 47
+- **Last Active**: 2026-09-07
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1565 | Active |
+| `journal-1.md` | ~1603 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 47 | 2026-09-07 | Global notice overlay, frameless action bars, and full UI consistency pass | `4c7e368`, `0d6d7b4`, `20abbfb`, `a31c6e9`, `b62353c`, `e3e3455` | `master` |
 | 46 | 2026-09-06 | Calendar ring linkage and picker fixes via adb debugging | `05a7b58`, `89e386c`, `d27bda2` | `master` |
 | 45 | 2026-09-06 | Unify full-screen top bar and icon containers | `0df0ce3` | `master` |
 | 44 | 2026-09-06 | Polish add/edit form settings and pickers | `b9c1bfb`, `803f1c6` | `master` |
