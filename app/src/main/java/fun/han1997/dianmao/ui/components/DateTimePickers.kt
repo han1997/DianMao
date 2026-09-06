@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DatePicker
@@ -60,12 +59,12 @@ private fun BrandedPickerDialog(
     wideContent: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    // The Material 3 DatePicker is designed at 360dp of content width. Wide
-    // content (the date picker) must not be squeezed by card margins or its
-    // date grid renders cramped; give it near-full-width chrome instead.
-    val cardHorizontalPadding = if (wideContent) 0.dp else 24.dp
+    // The Material 3 DatePicker needs roughly 360dp of content width, but
+    // without its internal title/headline it is compact. Give it modest outer
+    // margins so it reads as a centered dialog rather than a full-bleed sheet.
+    val cardHorizontalPadding = if (wideContent) 8.dp else 24.dp
     val columnHorizontalPadding = if (wideContent) 0.dp else 20.dp
-    val columnVerticalPadding = if (wideContent) 12.dp else 16.dp
+    val columnVerticalPadding = if (wideContent) 8.dp else 16.dp
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false)
@@ -83,7 +82,6 @@ private fun BrandedPickerDialog(
         ) {
             Card(
                 modifier = Modifier
-                    .widthIn(min = 0.dp, max = if (wideContent) 376.dp else 360.dp)
                     .fillMaxWidth()
                     .windowInsetsPadding(WindowInsets.safeDrawing)
                     .padding(horizontal = cardHorizontalPadding)
@@ -160,7 +158,12 @@ internal fun DianMaoDatePickerDialog(
             }
         }
     ) {
-        DatePicker(state = state)
+        DatePicker(
+            state = state,
+            title = null,
+            headline = null,
+            showModeToggle = false
+        )
     }
 }
 
