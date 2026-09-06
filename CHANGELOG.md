@@ -1,5 +1,11 @@
 # Changelog
 
+- Unified operation feedback across every page: the global notice is now an
+  overlay anchored to the same top position on all screens instead of the
+  Material 3 Scaffold snackbar slot, which shifted with the FAB's presence
+  (home-only) and made notices land at different heights per page. Tapping a
+  notice now dismisses it immediately.
+
 - Reworked the calendar-alarm linkage: 响铃提醒 is now 开启日历响铃, a
   sub-switch of 同步到系统日历 that only controls the system-calendar event's
   audible reminder (including OPPO/ColorOS's per-event 响铃 switch via the

@@ -48,6 +48,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
@@ -89,6 +90,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -264,63 +266,12 @@ private fun DianMaoApp() {
         }
     }
 
-    Surface(color = MaterialTheme.colorScheme.background) {
-        Scaffold(
-            containerColor = MaterialTheme.colorScheme.background,
-            contentWindowInsets = WindowInsets(0, 0, 0, 0),
-            snackbarHost = {
-                // Top-anchored host: feedback like upload results is more
-                // noticeable above the FAB and never blocked by the keyboard.
-                // The toast reuses the app's quiet surface language — light
-                // card, hairline border, semantic icon — instead of the M3
-                // inverse-surface bar, so it reads as part of the app.
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .windowInsetsPadding(WindowInsets.statusBars)
-                        .padding(top = 72.dp, start = 20.dp, end = 20.dp),
-                    contentAlignment = Alignment.TopCenter
-                ) {
-                    SnackbarHost(snackbarHostState) { data ->
-                        val isError = data.visuals.message.contains("失败")
-                        val toastTint = if (isError) {
-                            MaterialTheme.colorScheme.error
-                        } else {
-                            MaterialTheme.colorScheme.secondary
-                        }
-                        Surface(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RowShape,
-                            color = MaterialTheme.colorScheme.surface,
-                            border = quietBorder(0.16f),
-                            shadowElevation = 4.dp
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 11.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(10.dp)
-                            ) {
-                                IconTile(
-                                    icon = if (isError) Icons.Rounded.Close else Icons.Rounded.CheckCircle,
-                                    contentDescription = null,
-                                    tint = toastTint,
-                                    containerColor = toastTint.copy(alpha = 0.10f),
-                                    iconSize = 15.dp
-                                )
-                                Text(
-                                    text = data.visuals.message,
-                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                        fontWeight = FontWeight.Medium,
-                                        letterSpacing = 0.sp
-                                    ),
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                        }
-                    }
-                }
-            },
-            floatingActionButton = {
+    Box(modifier = Modifier.fillMaxSize()) {
+        Surface(color = MaterialTheme.colorScheme.background) {
+            Scaffold(
+                containerColor = MaterialTheme.colorScheme.background,
+                contentWindowInsets = WindowInsets(0, 0, 0, 0),
+                floatingActionButton = {
                 // Home surface only, and never while an overlay panel is
                 // open — the FAB lives above the content layer and would
                 // otherwise float over the panel and block its content.
@@ -736,6 +687,12 @@ private fun DianMaoApp() {
         }
     }
 
+        // Global notice overlay: fixed top anchoring on every page. The
+        // Scaffold's own snackbar slot shifts with FAB presence, so the host
+        // is drawn here instead — above all content, unaffected by the FAB.
+        TopNoticeHost(snackbarHostState)
+    }
+
     taskForNote?.let { task ->
         CompletionNoteDialog(
             task = task,
@@ -805,5 +762,69 @@ private fun DianMaoApp() {
                 taskForUncompletion = null
             }
         )
+    }
+}
+
+/**
+ * Fixed top-anchored global notice host.
+ *
+ * Drawn as an overlay above the whole app instead of the Scaffold's
+ * snackbar slot: the M3 Scaffold anchors its snackbar slot from the bottom
+ * and raises it to avoid the FAB, which only exists on the home surface —
+ * so a slot host would land at different heights per page. Anchoring here
+ * keeps the notice at the same spot everywhere, and tapping the card
+ * dismisses it immediately.
+ */
+@Composable
+private fun TopNoticeHost(hostState: SnackbarHostState) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.statusBars)
+            .padding(top = 72.dp, start = 20.dp, end = 20.dp),
+        contentAlignment = Alignment.TopCenter
+    ) {
+        SnackbarHost(hostState) { data ->
+            val isError = data.visuals.message.contains("失败")
+            val toastTint = if (isError) {
+                MaterialTheme.colorScheme.error
+            } else {
+                MaterialTheme.colorScheme.secondary
+            }
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(
+                        role = Role.Button,
+                        onClick = { data.dismiss() }
+                    ),
+                shape = RowShape,
+                color = MaterialTheme.colorScheme.surface,
+                border = quietBorder(0.16f),
+                shadowElevation = 4.dp
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 11.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    IconTile(
+                        icon = if (isError) Icons.Rounded.Close else Icons.Rounded.CheckCircle,
+                        contentDescription = null,
+                        tint = toastTint,
+                        containerColor = toastTint.copy(alpha = 0.10f),
+                        iconSize = 15.dp
+                    )
+                    Text(
+                        text = data.visuals.message,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontWeight = FontWeight.Medium,
+                            letterSpacing = 0.sp
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+        }
     }
 }
