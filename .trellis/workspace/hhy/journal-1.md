@@ -1601,3 +1601,40 @@ Three focused fixes then a full cross-surface consistency pass. (1) Global opera
 ### Next Steps
 
 - None - task complete
+
+
+## Session 48: Mainstream-alignment batch: undo, smart views, reminders, swipe, dark theme
+
+**Date**: 2026-09-07
+**Task**: Mainstream-alignment batch: undo, smart views, reminders, swipe, dark theme
+**Branch**: `master`
+
+### Summary
+
+Executed the five-task roadmap aligned with mainstream task apps (TickTick/Todoist/Things). (1) Undo for destructive actions: task and completion-record deletion now shows a 撤销 action on the top notice; restore re-inserts the original entity (same id/order), and the linked calendar event is only cleaned up after the undo window closes. (2) Home smart views restored: segmented switcher over 四象限/今天/近期/收集箱 backed by the existing pure projections, reusing TaskRow and all row actions. (3) Local reminders restored with lead-time options (准时/5分/30分/1天): DB v10 migration (useLocalReminder, reminderLeadMinutes), backup codec fields, slim alerts package (scheduler/receiver/boot-restore/channels), scheduling wired through save/complete/uncomplete/delete/import flows, detail-page status row. (4) Swipe gestures on home smart-view rows: right = complete toggle, left = delete via confirm+undo, tinted hint behind the row, coexisting with long-press drag reorder. (5) Hand-tuned dark theme following the system: warm brown-grey palette, lightened terracotta/blue accents, inverted containers, night nav-bar color. All five tasks passed testDebugUnitTest/lintDebug/assembleDebug/git diff --check and were archived individually.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `13e4607` | (see git log) |
+| `e17470b` | (see git log) |
+| `da410b4` | (see git log) |
+| `83e8083` | (see git log) |
+| `ab593ca` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
