@@ -52,6 +52,6 @@ class ReminderScheduler(private val context: Context) {
     }
 }
 
-private object PendingIntentCompatFlags {
+internal object PendingIntentCompatFlags {
     fun immutable(): Int = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
 }

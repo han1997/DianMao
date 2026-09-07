@@ -2,6 +2,7 @@ package `fun`.han1997.dianmao
 
 import `fun`.han1997.dianmao.alerts.ReminderScheduler
 import `fun`.han1997.dianmao.alerts.TaskNotificationChannels
+import `fun`.han1997.dianmao.alerts.TaskReminderReceiver
 import `fun`.han1997.dianmao.backup.BackupSettingsStore
 import `fun`.han1997.dianmao.backup.WebDavBackupClient
 import `fun`.han1997.dianmao.data.RepeatRule
@@ -42,6 +43,7 @@ import `fun`.han1997.dianmao.RecurringTaskHistoryPanel
 import `fun`.han1997.dianmao.TaskDetailScreen
 import `fun`.han1997.dianmao.DianMaoTheme
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -90,6 +92,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
@@ -118,15 +121,38 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             DianMaoTheme {
-                DianMaoApp()
+                DianMaoApp(initialTaskId = extractReminderTaskId(intent))
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        val taskId = extractReminderTaskId(intent)
+        if (taskId != null) {
+            intent.removeExtra(TaskReminderReceiver.EXTRA_TASK_ID)
+            currentComposeTaskId?.invoke(taskId)
+        }
+    }
+
+    private fun extractReminderTaskId(intent: Intent?): Long? {
+        if (intent == null || !intent.hasExtra(TaskReminderReceiver.EXTRA_TASK_ID)) return null
+        val id = intent.getLongExtra(TaskReminderReceiver.EXTRA_TASK_ID, 0L)
+        return if (id > 0L) id else null
+    }
+
+    companion object {
+        // Set from composition so onNewIntent can forward deep-link task ids
+        // into the Compose tree without a shared ViewModel.
+        @Volatile
+        var currentComposeTaskId: ((Long) -> Unit)? = null
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-private fun DianMaoApp() {
+private fun DianMaoApp(initialTaskId: Long? = null) {
     val context = LocalContext.current
     val repository = remember(context) { TaskRepository(context.applicationContext) }
     val scheduler = remember(context) { ReminderScheduler(context.applicationContext) }
@@ -167,6 +193,30 @@ private fun DianMaoApp() {
                 taskForDetail = updated
             }
         }
+    }
+
+    // Notification deep link: open the reminder's task detail once the task
+    // lists are loaded. Cold start passes the id through initialTaskId; warm
+    // start forwards it from onNewIntent via the activity callback. A missing
+    // task (deleted) is silently ignored.
+    var pendingDeepLinkTaskId by remember { mutableStateOf(initialTaskId) }
+    LaunchedEffect(activeTasks, archivedTasks) {
+        val linkId = pendingDeepLinkTaskId ?: return@LaunchedEffect
+        if (taskForDetail?.id == linkId) {
+            pendingDeepLinkTaskId = null
+            return@LaunchedEffect
+        }
+        val linked = (activeTasks + archivedTasks).firstOrNull { it.id == linkId }
+        if (linked != null) {
+            taskForDetail = linked
+            pendingDeepLinkTaskId = null
+        }
+    }
+    LaunchedEffect(Unit) {
+        MainActivity.currentComposeTaskId = { linkId -> pendingDeepLinkTaskId = linkId }
+    }
+    DisposableEffect(Unit) {
+        onDispose { MainActivity.currentComposeTaskId = null }
     }
     var webDavSettings by remember { mutableStateOf(backupSettingsStore.loadWebDavSettings()) }
     val notificationPermissionLauncher = rememberLauncherForActivityResult(

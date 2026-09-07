@@ -1,6 +1,7 @@
 package `fun`.han1997.dianmao.alerts
 
 import android.Manifest
+import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -9,6 +10,7 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import `fun`.han1997.dianmao.MainActivity
 import `fun`.han1997.dianmao.R
 import `fun`.han1997.dianmao.data.TaskRepository
 import kotlinx.coroutines.CoroutineScope
@@ -19,10 +21,20 @@ class TaskReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val title = intent.getStringExtra(EXTRA_TITLE).orEmpty()
         val taskId = intent.getLongExtra(EXTRA_TASK_ID, 0L)
+        val contentIntent = PendingIntent.getActivity(
+            context,
+            taskId.hashCode(),
+            Intent(context, MainActivity::class.java).apply {
+                putExtra(EXTRA_TASK_ID, taskId)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntentCompatFlags.immutable()
+        )
         val notification = NotificationCompat.Builder(context, TaskNotificationChannels.REMINDERS)
-            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("DianMao 提醒")
             .setContentText(title)
+            .setContentIntent(contentIntent)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .build()
