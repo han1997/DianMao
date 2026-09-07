@@ -48,6 +48,8 @@ data class TaskEntity(
     val useCalendar: Boolean,
     val calendarEventId: Long? = null,
     val useAlarm: Boolean,
+    val useLocalReminder: Boolean = false,
+    val reminderLeadMinutes: Int = 0,
     val repeatRule: RepeatRule = RepeatRule.None,
     val subTasks: List<TaskSubTask> = emptyList(),
     val completionCount: Int = 0,
@@ -67,6 +69,8 @@ data class TaskFormState(
     val dueTimeMinutes: Int? = null,
     val useCalendar: Boolean = false,
     val useAlarm: Boolean = false,
+    val useLocalReminder: Boolean = false,
+    val reminderLeadMinutes: Int = 0,
     val repeatRule: RepeatRule = RepeatRule.None,
     val subTasks: List<TaskSubTask> = emptyList()
 )
@@ -74,10 +78,13 @@ data class TaskFormState(
 fun TaskFormState.normalizedTimeSettings(): TaskFormState {
     val hasDueDate = dueDateMillis != null
     val normalizedAlarm = useAlarm && hasDueDate
+    val normalizedLocalReminder = useLocalReminder && hasDueDate
     return copy(
         dueTimeMinutes = if (hasDueDate) dueTimeMinutes else null,
         useCalendar = useCalendar && hasDueDate,
         useAlarm = normalizedAlarm,
+        useLocalReminder = normalizedLocalReminder,
+        reminderLeadMinutes = if (normalizedLocalReminder) reminderLeadMinutes else 0,
         repeatRule = if (normalizedAlarm) repeatRule else RepeatRule.None
     )
 }
@@ -91,6 +98,8 @@ data class TaskUiModel(
     val useCalendar: Boolean,
     val calendarEventId: Long?,
     val useAlarm: Boolean,
+    val useLocalReminder: Boolean = false,
+    val reminderLeadMinutes: Int = 0,
     val repeatRule: RepeatRule,
     val subTasks: List<TaskSubTask>,
     val completionCount: Int,
@@ -110,6 +119,8 @@ fun TaskEntity.toUiModel(): TaskUiModel {
         useCalendar = useCalendar,
         calendarEventId = calendarEventId,
         useAlarm = useAlarm,
+        useLocalReminder = useLocalReminder,
+        reminderLeadMinutes = reminderLeadMinutes,
         repeatRule = repeatRule,
         subTasks = subTasks,
         completionCount = completionCount,

@@ -1,5 +1,12 @@
 # Changelog
 
+- Restored local due-time reminders with a lead-time option: tasks can now
+  enable 到点提醒 (DianMao's own notification, independent of calendar sync)
+  and choose how early it fires — 准时 / 提前 5 分钟 / 提前 30 分钟 / 提前 1 天.
+  Reminders survive reboots and backup restores, recurring tasks reschedule
+  per cycle, and the task detail page shows the reminder state. Database
+  migrated to version 10 with the new fields included in backups.
+
 - Restored the home smart views: a segmented switcher (四象限 / 今天 / 近期 /
   收集箱) above the board browses the pure smart-view projections — today
   (overdue + timed today), the next 7 days, and unscheduled inbox — reusing the

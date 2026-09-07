@@ -56,6 +56,7 @@ import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Inventory2
+import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.Repeat
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material3.Button
@@ -115,6 +116,8 @@ internal fun AddTaskPanel(
     var dueTimeMinutes by rememberSaveable { mutableStateOf<Int?>(null) }
     var useCalendar by rememberSaveable { mutableStateOf(false) }
     var useAlarm by rememberSaveable { mutableStateOf(false) }
+    var useLocalReminder by rememberSaveable { mutableStateOf(false) }
+    var reminderLeadMinutes by rememberSaveable { mutableStateOf(0) }
     var repeatRule by rememberSaveable { mutableStateOf(RepeatRule.None) }
     var subTasks by remember { mutableStateOf<List<TaskSubTask>>(emptyList()) }
     var subTaskDraft by rememberSaveable { mutableStateOf("") }
@@ -122,6 +125,7 @@ internal fun AddTaskPanel(
     var saveFailed by rememberSaveable { mutableStateOf(false) }
     var isSaving by rememberSaveable { mutableStateOf(false) }
     var repeatMenuExpanded by rememberSaveable { mutableStateOf(false) }
+    var leadMenuExpanded by rememberSaveable { mutableStateOf(false) }
     var showDatePickerDialog by rememberSaveable { mutableStateOf(false) }
     var showTimePickerDialog by rememberSaveable { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
@@ -141,6 +145,8 @@ internal fun AddTaskPanel(
             dueTimeMinutes = editingTask?.dueAtMillis?.let { minutesOfDay(it) }
             useCalendar = editingTask?.useCalendar ?: false
             useAlarm = editingTask?.useAlarm ?: false
+            useLocalReminder = editingTask?.useLocalReminder ?: false
+            reminderLeadMinutes = editingTask?.reminderLeadMinutes ?: 0
             repeatRule = editingTask?.repeatRule ?: RepeatRule.None
             subTasks = editingTask?.subTasks ?: emptyList()
             subTaskDraft = ""
@@ -193,6 +199,8 @@ internal fun AddTaskPanel(
                         dueTimeMinutes = dueTimeMinutes,
                         useCalendar = useCalendar,
                         useAlarm = useAlarm,
+                        useLocalReminder = useLocalReminder,
+                        reminderLeadMinutes = reminderLeadMinutes,
                         repeatRule = repeatRule,
                         subTasks = subTasks
                     ).normalizedTimeSettings()
@@ -216,6 +224,8 @@ internal fun AddTaskPanel(
                     dueTimeMinutes = null
                     useCalendar = false
                     useAlarm = false
+                    useLocalReminder = false
+                    reminderLeadMinutes = 0
                     repeatRule = RepeatRule.None
                     subTasks = emptyList()
                     subTaskDraft = ""
@@ -421,6 +431,77 @@ internal fun AddTaskPanel(
                             )
                         }
                     )
+                    SettingDivider()
+
+                    // 到点提醒 (toggle, DianMao's own local notification)
+                    val reminderReady = hasDate
+                    SettingRow(
+                        icon = Icons.Rounded.NotificationsActive,
+                        title = if (useLocalReminder) "到点提醒已开启" else "开启到点提醒",
+                        subtitle = when {
+                            useLocalReminder -> leadLabel(reminderLeadMinutes) + "提醒我"
+                            !hasDate -> "需先设置到期日"
+                            else -> "在 DianMao 内发出通知，不依赖日历"
+                        },
+                        iconTint = if (useLocalReminder) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.58f),
+                        enabled = reminderReady,
+                        onClick = {
+                            useLocalReminder = !useLocalReminder
+                        },
+                        trailing = {
+                            Switch(
+                                checked = useLocalReminder,
+                                onCheckedChange = null,
+                                enabled = reminderReady,
+                                colors = SwitchDefaults.colors(
+                                    checkedTrackColor = MaterialTheme.colorScheme.secondary,
+                                    checkedThumbColor = MaterialTheme.colorScheme.surface
+                                )
+                            )
+                        }
+                    )
+                    SettingDivider()
+
+                    // 提醒提前量 (sub-option of 到点提醒)
+                    val reminderLeadReady = hasDate && useLocalReminder
+                    SettingRow(
+                        icon = Icons.Rounded.Schedule,
+                        title = leadLabel(reminderLeadMinutes),
+                        subtitle = when {
+                            !hasDate -> "需先设置到期日"
+                            !useLocalReminder -> "需先开启到点提醒"
+                            else -> "点按修改提醒提前量"
+                        },
+                        iconTint = if (reminderLeadReady) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.58f),
+                        enabled = reminderLeadReady,
+                        onClick = { leadMenuExpanded = true }
+                    )
+                    DropdownMenu(
+                        expanded = leadMenuExpanded,
+                        onDismissRequest = { leadMenuExpanded = false }
+                    ) {
+                        ReminderLeadOption.entries.forEach { option ->
+                            DropdownMenuItem(
+                                text = { Text(option.label) },
+                                leadingIcon = if (option.minutes == reminderLeadMinutes) {
+                                    {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Check,
+                                            contentDescription = null,
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                } else {
+                                    null
+                                },
+                                onClick = {
+                                    reminderLeadMinutes = option.minutes
+                                    leadMenuExpanded = false
+                                }
+                            )
+                        }
+                    }
                     SettingDivider()
 
                     // 重复
@@ -681,4 +762,16 @@ private fun SettingDivider() {
             .height(1.dp)
             .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.14f))
     )
+}
+
+/** Reminder lead-time choices shown in the 提醒提前量 menu. */
+internal enum class ReminderLeadOption(val minutes: Int, val label: String) {
+    OnTime(0, "准时提醒"),
+    FiveMinutesBefore(5, "提前 5 分钟"),
+    ThirtyMinutesBefore(30, "提前 30 分钟"),
+    OneDayBefore(24 * 60, "提前 1 天")
+}
+
+internal fun leadLabel(minutes: Int): String {
+    return ReminderLeadOption.entries.firstOrNull { it.minutes == minutes }?.label ?: "准时提醒"
 }

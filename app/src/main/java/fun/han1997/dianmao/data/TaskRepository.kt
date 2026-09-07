@@ -41,6 +41,8 @@ class TaskRepository(context: Context) {
             dueAtMillis = dueAtMillis,
             useCalendar = normalizedForm.useCalendar && dueAtMillis != null,
             useAlarm = normalizedForm.useAlarm && dueAtMillis != null,
+            useLocalReminder = normalizedForm.useLocalReminder && dueAtMillis != null,
+            reminderLeadMinutes = normalizedForm.reminderLeadMinutes,
             repeatRule = normalizedForm.repeatRule,
             subTasks = normalizedSubTasks(normalizedForm.subTasks),
             completed = false,
@@ -63,6 +65,8 @@ class TaskRepository(context: Context) {
             dueAtMillis = dueAtMillis,
             useCalendar = normalizedForm.useCalendar && dueAtMillis != null,
             useAlarm = normalizedForm.useAlarm && dueAtMillis != null,
+            useLocalReminder = normalizedForm.useLocalReminder && dueAtMillis != null,
+            reminderLeadMinutes = normalizedForm.reminderLeadMinutes,
             repeatRule = normalizedForm.repeatRule,
             subTasks = normalizedSubTasks(normalizedForm.subTasks),
             updatedAtMillis = System.currentTimeMillis()
@@ -295,6 +299,54 @@ class TaskRepository(context: Context) {
 
     suspend fun exportBackupJson(): String {
         return TaskBackupCodec.encode(dao.findAllTasks(), completionDao.findAll())
+    }
+
+    /**
+     * Recomputes reminders after a reboot or backup import: recurring tasks
+     * whose due date has passed advance to the next future occurrence, and
+     * every open task with a local reminder is returned for rescheduling.
+     */
+    suspend fun restoreScheduledReminders(nowMillis: Long = System.currentTimeMillis()): List<TaskUiModel> {
+        return dao.findActiveReminderTasks().mapNotNull { task ->
+            val dueAt = task.dueAtMillis ?: return@mapNotNull null
+            when {
+                task.repeatRule != RepeatRule.None && dueAt <= nowMillis -> {
+                    val nextDue = RepeatReminderCalculator.nextFutureDueAfter(dueAt, task.repeatRule, nowMillis)
+                    updateTaskDue(task, nextDue).toUiModel()
+                }
+                dueAt > nowMillis -> task.toUiModel()
+                else -> null
+            }
+        }
+    }
+
+    /**
+     * Advances a recurring task to its next cycle after its reminder fired;
+     * returns the updated task so the caller can reschedule it.
+     */
+    suspend fun advanceRepeatAfterReminder(taskId: Long): TaskUiModel? {
+        val existing = dao.findById(taskId) ?: return null
+        val currentDue = existing.dueAtMillis ?: return null
+        if (existing.repeatRule == RepeatRule.None || !existing.useLocalReminder || existing.completed) return null
+        val nextDue = RepeatReminderCalculator.nextFutureDueAfter(
+            currentMillis = currentDue,
+            repeatRule = existing.repeatRule,
+            nowMillis = System.currentTimeMillis()
+        )
+        return updateTaskDue(existing, nextDue).toUiModel()
+    }
+
+    private suspend fun updateTaskDue(task: TaskEntity, nextDue: Long): TaskEntity {
+        val updated = task.copy(
+            dueLabel = DateTimeFormatters.labelFor(
+                dateMillis = midnightMillis(nextDue),
+                minutesOfDay = minutesOfDay(nextDue)
+            ),
+            dueAtMillis = nextDue,
+            updatedAtMillis = System.currentTimeMillis()
+        )
+        dao.update(updated)
+        return updated
     }
 
     suspend fun importBackupJson(json: String): Int {

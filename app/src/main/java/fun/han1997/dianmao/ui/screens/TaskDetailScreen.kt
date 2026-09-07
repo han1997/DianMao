@@ -60,6 +60,7 @@ import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Inventory2
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material.icons.rounded.KeyboardArrowUp
+import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.Repeat
 import androidx.compose.material.icons.rounded.Replay
 import androidx.compose.material.icons.rounded.Schedule
@@ -227,6 +228,15 @@ internal fun TaskDetailScreen(
                             icon = Icons.Rounded.Alarm,
                             iconTint = MaterialTheme.colorScheme.secondary,
                             label = if (task.useAlarm) "响铃提醒已开启" else "未设置响铃"
+                        )
+                        DetailMetaRow(
+                            icon = Icons.Rounded.NotificationsActive,
+                            iconTint = MaterialTheme.colorScheme.secondary,
+                            label = if (task.useLocalReminder) {
+                                "到点提醒已开启（${leadLabel(task.reminderLeadMinutes)}）"
+                            } else {
+                                "未开启到点提醒"
+                            }
                         )
                         DetailMetaRow(
                             icon = Icons.Rounded.Repeat,

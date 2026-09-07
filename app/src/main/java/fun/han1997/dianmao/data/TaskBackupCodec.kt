@@ -92,6 +92,8 @@ object TaskBackupCodec {
             .put("useCalendar", task.useCalendar)
             .putNullable("calendarEventId", task.calendarEventId)
             .put("useAlarm", task.useAlarm)
+            .put("useLocalReminder", task.useLocalReminder)
+            .put("reminderLeadMinutes", task.reminderLeadMinutes)
             .put("repeatRule", task.repeatRule.name)
             .put("repeatRuleLabel", task.repeatRule.label)
             .put("subTasks", subTasksToJson(task.subTasks))
@@ -118,6 +120,8 @@ object TaskBackupCodec {
             useCalendar = json.getBoolean("useCalendar"),
             calendarEventId = json.nullableLong("calendarEventId"),
             useAlarm = json.getBoolean("useAlarm"),
+            useLocalReminder = json.optBoolean("useLocalReminder", false),
+            reminderLeadMinutes = json.optInt("reminderLeadMinutes", 0),
             repeatRule = RepeatRule.valueOf(json.getString("repeatRule")),
             subTasks = subTasksFromJson(json),
             completionCount = json.optInt("completionCount", 0),

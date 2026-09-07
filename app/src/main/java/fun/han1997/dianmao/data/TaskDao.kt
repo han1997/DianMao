@@ -25,6 +25,9 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE id = :id LIMIT 1")
     suspend fun findById(id: Long): TaskEntity?
 
+    @Query("SELECT * FROM tasks WHERE completed = 0 AND useLocalReminder = 1 AND dueAtMillis IS NOT NULL")
+    suspend fun findActiveReminderTasks(): List<TaskEntity>
+
     @Query("SELECT * FROM tasks ORDER BY displayOrder ASC, createdAtMillis DESC")
     suspend fun findAllTasks(): List<TaskEntity>
 
