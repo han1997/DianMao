@@ -1,5 +1,11 @@
 # Changelog
 
+- Restored the home smart views: a segmented switcher (四象限 / 今天 / 近期 /
+  收集箱) above the board browses the pure smart-view projections — today
+  (overdue + timed today), the next 7 days, and unscheduled inbox — reusing the
+  shared task row and all row actions, with the quadrant board remaining the
+  default primary surface.
+
 - Added undo to destructive actions, matching mainstream task apps: deleting a
   task or a completion record now shows the top notice with a 撤销 action for
   a few seconds — tapping it restores the item with its original id, order,

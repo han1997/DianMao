@@ -328,20 +328,43 @@ private fun DianMaoApp() {
                                 showArchivedPanel = true
                             }
                         )
-                        TimeFocusLane(
-                            tasks = homeVisibleTasks,
-                            onTaskSelected = { taskForDetail = it }
+                        HomeSmartViewSwitcher(
+                            selected = homeSmartView,
+                            onSelect = { homeSmartView = it }
                         )
-                        QuadrantBoard(
-                            tasks = homeVisibleTasks,
-                            modifier = Modifier.weight(1f),
-                            onSelected = { priority -> activePriority = priority },
-                            emptyMessage = if (homeSearchQuery.isNotBlank() && homeVisibleTasks.isEmpty()) {
-                                "没有匹配“${homeSearchQuery.trim()}”的事项"
-                            } else {
-                                null
-                            }
-                        )
+                        if (homeSmartView == HomeSmartView.Quadrants) {
+                            TimeFocusLane(
+                                tasks = homeVisibleTasks,
+                                onTaskSelected = { taskForDetail = it }
+                            )
+                            QuadrantBoard(
+                                tasks = homeVisibleTasks,
+                                modifier = Modifier.weight(1f),
+                                onSelected = { priority -> activePriority = priority },
+                                emptyMessage = if (homeSearchQuery.isNotBlank() && homeVisibleTasks.isEmpty()) {
+                                    "没有匹配“${homeSearchQuery.trim()}”的事项"
+                                } else {
+                                    null
+                                }
+                            )
+                        } else {
+                            HomeSmartTaskList(
+                                items = homeSmartItems,
+                                modifier = Modifier.weight(1f),
+                                repository = repository,
+                                onToggleComplete = toggleComplete,
+                                onEditTask = { taskForEdit = it },
+                                onDeleteTask = { taskForDelete = it },
+                                onEditNote = { taskForNote = it },
+                                onArchiveTask = archiveTask,
+                                onViewDetail = { taskForDetail = it },
+                                emptyMessage = if (homeSearchQuery.isNotBlank() && homeVisibleTasks.isEmpty()) {
+                                    "没有匹配“${homeSearchQuery.trim()}”的事项"
+                                } else {
+                                    null
+                                }
+                            )
+                        }
                     }
                 } else {
                     val listState = rememberLazyListState()

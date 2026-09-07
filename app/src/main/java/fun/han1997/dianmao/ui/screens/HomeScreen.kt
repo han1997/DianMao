@@ -59,11 +59,15 @@ import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -582,6 +586,110 @@ internal fun CompactQuadrantTask(
                 contentDescription = "有提醒",
                 modifier = Modifier.size(14.dp),
                 tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.68f)
+            )
+        }
+    }
+}
+
+/**
+ * Light-weight home view switcher: 四象限 / 今天 / 近期 / 收集箱. Uses the same
+ * segmented-row family as the form's priority selector so browsing never feels
+ * like a second app. Quadrants stays the default and primary surface.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun HomeSmartViewSwitcher(
+    selected: HomeSmartView,
+    onSelect: (HomeSmartView) -> Unit
+) {
+    SingleChoiceSegmentedButtonRow(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        HomeSmartView.entries.forEachIndexed { index, view ->
+            SegmentedButton(
+                selected = view == selected,
+                onClick = { onSelect(view) },
+                shape = SegmentedButtonDefaults.itemShape(
+                    index = index,
+                    count = HomeSmartView.entries.size
+                ),
+                modifier = Modifier.weight(1f),
+                label = {
+                    Text(
+                        text = view.label,
+                        style = MaterialTheme.typography.labelMedium,
+                        maxLines = 1
+                    )
+                },
+                colors = SegmentedButtonDefaults.colors(
+                    activeContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    activeContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            )
+        }
+    }
+}
+
+/**
+ * Task list behind the smart views: a quiet LazyColumn of TaskRows fed by the
+ * pure smart-item projection, reusing every row action from the other lists.
+ */
+@Composable
+internal fun HomeSmartTaskList(
+    items: List<HomeSmartTaskItem>,
+    repository: TaskRepository,
+    onToggleComplete: (TaskUiModel) -> Unit,
+    onEditTask: (TaskUiModel) -> Unit,
+    onDeleteTask: (TaskUiModel) -> Unit,
+    onEditNote: (TaskUiModel) -> Unit,
+    onArchiveTask: (TaskUiModel) -> Unit,
+    onViewDetail: (TaskUiModel) -> Unit,
+    emptyMessage: String?,
+    modifier: Modifier = Modifier
+) {
+    if (items.isEmpty()) {
+        Box(
+            modifier = modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                IconTile(
+                    icon = Icons.Rounded.Inventory2,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.48f),
+                    iconSize = 22.dp,
+                    modifier = Modifier.size(48.dp)
+                )
+                Text(
+                    text = emptyMessage ?: "这里还没有事项",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
+                )
+            }
+        }
+        return
+    }
+    LazyColumn(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+        contentPadding = PaddingValues(top = 2.dp, bottom = 96.dp)
+    ) {
+        items(items, key = { it.task.id }) { item ->
+            TaskRow(
+                task = item.task,
+                repository = repository,
+                dueLabelOverride = item.dueLabel,
+                onToggleComplete = onToggleComplete,
+                onEditTask = onEditTask,
+                onDeleteTask = onDeleteTask,
+                onEditNote = onEditNote,
+                onArchiveTask = onArchiveTask,
+                onViewDetail = onViewDetail,
+                showQuadrantMeta = true
             )
         }
     }
