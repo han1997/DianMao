@@ -422,6 +422,7 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
                         } else {
                             HomeSmartTaskList(
                                 items = homeSmartItems,
+                                homeSmartView = homeSmartView,
                                 modifier = Modifier.weight(1f),
                                 repository = repository,
                                 onToggleComplete = toggleComplete,

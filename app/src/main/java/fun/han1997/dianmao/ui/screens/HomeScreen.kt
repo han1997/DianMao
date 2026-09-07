@@ -29,6 +29,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -645,9 +646,11 @@ internal fun HomeSmartViewSwitcher(
  * Task list behind the smart views: a quiet LazyColumn of TaskRows fed by the
  * pure smart-item projection, reusing every row action from the other lists.
  */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun HomeSmartTaskList(
     items: List<HomeSmartTaskItem>,
+    homeSmartView: HomeSmartView,
     repository: TaskRepository,
     onToggleComplete: (TaskUiModel) -> Unit,
     onEditTask: (TaskUiModel) -> Unit,
@@ -689,25 +692,41 @@ internal fun HomeSmartTaskList(
         verticalArrangement = Arrangement.spacedBy(10.dp),
         contentPadding = PaddingValues(top = 2.dp, bottom = 96.dp)
     ) {
-        items(items, key = { it.task.id }) { item ->
-            SwipeableTaskRow(
-                task = item.task,
-                repository = repository,
-                onToggleComplete = onToggleComplete,
-                onDeleteTask = onDeleteTask
-            ) {
-                TaskRow(
+        val groups = groupHomeSmartItems(items, homeSmartView)
+        groups.forEach { group ->
+            if (group.label.isNotEmpty()) {
+                item(key = "group-${group.label}") {
+                    Text(
+                        text = "${group.label} · ${group.items.size}",
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            fontWeight = FontWeight.Medium,
+                            letterSpacing = 0.sp
+                        ),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f)
+                    )
+                }
+            }
+            items(group.items, key = { it.task.id }) { item ->
+                SwipeableTaskRow(
                     task = item.task,
                     repository = repository,
-                    dueLabelOverride = item.dueLabel,
                     onToggleComplete = onToggleComplete,
-                    onEditTask = onEditTask,
-                    onDeleteTask = onDeleteTask,
-                    onEditNote = onEditNote,
-                    onArchiveTask = onArchiveTask,
-                    onViewDetail = onViewDetail,
-                    showQuadrantMeta = true
-                )
+                    onDeleteTask = onDeleteTask
+                ) {
+                    TaskRow(
+                        task = item.task,
+                        repository = repository,
+                        dueLabelOverride = item.dueLabel,
+                        onToggleComplete = onToggleComplete,
+                        onEditTask = onEditTask,
+                        onDeleteTask = onDeleteTask,
+                        onEditNote = onEditNote,
+                        onArchiveTask = onArchiveTask,
+                        onViewDetail = onViewDetail,
+                        showQuadrantMeta = true,
+                        modifier = with(this@items) { Modifier.animateItemPlacement() }
+                    )
+                }
             }
         }
     }

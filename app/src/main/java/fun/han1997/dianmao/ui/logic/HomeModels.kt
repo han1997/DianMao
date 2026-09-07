@@ -46,6 +46,75 @@ internal data class HomeSmartTaskItem(
     val dueLabel: String?
 )
 
+/**
+ * One grouped section inside a smart view: a header label plus the items that
+ * belong to it, in display order. Grouping is a pure projection — it never
+ * mutates tasks or persistence.
+ */
+internal data class HomeSmartTaskGroup(
+    val label: String,
+    val items: List<HomeSmartTaskItem>
+)
+
+/**
+ * Groups the given smart-view items for display. Today splits into 过期 /
+ * 今天; Upcoming groups by local day (明天 · 周X style relative labels);
+ * every other view renders one ungrouped section. Pure helper, unit tested.
+ */
+internal fun groupHomeSmartItems(
+    items: List<HomeSmartTaskItem>,
+    view: HomeSmartView,
+    nowMillis: Long = System.currentTimeMillis(),
+    zoneId: ZoneId = ZoneId.systemDefault()
+): List<HomeSmartTaskGroup> {
+    if (items.isEmpty()) return emptyList()
+    return when (view) {
+        HomeSmartView.Today -> {
+            val todayStart = midnightMillis(nowMillis, zoneId)
+            val (overdue, dueToday) = items.partition { (it.dueAtMillis ?: Long.MAX_VALUE) < todayStart }
+            buildList {
+                if (overdue.isNotEmpty()) add(HomeSmartTaskGroup("过期", overdue))
+                if (dueToday.isNotEmpty()) add(HomeSmartTaskGroup("今天", dueToday))
+            }
+        }
+        HomeSmartView.Upcoming -> items
+            .groupBy { item ->
+                midnightMillis(item.dueAtMillis ?: nowMillis, zoneId)
+            }
+            .toSortedMap()
+            .map { (dayStart, dayItems) ->
+                HomeSmartTaskGroup(relativeDayLabel(dayStart, nowMillis, zoneId), dayItems)
+            }
+        HomeSmartView.Quadrants,
+        HomeSmartView.Inbox -> listOf(HomeSmartTaskGroup("", items))
+    }
+}
+
+/** Relative day label for an Upcoming group header, e.g. "明天 · 周四". */
+private fun relativeDayLabel(
+    dayStartMillis: Long,
+    nowMillis: Long,
+    zoneId: ZoneId
+): String {
+    val today = Instant.ofEpochMilli(nowMillis).atZone(zoneId).toLocalDate()
+    val date = Instant.ofEpochMilli(dayStartMillis).atZone(zoneId).toLocalDate()
+    val dayNames = mapOf(
+        java.time.DayOfWeek.MONDAY to "周一",
+        java.time.DayOfWeek.TUESDAY to "周二",
+        java.time.DayOfWeek.WEDNESDAY to "周三",
+        java.time.DayOfWeek.THURSDAY to "周四",
+        java.time.DayOfWeek.FRIDAY to "周五",
+        java.time.DayOfWeek.SATURDAY to "周六",
+        java.time.DayOfWeek.SUNDAY to "周日"
+    )
+    val weekday = dayNames.getValue(date.dayOfWeek)
+    return when (date) {
+        today.plusDays(1) -> "明天 · $weekday"
+        today.plusDays(2) -> "后天 · $weekday"
+        else -> "${date.monthValue}月${date.dayOfMonth}日 · $weekday"
+    }
+}
+
 internal fun buildTimeFocusItems(
     tasks: List<TaskUiModel>,
     nowMillis: Long = System.currentTimeMillis(),
