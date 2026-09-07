@@ -1,5 +1,12 @@
 # Changelog
 
+- Reworked the smart-view row swipes to the settle-back pattern: the row
+  always returns to place after a swipe — completing a task lets it leave the
+  list through the data flow, and a left swipe opens the delete confirmation
+  with the row staying put until deletion is confirmed. A 40% width threshold
+  stops accidental triggers while scrolling, and gesture state resets cleanly
+  when a task's completion state changes.
+
 - The quadrant-detail pages now offer the add-task action, and saving a new
   task closes the form instead of staying open for continuous capture — the
   save button reads 保存, and both add and edit are single-shot.

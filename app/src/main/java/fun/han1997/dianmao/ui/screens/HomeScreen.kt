@@ -80,6 +80,7 @@ import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -736,73 +737,80 @@ internal fun SwipeableTaskRow(
     }
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
+            // Always settle back: the row never stays dismissed. Actions fire
+            // here and the list updates through the data flow, so a completed
+            // task simply leaves the smart view and a cancelled delete leaves
+            // the row untouched — no stuck states.
             when (value) {
                 SwipeToDismissBoxValue.StartToEnd -> {
                     if (canComplete || task.completed) {
                         onToggleComplete(task)
-                        true
-                    } else {
-                        false
                     }
+                    false
                 }
                 SwipeToDismissBoxValue.EndToStart -> {
                     onDeleteTask(task)
-                    true
+                    false
                 }
                 SwipeToDismissBoxValue.Settled -> false
             }
-        }
-    )
-    SwipeToDismissBox(
-        state = dismissState,
-        enableDismissFromStartToEnd = canComplete || task.completed,
-        enableDismissFromEndToStart = true,
-        backgroundContent = {
-            val direction = dismissState.dismissDirection
-            val settled = dismissState.targetValue == SwipeToDismissBoxValue.Settled
-            val tint = when (direction) {
-                SwipeToDismissBoxValue.StartToEnd -> task.quadrant.color
-                else -> MaterialTheme.colorScheme.error
-            }
-            val label = when (direction) {
-                SwipeToDismissBoxValue.StartToEnd ->
-                    if (task.completed) "标为未完成" else "完成"
-                else -> "删除"
-            }
-            val icon = when (direction) {
-                SwipeToDismissBoxValue.StartToEnd ->
-                    if (task.completed) Icons.Rounded.Replay else Icons.Rounded.DoneAll
-                else -> Icons.Rounded.Delete
-            }
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(tint.copy(alpha = if (settled) 0.08f else 0.16f), RowShape)
-                    .padding(horizontal = 20.dp),
-                contentAlignment = if (direction == SwipeToDismissBoxValue.StartToEnd) {
-                    Alignment.CenterStart
-                } else {
-                    Alignment.CenterEnd
-                }
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = tint,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.labelLarge,
-                        color = tint
-                    )
-                }
-            }
         },
-        content = content
+        positionalThreshold = { totalDistance -> totalDistance * 0.4f }
     )
+    // Reset the gesture state whenever the task identity or completion state
+    // changes, so a recycled row never inherits a stale swipe offset.
+    key(task.id, task.completed) {
+        SwipeToDismissBox(
+            state = dismissState,
+            enableDismissFromStartToEnd = canComplete || task.completed,
+            enableDismissFromEndToStart = true,
+            backgroundContent = {
+                val direction = dismissState.dismissDirection
+                val settled = dismissState.targetValue == SwipeToDismissBoxValue.Settled
+                val tint = when (direction) {
+                    SwipeToDismissBoxValue.StartToEnd -> task.quadrant.color
+                    else -> MaterialTheme.colorScheme.error
+                }
+                val label = when (direction) {
+                    SwipeToDismissBoxValue.StartToEnd ->
+                        if (task.completed) "标为未完成" else "完成"
+                    else -> "删除"
+                }
+                val icon = when (direction) {
+                    SwipeToDismissBoxValue.StartToEnd ->
+                        if (task.completed) Icons.Rounded.Replay else Icons.Rounded.DoneAll
+                    else -> Icons.Rounded.Delete
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(tint.copy(alpha = if (settled) 0.08f else 0.16f), RowShape)
+                        .padding(horizontal = 20.dp),
+                    contentAlignment = if (direction == SwipeToDismissBoxValue.StartToEnd) {
+                        Alignment.CenterStart
+                    } else {
+                        Alignment.CenterEnd
+                    }
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = icon,
+                            contentDescription = null,
+                            tint = tint,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = tint
+                        )
+                    }
+                }
+            },
+            content = content
+        )
+    }
 }
