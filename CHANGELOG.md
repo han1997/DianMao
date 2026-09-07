@@ -1,5 +1,11 @@
 # Changelog
 
+- Added row swipe gestures to the home smart-view lists: swipe right to
+  complete (or un-complete) a task, swipe left to request deletion — with a
+  tinted action hint behind the row while dragging. Deletion still runs
+  through the confirm dialog and undo chain, and long-press drag reorder is
+  unaffected.
+
 - Restored local due-time reminders with a lead-time option: tasks can now
   enable 到点提醒 (DianMao's own notification, independent of calendar sync)
   and choose how early it fires — 准时 / 提前 5 分钟 / 提前 30 分钟 / 提前 1 天.

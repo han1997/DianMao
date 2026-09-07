@@ -36,6 +36,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -54,7 +55,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Archive
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.Inventory2
+import androidx.compose.material.icons.rounded.Replay
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
@@ -69,10 +73,16 @@ import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -679,18 +689,120 @@ internal fun HomeSmartTaskList(
         contentPadding = PaddingValues(top = 2.dp, bottom = 96.dp)
     ) {
         items(items, key = { it.task.id }) { item ->
-            TaskRow(
+            SwipeableTaskRow(
                 task = item.task,
                 repository = repository,
-                dueLabelOverride = item.dueLabel,
                 onToggleComplete = onToggleComplete,
-                onEditTask = onEditTask,
-                onDeleteTask = onDeleteTask,
-                onEditNote = onEditNote,
-                onArchiveTask = onArchiveTask,
-                onViewDetail = onViewDetail,
-                showQuadrantMeta = true
-            )
+                onDeleteTask = onDeleteTask
+            ) {
+                TaskRow(
+                    task = item.task,
+                    repository = repository,
+                    dueLabelOverride = item.dueLabel,
+                    onToggleComplete = onToggleComplete,
+                    onEditTask = onEditTask,
+                    onDeleteTask = onDeleteTask,
+                    onEditNote = onEditNote,
+                    onArchiveTask = onArchiveTask,
+                    onViewDetail = onViewDetail,
+                    showQuadrantMeta = true
+                )
+            }
         }
     }
+}
+
+/**
+ * Row-level swipe gestures, mainstream to-do style: swipe right to toggle
+ * completion, swipe left to request deletion (which still runs through the
+ * confirm dialog + undo chain). The wrapped [content] stays interactive —
+ * drags only start from the horizontal swipe, leaving long-press drag
+ * reorder untouched.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun SwipeableTaskRow(
+    task: TaskUiModel,
+    repository: TaskRepository,
+    onToggleComplete: (TaskUiModel) -> Unit,
+    onDeleteTask: (TaskUiModel) -> Unit,
+    content: @Composable RowScope.() -> Unit
+) {
+    var canComplete by remember(task.id, task.lastCompletedAtMillis, task.completed) {
+        mutableStateOf(true)
+    }
+    LaunchedEffect(task.id, task.lastCompletedAtMillis, task.completed) {
+        canComplete = repository.canCompleteInCurrentCycle(task)
+    }
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            when (value) {
+                SwipeToDismissBoxValue.StartToEnd -> {
+                    if (canComplete || task.completed) {
+                        onToggleComplete(task)
+                        true
+                    } else {
+                        false
+                    }
+                }
+                SwipeToDismissBoxValue.EndToStart -> {
+                    onDeleteTask(task)
+                    true
+                }
+                SwipeToDismissBoxValue.Settled -> false
+            }
+        }
+    )
+    SwipeToDismissBox(
+        state = dismissState,
+        enableDismissFromStartToEnd = canComplete || task.completed,
+        enableDismissFromEndToStart = true,
+        backgroundContent = {
+            val direction = dismissState.dismissDirection
+            val settled = dismissState.targetValue == SwipeToDismissBoxValue.Settled
+            val tint = when (direction) {
+                SwipeToDismissBoxValue.StartToEnd -> task.quadrant.color
+                else -> MaterialTheme.colorScheme.error
+            }
+            val label = when (direction) {
+                SwipeToDismissBoxValue.StartToEnd ->
+                    if (task.completed) "标为未完成" else "完成"
+                else -> "删除"
+            }
+            val icon = when (direction) {
+                SwipeToDismissBoxValue.StartToEnd ->
+                    if (task.completed) Icons.Rounded.Replay else Icons.Rounded.DoneAll
+                else -> Icons.Rounded.Delete
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(tint.copy(alpha = if (settled) 0.08f else 0.16f), RowShape)
+                    .padding(horizontal = 20.dp),
+                contentAlignment = if (direction == SwipeToDismissBoxValue.StartToEnd) {
+                    Alignment.CenterStart
+                } else {
+                    Alignment.CenterEnd
+                }
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = tint,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = tint
+                    )
+                }
+            }
+        },
+        content = content
+    )
 }
