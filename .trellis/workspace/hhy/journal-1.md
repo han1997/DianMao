@@ -1638,3 +1638,43 @@ Executed the five-task roadmap aligned with mainstream task apps (TickTick/Todoi
 ### Next Steps
 
 - None - task complete
+
+
+## Session 49: Polish pass: notification deep link, quick dates, task detail field, smart-view grouping, haptics
+
+**Date**: 2026-09-08
+**Task**: Polish pass: notification deep link, quick dates, task detail field, smart-view grouping, haptics
+**Branch**: `master`
+
+### Summary
+
+Six-batch polish pass over DianMao: reminder notifications now deep-link to the task detail (singleTop activity + monochrome ic_notification); the add/edit form gained quick due-date chips (today/tomorrow/next Monday, ISO-week tested); tasks gained an optional detail field with Room v11 migration, backup v5 codec support, form input, and detail display; smart views group Today into overdue/today and Upcoming by day with relative labels plus animateItemPlacement row motion; swipe completion is now silent with a top-notice write-note action, haptics added to swipe/drag/checkbox, and empty smart views offer an add CTA; the recurring history panel is reachable from the detail stats row. Specs updated for backup v5, notification deep link, and grouping contracts.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `47782e9` | (see git log) |
+| `e7849a9` | (see git log) |
+| `2b683b2` | (see git log) |
+| `b822ca9` | (see git log) |
+| `132cf57` | (see git log) |
+| `f949503` | (see git log) |
+| `abfea11` | (see git log) |
+| `ac4ff1a` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
