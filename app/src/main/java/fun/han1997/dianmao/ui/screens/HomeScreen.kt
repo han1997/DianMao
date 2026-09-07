@@ -1,5 +1,6 @@
 package `fun`.han1997.dianmao
 
+import `fun`.han1997.dianmao.data.RepeatRule
 import `fun`.han1997.dianmao.data.TaskPriority
 import `fun`.han1997.dianmao.data.TaskRepository
 import `fun`.han1997.dianmao.data.TaskUiModel
@@ -9,6 +10,7 @@ import `fun`.han1997.dianmao.CompactMeta
 import `fun`.han1997.dianmao.CompletionMark
 import `fun`.han1997.dianmao.HeaderActionButton
 import `fun`.han1997.dianmao.IconTile
+import `fun`.han1997.dianmao.InlineButtonIcon
 import `fun`.han1997.dianmao.SummaryPill
 import `fun`.han1997.dianmao.TaskRow
 import `fun`.han1997.dianmao.HomeSmartTaskItem
@@ -58,6 +60,7 @@ import androidx.compose.material.icons.rounded.Archive
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.DoneAll
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Inventory2
 import androidx.compose.material.icons.rounded.Replay
 import androidx.compose.material.icons.rounded.Schedule
@@ -71,6 +74,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
@@ -89,6 +94,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
@@ -653,11 +660,13 @@ internal fun HomeSmartTaskList(
     homeSmartView: HomeSmartView,
     repository: TaskRepository,
     onToggleComplete: (TaskUiModel) -> Unit,
+    onCompleteSilently: (TaskUiModel) -> Unit,
     onEditTask: (TaskUiModel) -> Unit,
     onDeleteTask: (TaskUiModel) -> Unit,
     onEditNote: (TaskUiModel) -> Unit,
     onArchiveTask: (TaskUiModel) -> Unit,
     onViewDetail: (TaskUiModel) -> Unit,
+    onAddTask: () -> Unit,
     emptyMessage: String?,
     modifier: Modifier = Modifier
 ) {
@@ -668,7 +677,7 @@ internal fun HomeSmartTaskList(
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 IconTile(
                     icon = Icons.Rounded.Inventory2,
@@ -683,6 +692,22 @@ internal fun HomeSmartTaskList(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
                 )
+                FilledTonalButton(
+                    onClick = onAddTask,
+                    shape = RowShape,
+                    colors = ButtonDefaults.filledTonalButtonColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                ) {
+                    InlineButtonIcon(
+                        icon = Icons.Rounded.Add,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        containerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.10f)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text("新增事项")
+                }
             }
         }
         return
@@ -711,6 +736,7 @@ internal fun HomeSmartTaskList(
                     task = item.task,
                     repository = repository,
                     onToggleComplete = onToggleComplete,
+                    onCompleteSilently = onCompleteSilently,
                     onDeleteTask = onDeleteTask
                 ) {
                     TaskRow(
@@ -733,8 +759,9 @@ internal fun HomeSmartTaskList(
 }
 
 /**
- * Row-level swipe gestures, mainstream to-do style: swipe right to toggle
- * completion, swipe left to request deletion (which still runs through the
+ * Row-level swipe gestures, mainstream to-do style: swipe right to complete
+ * silently (a 写心得 action on the top notice can add a note afterwards) or
+ * un-complete, swipe left to request deletion (which still runs through the
  * confirm dialog + undo chain). The wrapped [content] stays interactive —
  * drags only start from the horizontal swipe, leaving long-press drag
  * reorder untouched.
@@ -745,6 +772,7 @@ internal fun SwipeableTaskRow(
     task: TaskUiModel,
     repository: TaskRepository,
     onToggleComplete: (TaskUiModel) -> Unit,
+    onCompleteSilently: (TaskUiModel) -> Unit,
     onDeleteTask: (TaskUiModel) -> Unit,
     content: @Composable RowScope.() -> Unit
 ) {
@@ -754,6 +782,7 @@ internal fun SwipeableTaskRow(
     LaunchedEffect(task.id, task.lastCompletedAtMillis, task.completed) {
         canComplete = repository.canCompleteInCurrentCycle(task)
     }
+    val haptics = LocalHapticFeedback.current
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
             // Always settle back: the row never stays dismissed. Actions fire
@@ -763,11 +792,19 @@ internal fun SwipeableTaskRow(
             when (value) {
                 SwipeToDismissBoxValue.StartToEnd -> {
                     if (canComplete || task.completed) {
-                        onToggleComplete(task)
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        if (task.completed || task.repeatRule != RepeatRule.None) {
+                            // Un-completing a recurring task keeps its confirm
+                            // dialog; everything else completes silently.
+                            onToggleComplete(task)
+                        } else {
+                            onCompleteSilently(task)
+                        }
                     }
                     false
                 }
                 SwipeToDismissBoxValue.EndToStart -> {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                     onDeleteTask(task)
                     false
                 }

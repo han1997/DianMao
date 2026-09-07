@@ -58,6 +58,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -85,6 +87,7 @@ internal fun TaskRow(
 ) {
     var canComplete by remember { mutableStateOf(true) }
     var actionsExpanded by remember { mutableStateOf(false) }
+    val haptics = LocalHapticFeedback.current
     val displayedDueLabel = dueLabelOverride ?: task.dueLabel
     val scale by animateFloatAsState(
         targetValue = if (task.completed) 0.985f else 1f,
@@ -119,7 +122,10 @@ internal fun TaskRow(
                     .clickable(
                         enabled = canComplete || task.completed,
                         role = Role.Checkbox
-                    ) { onToggleComplete(task) }
+                    ) {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onToggleComplete(task)
+                    }
                     .semantics {
                         contentDescription = if (task.completed) "标记为未完成" else "标记为完成"
                     },

@@ -162,6 +162,16 @@ class TaskRepository(context: Context) {
         }
     }
 
+    /**
+     * Silent completion used by the swipe gesture: completes without a note
+     * (no history row for non-recurring tasks, no dialog interruption). The
+     * top notice's 写心得 action can add a note afterwards via
+     * [saveCompletionNote], which handles the already-completed path.
+     */
+    suspend fun completeSilently(task: TaskUiModel) {
+        toggleCompleted(task, true)
+    }
+
     suspend fun saveCompletionNote(taskId: Long, note: String): TaskEntity? {
         var result: TaskEntity? = null
         db.withTransaction {

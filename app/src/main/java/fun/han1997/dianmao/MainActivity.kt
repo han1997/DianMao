@@ -101,6 +101,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -306,6 +308,34 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
         }
     }
 
+    // Silent completion for the swipe gesture: no note dialog interrupting the
+    // flow. The top notice offers an optional 写心得 action that opens the
+    // completion-note dialog afterwards.
+    val completeSilently: (TaskUiModel) -> Unit = { target ->
+        scope.launch {
+            try {
+                repository.completeSilently(target)
+                if (target.useLocalReminder && target.dueAtMillis != null) {
+                    scheduler.cancel(target.id)
+                    if (target.repeatRule != RepeatRule.None) {
+                        scheduler.schedule(target)
+                    }
+                }
+                val result = snackbarHostState.showSnackbar(
+                    message = "已完成「${target.title}」",
+                    actionLabel = "写心得",
+                    duration = SnackbarDuration.Long
+                )
+                if (result == SnackbarResult.ActionPerformed) {
+                    taskForNote = target
+                }
+            } catch (error: Exception) {
+                if (error is CancellationException) throw error
+                snackbarHostState.showSnackbar("完成失败：${error.message ?: "请稍后重试"}")
+            }
+        }
+    }
+
     val archiveTask: (TaskUiModel) -> Unit = { target ->
         scope.launch {
             try {
@@ -423,14 +453,15 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
                             HomeSmartTaskList(
                                 items = homeSmartItems,
                                 homeSmartView = homeSmartView,
-                                modifier = Modifier.weight(1f),
                                 repository = repository,
                                 onToggleComplete = toggleComplete,
+                                onCompleteSilently = completeSilently,
                                 onEditTask = { taskForEdit = it },
                                 onDeleteTask = { taskForDelete = it },
                                 onEditNote = { taskForNote = it },
                                 onArchiveTask = archiveTask,
                                 onViewDetail = { taskForDetail = it },
+                                onAddTask = { showAddSheet = true },
                                 emptyMessage = if (homeSearchQuery.isNotBlank() && homeVisibleTasks.isEmpty()) {
                                     "没有匹配“${homeSearchQuery.trim()}”的事项"
                                 } else {
@@ -441,6 +472,7 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
                     }
                 } else {
                     val listState = rememberLazyListState()
+                    val dragHaptics = LocalHapticFeedback.current
                     val openDetailTaskCount = reorderableDetailTasks.count { !it.completed }
                     val dragDropState = rememberDragDropListState(
                         lazyListState = listState,
@@ -489,6 +521,7 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
                                                 // Only open (未完成) task rows are draggable; the
                                                 // completed group sits after them and must not drag.
                                                 if (taskIndex in 0 until openDetailTaskCount) {
+                                                    dragHaptics.performHapticFeedback(HapticFeedbackType.LongPress)
                                                     dragDropState.onDragStart(taskIndex)
                                                 }
                                             }
