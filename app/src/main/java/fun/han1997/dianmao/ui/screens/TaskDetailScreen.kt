@@ -207,6 +207,18 @@ internal fun TaskDetailScreen(
                     }
                 }
 
+                // Detail body: the task's own description, above the meta rows
+                if (!task.detail.isNullOrBlank()) {
+                    item {
+                        Text(
+                            text = task.detail.orEmpty(),
+                            modifier = Modifier.padding(start = 58.dp),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
                 // Meta section: full-width verb rows (To Do verb-becomes-value pattern)
                 item {
                     TaskFormSection(

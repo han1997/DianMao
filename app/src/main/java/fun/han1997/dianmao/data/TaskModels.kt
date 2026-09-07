@@ -42,6 +42,7 @@ data class TaskSubTask(
 data class TaskEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val title: String,
+    val detail: String? = null,
     val quadrant: QuadrantType,
     val dueLabel: String?,
     val dueAtMillis: Long?,
@@ -64,6 +65,7 @@ data class TaskEntity(
 
 data class TaskFormState(
     val title: String = "",
+    val detail: String? = null,
     val quadrant: QuadrantType = QuadrantType.ImportantUrgent,
     val dueDateMillis: Long? = null,
     val dueTimeMinutes: Int? = null,
@@ -92,6 +94,7 @@ fun TaskFormState.normalizedTimeSettings(): TaskFormState {
 data class TaskUiModel(
     val id: Long,
     val title: String,
+    val detail: String? = null,
     val quadrant: TaskPriority,
     val dueLabel: String?,
     val dueAtMillis: Long?,
@@ -113,6 +116,7 @@ fun TaskEntity.toUiModel(): TaskUiModel {
     return TaskUiModel(
         id = id,
         title = title,
+        detail = detail,
         quadrant = TaskPriority.valueOf(quadrant.name),
         dueLabel = dueLabel,
         dueAtMillis = dueAtMillis,

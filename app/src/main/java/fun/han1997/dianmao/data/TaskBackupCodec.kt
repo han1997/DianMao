@@ -8,7 +8,9 @@ import org.json.JSONObject
 
 object TaskBackupCodec {
     private const val FORMAT = "dianmao.tasks"
-    private const val BACKUP_VERSION = 4
+    private const val BACKUP_VERSION = 5
+    /** Highest backup version this build accepts on import. */
+    private const val SUPPORTED_BACKUP_VERSION = 5
 
     fun encode(
         tasks: List<TaskEntity>,
@@ -54,7 +56,7 @@ object TaskBackupCodec {
     fun decodeForImport(json: String): Pair<List<TaskEntity>, List<TaskCompletionEntity>> {
         val root = JSONObject(json)
         require(root.getString("format") == FORMAT) { "Unsupported backup format" }
-        require(root.getInt("backupVersion") <= BACKUP_VERSION) { "Unsupported backup version" }
+        require(root.getInt("backupVersion") <= SUPPORTED_BACKUP_VERSION) { "Unsupported backup version" }
 
         val tasks = root.getJSONArray("tasks")
         val taskList = List(tasks.length()) { index ->
@@ -84,6 +86,7 @@ object TaskBackupCodec {
         return JSONObject()
             .put("id", task.id)
             .put("title", task.title)
+            .putNullable("detail", task.detail)
             .put("quadrant", task.quadrant.name)
             .put("quadrantLabel", TaskPriority.valueOf(task.quadrant.name).label)
             .putNullable("dueLabel", task.dueLabel)
@@ -114,6 +117,7 @@ object TaskBackupCodec {
         return TaskEntity(
             id = json.getLong("id"),
             title = json.getString("title"),
+            detail = json.nullableString("detail"),
             quadrant = QuadrantType.valueOf(json.getString("quadrant")),
             dueLabel = json.nullableString("dueLabel"),
             dueAtMillis = json.nullableLong("dueAtMillis"),

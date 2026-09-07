@@ -36,6 +36,7 @@ class TaskRepository(context: Context) {
         val dueAtMillis = dueAtMillis(normalizedForm)
         val entity = TaskEntity(
             title = normalizedForm.title.trim(),
+            detail = normalizedForm.detail?.trim()?.takeIf { it.isNotEmpty() },
             quadrant = normalizedForm.quadrant,
             dueLabel = normalizedForm.dueDateMillis?.let { DateTimeFormatters.labelFor(it, normalizedForm.dueTimeMinutes) },
             dueAtMillis = dueAtMillis,
@@ -60,6 +61,7 @@ class TaskRepository(context: Context) {
         val dueAtMillis = dueAtMillis(normalizedForm)
         val updated = existing.copy(
             title = normalizedForm.title.trim(),
+            detail = normalizedForm.detail?.trim()?.takeIf { it.isNotEmpty() },
             quadrant = normalizedForm.quadrant,
             dueLabel = normalizedForm.dueDateMillis?.let { DateTimeFormatters.labelFor(it, normalizedForm.dueTimeMinutes) },
             dueAtMillis = dueAtMillis,

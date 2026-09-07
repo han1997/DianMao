@@ -113,6 +113,7 @@ internal fun AddTaskPanel(
     onStatus: (String) -> Unit
 ) {
     var title by rememberSaveable { mutableStateOf("") }
+    var detail by rememberSaveable { mutableStateOf("") }
     var priority by rememberSaveable(initialPriority) { mutableStateOf(initialPriority) }
     var dueDateMillis by rememberSaveable { mutableStateOf<Long?>(null) }
     var dueTimeMinutes by rememberSaveable { mutableStateOf<Int?>(null) }
@@ -142,6 +143,7 @@ internal fun AddTaskPanel(
     LaunchedEffect(visible, editingTask?.id, initialPriority) {
         if (visible) {
             title = editingTask?.title.orEmpty()
+            detail = editingTask?.detail.orEmpty()
             priority = editingTask?.quadrant ?: initialPriority
             dueDateMillis = editingTask?.dueAtMillis?.let { midnightMillis(it) }
             dueTimeMinutes = editingTask?.dueAtMillis?.let { minutesOfDay(it) }
@@ -196,6 +198,7 @@ internal fun AddTaskPanel(
                 val outcome = onSave(
                     TaskFormState(
                         title = trimmed,
+                        detail = detail.trim().takeIf { it.isNotEmpty() },
                         quadrant = priority.type,
                         dueDateMillis = dueDateMillis,
                         dueTimeMinutes = dueTimeMinutes,
@@ -273,6 +276,20 @@ internal fun AddTaskPanel(
                     ),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = { if (!isEditing) saveTask() else focusManager.clearFocus() }),
+                    colors = quietTextFieldColors()
+                )
+
+                // Optional detail field: background, links, key points.
+                OutlinedTextField(
+                    value = detail,
+                    onValueChange = { detail = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("补充说明（可选）") },
+                    singleLine = false,
+                    minLines = 1,
+                    maxLines = 5,
+                    shape = RowShape,
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(letterSpacing = 0.sp),
                     colors = quietTextFieldColors()
                 )
 
