@@ -44,6 +44,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -82,6 +83,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalFocusManager
@@ -337,6 +339,13 @@ internal fun AddTaskPanel(
                         },
                         iconTint = MaterialTheme.colorScheme.secondary,
                         onClick = { showDatePickerDialog = true }
+                    )
+                    QuickDateChipRow(
+                        selectedDateMillis = dueDateMillis,
+                        onSelect = { selected ->
+                            dueDateMillis = selected
+                            if (dueTimeMinutes == null) dueTimeMinutes = 9 * 60
+                        }
                     )
                     SettingDivider()
 
@@ -749,6 +758,81 @@ private fun SettingDivider() {
             .padding(start = 4.dp, end = 4.dp)
             .height(1.dp)
             .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.14f))
+    )
+}
+
+/**
+ * Quick due-date chips (今天 / 明天 / 下周一) under the 到期日 row. Selecting a
+ * chip sets the due date directly (local midnight) without opening the date
+ * picker; the chip matching the current date renders selected. Pure date math
+ * lives in [quickDueDateOptions] for unit testing.
+ */
+@Composable
+private fun QuickDateChipRow(
+    selectedDateMillis: Long?,
+    onSelect: (Long) -> Unit
+) {
+    val options = remember(selectedDateMillis) { quickDueDateOptions() }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        options.forEach { option ->
+            val selected = selectedDateMillis != null &&
+                midnightMillis(selectedDateMillis) == option.dateMillis
+            Surface(
+                shape = ChipShape,
+                color = if (selected) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f)
+                },
+                contentColor = if (selected) {
+                    MaterialTheme.colorScheme.onPrimaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                border = if (selected) null else quietBorder(0.10f),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable(role = Role.Button) { onSelect(option.dateMillis) }
+            ) {
+                Text(
+                    text = option.label,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 0.sp),
+                    maxLines = 1
+                )
+            }
+        }
+    }
+}
+
+/** One quick due-date chip: label plus its local-midnight timestamp. */
+internal data class QuickDueDateOption(
+    val label: String,
+    val dateMillis: Long
+)
+
+/**
+ * Pure helper computing the quick due-date options relative to today:
+ * 今天, 明天, and the Monday of next week. Exposed for unit tests.
+ */
+internal fun quickDueDateOptions(
+    nowMillis: Long = System.currentTimeMillis(),
+    zoneId: ZoneId = ZoneId.systemDefault()
+): List<QuickDueDateOption> {
+    val today = Instant.ofEpochMilli(nowMillis).atZone(zoneId).toLocalDate()
+    // "下周一" means the Monday of next ISO week: anchor on this week's
+    // Monday and add seven days, so from a Sunday it lands on tomorrow.
+    val thisMonday = today.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY))
+    val nextMonday = thisMonday.plusDays(7)
+    return listOf(
+        QuickDueDateOption("今天", today.atStartOfDay(zoneId).toInstant().toEpochMilli()),
+        QuickDueDateOption("明天", today.plusDays(1).atStartOfDay(zoneId).toInstant().toEpochMilli()),
+        QuickDueDateOption("下周一", nextMonday.atStartOfDay(zoneId).toInstant().toEpochMilli())
     )
 }
 
