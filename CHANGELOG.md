@@ -1,5 +1,10 @@
 # Changelog
 
+- Replaced the four quadrant priority chips in the add/edit form with a
+  connected segmented-button row: each segment is evenly weighted with a small
+  quadrant color dot and a centered two-character label, so nothing clips on
+  phone widths, and the selected segment uses the terracotta container.
+
 - Cross-surface visual-consistency pass over every screen: non-scheduling
   tonal buttons and selected chips now use the terracotta container instead of
   inheriting calendar blue from Material defaults (subtask add, archive,

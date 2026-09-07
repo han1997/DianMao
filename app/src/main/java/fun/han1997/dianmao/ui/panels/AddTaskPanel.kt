@@ -62,8 +62,10 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -96,7 +98,7 @@ import kotlinx.coroutines.launch
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 internal fun AddTaskPanel(
     visible: Boolean,
@@ -274,27 +276,37 @@ internal fun AddTaskPanel(
                     colors = quietTextFieldColors()
                 )
 
-                // Priority section: quadrant choice, unchanged control, grouped.
+                // Priority section: quadrant choice as one connected segmented row.
                 TaskFormSection(
                     title = "优先级",
                     subtitle = "放入四象限，决定它的颜色与归类",
                     icon = Icons.Rounded.Inventory2,
                     iconTint = priority.color
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    SingleChoiceSegmentedButtonRow(
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        TaskPriority.entries.forEach { item ->
-                            FilterChip(
+                        TaskPriority.entries.forEachIndexed { index, item ->
+                            SegmentedButton(
                                 selected = item == priority,
                                 onClick = { priority = item },
+                                shape = SegmentedButtonDefaults.itemShape(
+                                    index = index,
+                                    count = TaskPriority.entries.size
+                                ),
                                 modifier = Modifier.weight(1f),
-                                label = { Text(item.shortTitle, maxLines = 1) },
-                                leadingIcon = { ColorDot(item.color) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                label = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(5.dp)
+                                    ) {
+                                        ColorDot(item.color, size = 8.dp)
+                                        Text(item.shortTitle, maxLines = 1)
+                                    }
+                                },
+                                colors = SegmentedButtonDefaults.colors(
+                                    activeContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    activeContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                                 )
                             )
                         }
