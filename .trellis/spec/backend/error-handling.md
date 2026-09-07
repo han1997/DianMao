@@ -61,6 +61,14 @@ permission, provider availability, or user-controlled settings.
 * Android 13+ notification posting must perform an inline permission check
   immediately before `NotificationManagerCompat.notify(...)` so Android lint
   can verify the call path.
+* Reminder notifications carry a `contentIntent` that opens `MainActivity`
+  with the `EXTRA_TASK_ID` extra. `MainActivity` must use
+  `android:launchMode="singleTop"` so warm-start taps route through
+  `onNewIntent` (cold start reads the launch intent); a missing/deleted task
+  id is silently ignored, never surfaced as an error.
+* Notification small icons must be a dedicated monochrome drawable
+  (`res/drawable/ic_notification.xml`, white-on-transparent), never the
+  launcher foreground asset.
 
 ### 4. Validation & Error Matrix
 

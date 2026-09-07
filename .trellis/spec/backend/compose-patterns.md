@@ -708,6 +708,18 @@ internal fun buildHomeSmartTaskItems(
     nowMillis: Long,
     zoneId: ZoneId
 ): List<HomeSmartTaskItem>
+
+internal data class HomeSmartTaskGroup(
+    val label: String,
+    val items: List<HomeSmartTaskItem>
+)
+
+internal fun groupHomeSmartItems(
+    items: List<HomeSmartTaskItem>,
+    view: HomeSmartView,
+    nowMillis: Long,
+    zoneId: ZoneId
+): List<HomeSmartTaskGroup>
 ```
 
 **Contracts**:
@@ -724,6 +736,15 @@ internal fun buildHomeSmartTaskItems(
   repeating tasks are classified by the current cycle, not stale stored dates.
 - Smart-list rows that display due metadata should use the computed smart-item
   due label, not `task.dueLabel`, so repeating tasks do not show stale labels.
+- Grouping is a second pure projection (`groupHomeSmartItems`), never a UI
+  concern: Today splits into 过期/今天 groups at local midnight; Upcoming
+  groups per local day with relative labels (明天 · 周X); other views render
+  one ungrouped section with an empty label. Empty groups are omitted.
+- Group keys in the LazyColumn must be namespaced (`group-<label>`) so they
+  never collide with task-id row keys.
+- Rows inside grouped smart lists use `Modifier.animateItemPlacement()`
+  (experimental foundation API) so completion/removal settles with the default
+  Material tween — no springs, per the State-Change Only motion rule.
 
 **Good**:
 ```kotlin
@@ -755,6 +776,10 @@ TaskRow(task = smartItem.task)
 **Tests Required**:
 - Unit tests for `buildHomeSmartTaskItems` must cover Today, Upcoming, Inbox,
   completed/archived exclusion, and search over task plus subtask title.
+- Unit tests for `groupHomeSmartItems` must cover the Today overdue/today
+  split at the local-midnight boundary, per-day Upcoming grouping with
+  relative labels, the ungrouped single section for Inbox/Quadrants, and
+  empty-input behavior (`GroupHomeSmartItemsTest`).
 - Recurring-date tests must assert smart views classify and label the current
   repeat cycle instead of using stale stored due metadata.
 - Compose or build verification must pass after wiring the views into the home
