@@ -5,6 +5,7 @@ import `fun`.han1997.dianmao.backup.WebDavBackupClient
 import `fun`.han1997.dianmao.data.RepeatRule
 import `fun`.han1997.dianmao.data.TaskPriority
 import `fun`.han1997.dianmao.data.TaskRepository
+import `fun`.han1997.dianmao.data.TaskEntity
 import `fun`.han1997.dianmao.data.TaskUiModel
 import `fun`.han1997.dianmao.TaskRow
 import `fun`.han1997.dianmao.rememberDragDropListState
@@ -76,10 +77,13 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -500,8 +504,15 @@ private fun DianMaoApp() {
                         onDeleteCompletion = { completionId ->
                             scope.launch {
                                 try {
-                                    repository.deleteCompletion(completionId)
-                                    snackbarHostState.showSnackbar("完成记录已删除")
+                                    val removed = repository.deleteCompletionForUndo(completionId)
+                                    val result = snackbarHostState.showSnackbar(
+                                        message = "完成记录已删除",
+                                        actionLabel = "撤销",
+                                        duration = SnackbarDuration.Long
+                                    )
+                                    if (result == SnackbarResult.ActionPerformed) {
+                                        removed?.let { repository.restoreCompletion(it) }
+                                    }
                                 } catch (error: Exception) {
                                     if (error is CancellationException) throw error
                                     snackbarHostState.showSnackbar("删除完成记录失败：${error.message ?: "请稍后重试"}")
@@ -602,8 +613,15 @@ private fun DianMaoApp() {
                         onDeleteCompletion = { completionId ->
                             scope.launch {
                                 try {
-                                    repository.deleteCompletion(completionId)
-                                    snackbarHostState.showSnackbar("完成记录已删除")
+                                    val removed = repository.deleteCompletionForUndo(completionId)
+                                    val result = snackbarHostState.showSnackbar(
+                                        message = "完成记录已删除",
+                                        actionLabel = "撤销",
+                                        duration = SnackbarDuration.Long
+                                    )
+                                    if (result == SnackbarResult.ActionPerformed) {
+                                        removed?.let { repository.restoreCompletion(it) }
+                                    }
                                 } catch (error: Exception) {
                                     if (error is CancellationException) throw error
                                     snackbarHostState.showSnackbar("删除完成记录失败：${error.message ?: "请稍后重试"}")
@@ -718,23 +736,24 @@ private fun DianMaoApp() {
             onDismiss = { taskForDelete = null },
             onConfirm = {
                 scope.launch {
-                    var calendarFailure = false
                     try {
-                        if (!deleteCalendarEvent(context, task.calendarEventId)) {
-                            calendarFailure = true
+                        // Remove immediately so the row disappears, then wait
+                        // for the undo window before making it permanent.
+                        val removed = repository.deleteTask(task.id)
+                        val result = snackbarHostState.showSnackbar(
+                            message = "事项已删除",
+                            actionLabel = "撤销",
+                            duration = SnackbarDuration.Long
+                        )
+                        if (result == SnackbarResult.ActionPerformed) {
+                            // Undo: re-insert the same entity (same id, order,
+                            // fields); the calendar event was never touched.
+                            removed?.let { repository.restoreTask(it) }
+                        } else {
+                            // Undo window closed: clean up the linked calendar
+                            // event for good.
+                            deleteCalendarEvent(context, task.calendarEventId)
                         }
-                    } catch (error: Exception) {
-                        if (error is CancellationException) throw error
-                        calendarFailure = true
-                    }
-                    try {
-                        repository.deleteTask(task.id)
-                        val failures = listOfNotNull(
-                            if (calendarFailure) "日历清理失败" else null
-                        )
-                        snackbarHostState.showSnackbar(
-                            if (failures.isEmpty()) "事项已删除" else "事项已删除；${failures.joinToString("、")}"
-                        )
                     } catch (error: Exception) {
                         if (error is CancellationException) throw error
                         snackbarHostState.showSnackbar("删除失败：${error.message ?: "请稍后重试"}")
@@ -816,12 +835,22 @@ private fun TopNoticeHost(hostState: SnackbarHostState) {
                     )
                     Text(
                         text = data.visuals.message,
+                        modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.bodyMedium.copy(
                             fontWeight = FontWeight.Medium,
                             letterSpacing = 0.sp
                         ),
                         color = MaterialTheme.colorScheme.onSurface
                     )
+                    if (data.visuals.actionLabel != null) {
+                        TextButton(onClick = { data.performAction() }) {
+                            Text(
+                                text = data.visuals.actionLabel.orEmpty(),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
                 }
             }
         }

@@ -1,5 +1,11 @@
 # Changelog
 
+- Added undo to destructive actions, matching mainstream task apps: deleting a
+  task or a completion record now shows the top notice with a 撤销 action for
+  a few seconds — tapping it restores the item with its original id, order,
+  and fields (the linked calendar event is only cleaned up once the undo
+  window closes).
+
 - Replaced the four quadrant priority chips in the add/edit form with a
   connected segmented-button row: each segment is evenly weighted with a small
   quadrant color dot and a centered two-character label, so nothing clips on

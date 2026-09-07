@@ -86,9 +86,10 @@ class TaskRepository(context: Context) {
         return updated.toUiModel()
     }
 
-    suspend fun deleteTask(taskId: Long) {
-        val existing = dao.findById(taskId) ?: return
+    suspend fun deleteTask(taskId: Long): TaskEntity? {
+        val existing = dao.findById(taskId) ?: return null
         dao.delete(existing)
+        return existing
     }
 
     suspend fun updateCalendarEventId(taskId: Long, calendarEventId: Long?): TaskUiModel? {
@@ -365,13 +366,35 @@ class TaskRepository(context: Context) {
         return completionDao.observeCompletions(taskId)
     }
 
-    suspend fun deleteCompletion(completionId: Long) {
-        db.withTransaction {
-            val completion = completionDao.findById(completionId) ?: return@withTransaction
+    /**
+     * Deletes a completion record and returns the removed entity so the caller
+     * can offer an undo window; [restoreCompletion] re-inserts it unchanged.
+     */
+    suspend fun deleteCompletionForUndo(completionId: Long): TaskCompletionEntity? {
+        val removed = db.withTransaction {
+            val completion = completionDao.findById(completionId) ?: return@withTransaction null
             completionDao.deleteById(completionId)
             val actualCount = completionDao.countForTask(completion.taskId)
             dao.updateCompletionCount(completion.taskId, actualCount)
+            completion
         }
+        return removed
+    }
+
+    suspend fun restoreCompletion(completion: TaskCompletionEntity) {
+        db.withTransaction {
+            completionDao.insert(completion)
+            val actualCount = completionDao.countForTask(completion.taskId)
+            dao.updateCompletionCount(completion.taskId, actualCount)
+        }
+    }
+
+    /**
+     * Re-inserts a previously deleted task with its original id, order, and
+     * fields — the undo path for [deleteTask].
+     */
+    suspend fun restoreTask(task: TaskEntity) {
+        dao.insert(task)
     }
 
     suspend fun updateCompletionNote(completionId: Long, note: String?) {
