@@ -1,5 +1,11 @@
 # Changelog
 
+- Added a hand-tuned dark theme that follows the system: the warm paper
+  identity carries into a deep warm brown-grey palette with lightened
+  terracotta and calendar-blue accents, inverted tinted containers, and the
+  same quiet hairline language. The system navigation bar matches the dark
+  background at night; light mode is unchanged.
+
 - Added row swipe gestures to the home smart-view lists: swipe right to
   complete (or un-complete) a task, swipe left to request deletion — with a
   tinted action hint behind the row while dragging. Deletion still runs
