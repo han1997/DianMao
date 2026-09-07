@@ -48,6 +48,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Alarm
 import androidx.compose.material.icons.rounded.Archive
 import androidx.compose.material.icons.rounded.CalendarMonth
@@ -116,7 +117,8 @@ internal fun TaskDetailScreen(
     onOpenCalendarReminder: (TaskUiModel) -> Unit,
     onToggleSubTask: (Long, Boolean) -> Unit,
     onDeleteCompletion: (Long) -> Unit,
-    onUpdateCompletionNote: (Long, String?) -> Unit
+    onUpdateCompletionNote: (Long, String?) -> Unit,
+    onOpenHistory: (TaskUiModel) -> Unit = {}
 ) {
     val completions by repository.observeCompletions(task.id).collectAsState(initial = emptyList())
     val listState = rememberLazyListState()
@@ -263,7 +265,8 @@ internal fun TaskDetailScreen(
                             DetailMetaRow(
                                 icon = Icons.Rounded.CheckCircle,
                                 iconTint = task.quadrant.color,
-                                label = "已完成 ${task.completionCount} 次"
+                                label = "已完成 ${task.completionCount} 次",
+                                onClick = { onOpenHistory(task) }
                             )
                         }
                     }
@@ -443,12 +446,20 @@ internal fun TaskDetailScreen(
 internal fun DetailMetaRow(
     icon: ImageVector,
     iconTint: Color,
-    label: String
+    label: String,
+    onClick: (() -> Unit)? = null
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 36.dp),
+            .heightIn(min = 36.dp)
+            .then(
+                if (onClick != null) {
+                    Modifier.clickable(role = Role.Button, onClick = onClick)
+                } else {
+                    Modifier
+                }
+            ),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
@@ -466,6 +477,15 @@ internal fun DetailMetaRow(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
+        if (onClick != null) {
+            Spacer(Modifier.weight(1f))
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                modifier = Modifier.size(18.dp)
+            )
+        }
     }
 }
 

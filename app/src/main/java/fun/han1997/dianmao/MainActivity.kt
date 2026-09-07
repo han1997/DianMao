@@ -658,7 +658,8 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
                                     snackbarHostState.showSnackbar("保存完成心得失败：${error.message ?: "请稍后重试"}")
                                 }
                             }
-                        }
+                        },
+                        onOpenHistory = { taskForHistory = it }
                     )
                 }
 
