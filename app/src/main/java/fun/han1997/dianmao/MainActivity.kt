@@ -298,10 +298,10 @@ private fun DianMaoApp() {
                 containerColor = MaterialTheme.colorScheme.background,
                 contentWindowInsets = WindowInsets(0, 0, 0, 0),
                 floatingActionButton = {
-                // Home surface only, and never while an overlay panel is
-                // open — the FAB lives above the content layer and would
-                // otherwise float over the panel and block its content.
-                if (activePriority == null && taskForDetail == null &&
+                // Home and quadrant-detail surfaces, and never while an
+                // overlay panel is open — the FAB lives above the content
+                // layer and would otherwise float over the panel.
+                if (taskForDetail == null &&
                     !showBackupPanel && !showArchivedPanel && !isTaskPanelVisible
                 ) {
                     FloatingActionButton(

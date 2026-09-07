@@ -135,7 +135,7 @@ internal fun AddTaskPanel(
     val titleFocusRequester = remember { FocusRequester() }
     val isEditing = editingTask != null
     val panelTitle = if (isEditing) "编辑事项" else "新增事项"
-    val saveButtonText = if (isEditing) "保存修改并关闭" else "保存并继续记录"
+    val saveButtonText = if (isEditing) "保存修改并关闭" else "保存并关闭"
 
     LaunchedEffect(visible, editingTask?.id, initialPriority) {
         if (visible) {
@@ -215,21 +215,9 @@ internal fun AddTaskPanel(
                 if (outcome.message != "事项已保存") {
                     onStatus(outcome.message)
                 }
-                if (isEditing) {
-                    onDismiss()
-                } else {
-                    saveFeedback = "已保存到 ${priority.shortTitle}，可继续记录"
-                    title = ""
-                    dueDateMillis = null
-                    dueTimeMinutes = null
-                    useCalendar = false
-                    useAlarm = false
-                    useLocalReminder = false
-                    reminderLeadMinutes = 0
-                    repeatRule = RepeatRule.None
-                    subTasks = emptyList()
-                    subTaskDraft = ""
-                }
+                // Both add and edit close after a successful save — capture
+                // is single-shot, no continuous-recording mode.
+                onDismiss()
             }
         }
     }

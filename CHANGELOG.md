@@ -1,5 +1,9 @@
 # Changelog
 
+- The quadrant-detail pages now offer the add-task action, and saving a new
+  task closes the form instead of staying open for continuous capture — the
+  save button reads 保存, and both add and edit are single-shot.
+
 - Added a hand-tuned dark theme that follows the system: the warm paper
   identity carries into a deep warm brown-grey palette with lightened
   terracotta and calendar-blue accents, inverted tinted containers, and the
