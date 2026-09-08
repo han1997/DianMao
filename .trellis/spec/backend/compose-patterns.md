@@ -255,6 +255,24 @@ cross section boundaries.
   the boundary into collapsed-group items.
 - If a collapsed group renders expanded task rows inside the same LazyColumn,
   do not include them in the reorderable list indices.
+- The drag state must translate relative task indices to absolute
+  `visibleItemsInfo` indices itself: `DragDropListState` exposes
+  `taskIndexPrefix` and `openTaskCount` that the screen assigns each
+  recomposition, so `onDrag` compares like with like (2026-09: the previous
+  code compared a relative `draggedIndex` against absolute item indices,
+  which worked only while the prefix and list shape matched by accident).
+- `rememberDragDropListState` must hold `onMove` in `rememberUpdatedState` —
+  a plain `remember { DragDropListState(lazyListState, onMove) }` freezes the
+  first-composition closure, so later counts (e.g. after completing tasks)
+  are stale and moves get silently rejected.
+- The dragged row renders its own lift via `graphicsLayer`: 8dp
+  `shadowElevation`, 1.02 scale, and `translationY = dragOffsetPx` while
+  held — instant, no tween (Finger-Tracked rule). Without this the reorder
+  is invisible and users read drag as broken.
+- Item placement animation goes on the lazy item's direct child
+  (`Modifier.animateItem()` on Compose 1.7+, `animateItemPlacement` before);
+  putting it on a nested Card inside a `SwipeToDismissBox` wrapper is a
+  no-op because the wrapper is the actual item.
 
 **Good**:
 ```kotlin
@@ -1101,6 +1119,65 @@ filters.
 - Verify search toggle opens a focused text field, typing filters tasks.
 - Verify closing search clears the query and collapses the panel.
 - Verify the toggle button is 48dp with an `IconTile` container.
+
+---
+
+## Pattern: Scroll-Path Recomposition Hygiene
+
+**Problem**: Pure projections (smart-view grouping, time-focus selection,
+header stats, quadrant filters) recomputed directly in composition or inside
+LazyColumn content lambdas re-run on every recomposition and every scroll
+layout pass. At 120Hz this visibly drops frames even with modest task counts.
+
+**Contracts**:
+- Wrap every non-trivial list projection in `remember(keys)` with the exact
+  inputs it derives from (`groupHomeSmartItems` → `(items, view)`,
+  `buildTimeFocusItems` → `(tasks)`, stat counts → `(tasks)`).
+- Compute groupings outside the `LazyColumn` content lambda — the lambda runs
+  on every layout pass, not just recomposition.
+- Use `derivedStateOf` for counts read during drag/scroll loops
+  (`openDetailTaskCount`) and for `SwipeToDismissBox` background visuals
+  (`dismissDirection`, `targetValue == Settled`) so gesture frames do not
+  recompose the background every frame.
+- Always pass `contentType` to `items`/`itemsIndexed` when a list mixes item
+  shapes (group headers vs task rows).
+- Upgraded stack note (2026-09): the project builds on Kotlin 2.0.21 with the
+  `org.jetbrains.kotlin.plugin.compose` plugin (no
+  `kotlinCompilerExtensionVersion`) and Compose BOM 2024.09.03; R8 +
+  resource shrinking are enabled for release. Do not reintroduce
+  `composeOptions.kotlinCompilerExtensionVersion` with Kotlin 2.x.
+
+**Good**:
+```kotlin
+val groups = remember(items, view) { groupHomeSmartItems(items, view) }
+LazyColumn {
+    groups.forEach { group ->
+        item(key = "group-${group.label}", contentType = "group-header") { ... }
+        items(group.items, key = { it.task.id }, contentType = { "task-row" }) { ... }
+    }
+}
+```
+
+**Bad**:
+```kotlin
+LazyColumn {
+    // Re-runs the sort/partition on every scroll layout pass.
+    val groups = groupHomeSmartItems(items, view)
+    // Background reads state objects directly → recomposes every swipe frame.
+    backgroundContent = { val settled = state.targetValue == Settled ... }
+}
+```
+
+**Why**: Lazy layout work scales with scroll distance; memoized projections
+turn per-frame work into per-data-change work, and derived state confines
+gesture-driven recomposition to the nodes that actually change appearance.
+
+**Reference implementation** (2026-09 scroll-perf task):
+- `HomeScreen.kt` — `remember`-wrapped groupings/stats, `contentTypes`,
+  `SwipeableTaskRow` derived background state
+- `MainActivity.kt` — `derivedStateOf` open-task count, `contentType` on
+  quadrant-detail rows
+- `TaskRow.kt` — `rememberUpdatedState` onMove + `graphicsLayer` drag lift
 
 ---
 
