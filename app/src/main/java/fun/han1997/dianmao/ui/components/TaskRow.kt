@@ -341,9 +341,9 @@ class DragDropListState(
     var draggedOffset by mutableStateOf(0f)
 
     /**
-     * Task-index prefix before the first task row (header + intro + section
-     * label in the quadrant-detail list). Set alongside [sectionItemCount] so
-     * relative task indices can be translated to absolute LazyColumn indices.
+     * Count of non-task items before the first task row (header + intro +
+     * section label). Set by the screen so relative task indices translate
+     * to absolute LazyColumn indices via [taskIndexPrefix].
      */
     var taskIndexPrefix: Int = 0
     var openTaskCount: Int = 0
