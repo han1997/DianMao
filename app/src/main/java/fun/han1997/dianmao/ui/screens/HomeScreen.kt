@@ -86,6 +86,7 @@ import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -748,7 +749,8 @@ internal fun HomeSmartTaskList(
                     repository = repository,
                     onToggleComplete = onToggleComplete,
                     onCompleteSilently = onCompleteSilently,
-                    onDeleteTask = onDeleteTask
+                    onDeleteTask = onDeleteTask,
+                    modifier = with(this@items) { Modifier.animateItemPlacement() }
                 ) {
                     TaskRow(
                         task = item.task,
@@ -760,8 +762,7 @@ internal fun HomeSmartTaskList(
                         onEditNote = onEditNote,
                         onArchiveTask = onArchiveTask,
                         onViewDetail = onViewDetail,
-                        showQuadrantMeta = true,
-                        modifier = with(this@items) { Modifier.animateItemPlacement() }
+                        showQuadrantMeta = true
                     )
                 }
             }
@@ -785,6 +786,7 @@ internal fun SwipeableTaskRow(
     onToggleComplete: (TaskUiModel) -> Unit,
     onCompleteSilently: (TaskUiModel) -> Unit,
     onDeleteTask: (TaskUiModel) -> Unit,
+    modifier: Modifier = Modifier,
     content: @Composable RowScope.() -> Unit
 ) {
     var canComplete by remember(task.id, task.lastCompletedAtMillis, task.completed) {
@@ -824,16 +826,26 @@ internal fun SwipeableTaskRow(
         },
         positionalThreshold = { totalDistance -> totalDistance * 0.4f }
     )
+    // Derive the background visuals from the state object so the background
+    // recomposes only when the direction/settled flip — not on every frame
+    // the finger moves (the offset itself is drawn by SwipeToDismissBox).
+    val backgroundDirection by remember(dismissState) {
+        derivedStateOf { dismissState.dismissDirection }
+    }
+    val backgroundSettled by remember(dismissState) {
+        derivedStateOf { dismissState.targetValue == SwipeToDismissBoxValue.Settled }
+    }
     // Reset the gesture state whenever the task identity or completion state
     // changes, so a recycled row never inherits a stale swipe offset.
     key(task.id, task.completed) {
         SwipeToDismissBox(
             state = dismissState,
+            modifier = modifier,
             enableDismissFromStartToEnd = canComplete || task.completed,
             enableDismissFromEndToStart = true,
             backgroundContent = {
-                val direction = dismissState.dismissDirection
-                val settled = dismissState.targetValue == SwipeToDismissBoxValue.Settled
+                val direction = backgroundDirection
+                val settled = backgroundSettled
                 val tint = when (direction) {
                     SwipeToDismissBoxValue.StartToEnd -> task.quadrant.color
                     else -> MaterialTheme.colorScheme.error
