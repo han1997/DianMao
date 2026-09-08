@@ -596,7 +596,7 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
                                         } else {
                                             0f
                                         },
-                                        modifier = Modifier.animateItemPlacement()
+                                        modifier = Modifier.animateItem()
                                     )
                                 }
                                 val completedDetailTasks = reorderableDetailTasks.filter { it.completed }

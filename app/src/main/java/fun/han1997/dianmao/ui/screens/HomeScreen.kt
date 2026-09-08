@@ -750,7 +750,7 @@ internal fun HomeSmartTaskList(
                     onToggleComplete = onToggleComplete,
                     onCompleteSilently = onCompleteSilently,
                     onDeleteTask = onDeleteTask,
-                    modifier = with(this@items) { Modifier.animateItemPlacement() }
+                    modifier = with(this@items) { Modifier.animateItem() }
                 ) {
                     TaskRow(
                         task = item.task,
