@@ -96,6 +96,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -473,7 +474,9 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
                 } else {
                     val listState = rememberLazyListState()
                     val dragHaptics = LocalHapticFeedback.current
-                    val openDetailTaskCount = reorderableDetailTasks.count { !it.completed }
+                    val openDetailTaskCount by remember {
+                        derivedStateOf { reorderableDetailTasks.count { !it.completed } }
+                    }
                     // Constant prefix of non-task items before the first task
                     // row in this list (header + intro + section label).
                     val detailTaskIndexPrefix = 3

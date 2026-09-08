@@ -116,9 +116,9 @@ internal fun AppHeader(
     onOpenBackup: () -> Unit,
     onOpenArchived: () -> Unit
 ) {
-    val openTasks = tasks.count { !it.completed }
-    val timedTasks = tasks.count { !it.completed && (it.useAlarm || it.useCalendar) }
-    val completedTasks = tasks.count { it.completed }
+    val openTasks = remember(tasks) { tasks.count { !it.completed } }
+    val timedTasks = remember(tasks) { tasks.count { !it.completed && (it.useAlarm || it.useCalendar) } }
+    val completedTasks = remember(tasks) { tasks.count { it.completed } }
     val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(searchVisible) {
@@ -233,7 +233,9 @@ internal fun TimeFocusLane(
     tasks: List<TaskUiModel>,
     onTaskSelected: (TaskUiModel) -> Unit
 ) {
-    val focusItems = buildTimeFocusItems(tasks)
+    // Pure projection over the task list — remember it so scrolling/recomposing
+    // the lane does not re-run the repeat-cycle math for every task.
+    val focusItems = remember(tasks) { buildTimeFocusItems(tasks) }
     if (focusItems.isEmpty()) return
 
     Surface(
@@ -410,17 +412,22 @@ internal fun QuadrantBoard(
                 )
             }
         } else Column {
+            // Group once per task-list change instead of filtering four times
+            // on every recomposition of the board.
+            val groupedTasks = remember(tasks) {
+                tasks.groupBy { it.quadrant }
+            }
             Row(modifier = Modifier.weight(1f)) {
                 QuadrantPane(
                     quadrant = TaskPriority.ImportantUrgent,
-                    tasks = tasks.filter { it.quadrant == TaskPriority.ImportantUrgent },
+                    tasks = groupedTasks[TaskPriority.ImportantUrgent].orEmpty(),
                     modifier = Modifier.weight(1f),
                     onSelected = onSelected
                 )
                 BoardDivider(vertical = true)
                 QuadrantPane(
                     quadrant = TaskPriority.ImportantNotUrgent,
-                    tasks = tasks.filter { it.quadrant == TaskPriority.ImportantNotUrgent },
+                    tasks = groupedTasks[TaskPriority.ImportantNotUrgent].orEmpty(),
                     modifier = Modifier.weight(1f),
                     onSelected = onSelected
                 )
@@ -429,14 +436,14 @@ internal fun QuadrantBoard(
             Row(modifier = Modifier.weight(1f)) {
                 QuadrantPane(
                     quadrant = TaskPriority.NotImportantUrgent,
-                    tasks = tasks.filter { it.quadrant == TaskPriority.NotImportantUrgent },
+                    tasks = groupedTasks[TaskPriority.NotImportantUrgent].orEmpty(),
                     modifier = Modifier.weight(1f),
                     onSelected = onSelected
                 )
                 BoardDivider(vertical = true)
                 QuadrantPane(
                     quadrant = TaskPriority.NotImportantNotUrgent,
-                    tasks = tasks.filter { it.quadrant == TaskPriority.NotImportantNotUrgent },
+                    tasks = groupedTasks[TaskPriority.NotImportantNotUrgent].orEmpty(),
                     modifier = Modifier.weight(1f),
                     onSelected = onSelected
                 )
@@ -712,15 +719,19 @@ internal fun HomeSmartTaskList(
         }
         return
     }
+    // Group outside the LazyColumn: computing it inside the content lambda
+    // would re-run the sort/partition on every scroll layout pass.
+    val groups = remember(items, homeSmartView) {
+        groupHomeSmartItems(items, homeSmartView)
+    }
     LazyColumn(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(10.dp),
         contentPadding = PaddingValues(top = 2.dp, bottom = 96.dp)
     ) {
-        val groups = groupHomeSmartItems(items, homeSmartView)
         groups.forEach { group ->
             if (group.label.isNotEmpty()) {
-                item(key = "group-${group.label}") {
+                item(key = "group-${group.label}", contentType = "group-header") {
                     Text(
                         text = "${group.label} · ${group.items.size}",
                         style = MaterialTheme.typography.labelMedium.copy(
@@ -731,7 +742,7 @@ internal fun HomeSmartTaskList(
                     )
                 }
             }
-            items(group.items, key = { it.task.id }) { item ->
+            items(group.items, key = { it.task.id }, contentType = { "task-row" }) { item ->
                 SwipeableTaskRow(
                     task = item.task,
                     repository = repository,
