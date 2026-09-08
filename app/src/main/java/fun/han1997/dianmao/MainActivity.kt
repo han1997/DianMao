@@ -474,13 +474,14 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
                     val listState = rememberLazyListState()
                     val dragHaptics = LocalHapticFeedback.current
                     val openDetailTaskCount = reorderableDetailTasks.count { !it.completed }
+                    // Constant prefix of non-task items before the first task
+                    // row in this list (header + intro + section label).
+                    val detailTaskIndexPrefix = 3
                     val dragDropState = rememberDragDropListState(
                         lazyListState = listState,
                         onMove = { fromIndex, toIndex ->
-                            if (fromIndex in 0 until openDetailTaskCount &&
-                                toIndex in 0 until openDetailTaskCount
-                            ) {
-                                val openTasks = reorderableDetailTasks.filter { !it.completed }
+                            val openTasks = reorderableDetailTasks.filter { !it.completed }
+                            if (fromIndex in openTasks.indices && toIndex in openTasks.indices) {
                                 val list = openTasks.toMutableList()
                                 val item = list.removeAt(fromIndex)
                                 list.add(toIndex, item)
@@ -488,6 +489,8 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
                             }
                         }
                     )
+                    dragDropState.taskIndexPrefix = detailTaskIndexPrefix
+                    dragDropState.openTaskCount = openDetailTaskCount
 
                     LaunchedEffect(dragDropState.draggedIndex) {
                         if (dragDropState.draggedIndex != null) {
@@ -516,8 +519,9 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
                                                 offset.y.toInt() in item.offset..(item.offset + item.size)
                                             }
                                             ?.let {
-                                                // Subtract 3 to account for header, intro, and section label items
-                                                val taskIndex = it.index - 3
+                                                // Subtract the constant prefix to get
+                                                // the relative task index.
+                                                val taskIndex = it.index - detailTaskIndexPrefix
                                                 // Only open (未完成) task rows are draggable; the
                                                 // completed group sits after them and must not drag.
                                                 if (taskIndex in 0 until openDetailTaskCount) {
@@ -568,8 +572,9 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
                                 }
                                 itemsIndexed(
                                     reorderableDetailTasks.filter { !it.completed },
-                                    key = { _, task -> task.id }
-                                ) { _, task ->
+                                    key = { _, task -> task.id },
+                                    contentType = { _, _ -> "open-task-row" }
+                                ) { index, task ->
                                     TaskRow(
                                         task = task,
                                         repository = repository,
@@ -581,7 +586,14 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
                                         onEditNote = { taskForNote = it },
                                         onArchiveTask = archiveTask,
                                         onViewDetail = { taskForDetail = it },
-                                        showQuadrantMeta = false
+                                        showQuadrantMeta = false,
+                                        isDragged = dragDropState.draggedIndex == index,
+                                        dragOffsetPx = if (dragDropState.draggedIndex == index) {
+                                            dragDropState.draggedOffset
+                                        } else {
+                                            0f
+                                        },
+                                        modifier = Modifier.animateItemPlacement()
                                     )
                                 }
                                 val completedDetailTasks = reorderableDetailTasks.filter { it.completed }

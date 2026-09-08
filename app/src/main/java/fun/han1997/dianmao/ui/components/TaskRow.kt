@@ -54,9 +54,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -83,6 +85,8 @@ internal fun TaskRow(
     onArchiveTask: (TaskUiModel) -> Unit = {},
     showQuadrantMeta: Boolean = true,
     dueLabelOverride: String? = null,
+    isDragged: Boolean = false,
+    dragOffsetPx: Float = 0f,
     modifier: Modifier = Modifier
 ) {
     var canComplete by remember { mutableStateOf(true) }
@@ -102,6 +106,17 @@ internal fun TaskRow(
     Card(
         modifier = modifier
             .fillMaxWidth()
+            .graphicsLayer {
+                // Drag lift: instant 8dp shadow + 1.02 scale while held, and
+                // the row tracks the finger vertically with no tween (the
+                // Finger-Tracked rule). At rest both stay at their defaults.
+                if (isDragged) {
+                    shadowElevation = 8.dp.toPx()
+                    scaleX = 1.02f
+                    scaleY = 1.02f
+                    translationY = dragOffsetPx
+                }
+            }
             .scale(scale),
         colors = CardDefaults.cardColors(
             containerColor = if (task.completed) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.38f) else MaterialTheme.colorScheme.surface
@@ -310,16 +325,29 @@ fun rememberDragDropListState(
     lazyListState: LazyListState,
     onMove: (Int, Int) -> Unit
 ): DragDropListState {
-    val state = remember { DragDropListState(lazyListState, onMove) }
+    // Hold onMove in rememberUpdatedState so the drag callbacks always invoke
+    // the latest composition's lambda — a plain remember{} would freeze the
+    // first-composition closure with stale counts and silently break reorder.
+    val currentOnMove by rememberUpdatedState(onMove)
+    val state = remember { DragDropListState(lazyListState) }
+    state.onMoveHandler = { from, to -> currentOnMove(from, to) }
     return state
 }
 
 class DragDropListState(
-    private val lazyListState: LazyListState,
-    private val onMove: (Int, Int) -> Unit
+    private val lazyListState: LazyListState
 ) {
     var draggedIndex by mutableStateOf<Int?>(null)
     var draggedOffset by mutableStateOf(0f)
+
+    /**
+     * Task-index prefix before the first task row (header + intro + section
+     * label in the quadrant-detail list). Set alongside [sectionItemCount] so
+     * relative task indices can be translated to absolute LazyColumn indices.
+     */
+    var taskIndexPrefix: Int = 0
+    var openTaskCount: Int = 0
+    var onMoveHandler: ((Int, Int) -> Unit)? = null
 
     fun onDragStart(index: Int) {
         draggedIndex = index
@@ -330,22 +358,30 @@ class DragDropListState(
 
         val draggedIdx = draggedIndex ?: return
         val startOffset = draggedOffset
-        
-        val currentElement = lazyListState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == draggedIdx }
-        val targetElement = lazyListState.layoutInfo.visibleItemsInfo.find {
-            val targetCenter = it.offset + it.size / 2
+        // draggedIdx is a relative task index; visibleItemsInfo uses absolute
+        // LazyColumn indices, so translate before comparing.
+        val absoluteDragged = draggedIdx + taskIndexPrefix
+
+        val currentElement = lazyListState.layoutInfo.visibleItemsInfo
+            .firstOrNull { it.index == absoluteDragged }
+        val targetElement = lazyListState.layoutInfo.visibleItemsInfo.find { info ->
+            val targetCenter = info.offset + info.size / 2
             val draggedCenter = (currentElement?.offset ?: 0) + startOffset + (currentElement?.size ?: 0) / 2
 
             if (startOffset > 0) {
-                draggedCenter > targetCenter && it.index > draggedIdx
+                draggedCenter > targetCenter && info.index > absoluteDragged
             } else {
-                draggedCenter < targetCenter && it.index < draggedIdx
+                draggedCenter < targetCenter && info.index < absoluteDragged
             }
-        }
+        } ?: return
 
-        if (targetElement != null) {
-            onMove(draggedIdx, targetElement.index)
-            draggedIndex = targetElement.index
+        // Only task rows inside the open section are valid move targets.
+        val targetTaskIndex = targetElement.index - taskIndexPrefix
+        if (targetTaskIndex !in 0 until openTaskCount) return
+
+        if (targetTaskIndex != draggedIdx) {
+            onMoveHandler?.invoke(draggedIdx, targetTaskIndex)
+            draggedIndex = targetTaskIndex
             draggedOffset = 0f
         }
     }
