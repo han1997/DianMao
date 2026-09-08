@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 49
+- **Total Sessions**: 50
 - **Last Active**: 2026-09-08
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1680 | Active |
+| `journal-1.md` | ~1718 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 50 | 2026-09-08 | Scroll and gesture performance: drag reorder fix, recomposition hotspots, Compose 1.7 upgrade | `4512879`, `7348fe7`, `b1f2d57`, `e3d98b4`, `90e20e9`, `18eac6c` | `master` |
 | 49 | 2026-09-08 | Polish pass: notification deep link, quick dates, task detail field, smart-view grouping, haptics | `47782e9`, `e7849a9`, `2b683b2`, `b822ca9`, `132cf57`, `f949503`, `abfea11`, `ac4ff1a` | `master` |
 | 48 | 2026-09-07 | Mainstream-alignment batch: undo, smart views, reminders, swipe, dark theme | `13e4607`, `e17470b`, `da410b4`, `83e8083`, `ab593ca` | `master` |
 | 47 | 2026-09-07 | Global notice overlay, frameless action bars, and full UI consistency pass | `4c7e368`, `0d6d7b4`, `20abbfb`, `a31c6e9`, `b62353c`, `e3e3455` | `master` |

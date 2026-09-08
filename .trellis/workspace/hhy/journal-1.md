@@ -1678,3 +1678,41 @@ Six-batch polish pass over DianMao: reminder notifications now deep-link to the 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 50: Scroll and gesture performance: drag reorder fix, recomposition hotspots, Compose 1.7 upgrade
+
+**Date**: 2026-09-08
+**Task**: Scroll and gesture performance: drag reorder fix, recomposition hotspots, Compose 1.7 upgrade
+**Branch**: `master`
+
+### Summary
+
+Diagnosed 120Hz jank and broken drag reorder. Fixed the drag pipeline: rememberUpdatedState for onMove (stale-closure bug silently rejected moves), unified relative/absolute index math inside DragDropListState via taskIndexPrefix/openTaskCount, and added the missing graphicsLayer drag lift (8dp shadow + 1.02 scale + finger-tracked translationY) plus animateItem placement. Memoized scroll-path projections (smart-view grouping, time-focus items, header stats, quadrant filters) with remember, moved grouping out of the LazyColumn content lambda, derivedStateOf for the open-task count and swipe background visuals, and contentType on all lazy rows. Upgraded the stack: Kotlin 1.9.22 to 2.0.21 with the compose plugin, Compose BOM 2024.02 to 2024.09.03 (Compose 1.7 / M3 1.3), animateItemPlacement to animateItem, and enabled R8 + resource shrinking for release. Specs updated with drag-reorder contracts and a scroll-path recomposition hygiene pattern.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `4512879` | (see git log) |
+| `7348fe7` | (see git log) |
+| `b1f2d57` | (see git log) |
+| `e3d98b4` | (see git log) |
+| `90e20e9` | (see git log) |
+| `18eac6c` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
