@@ -14,6 +14,7 @@ rules that future agents must follow when changing DianMao.
 | [Compose Patterns](./compose-patterns.md) | BackHandler state capture, overlay navigation, edge-to-edge safe areas, compact accessible layout | Active |
 | [Quality Guidelines](./quality-guidelines.md) | Required checks, testing strategy, data/platform/Compose review rules | Active |
 | [Logging Guidelines](./logging-guidelines.md) | Privacy-safe Android logging conventions | Active |
+| [Release Packaging](./release-packaging.md) | Version source, bumpVersion task, APK naming, upload-key signing | Active |
 
 ## Quality Check
 
