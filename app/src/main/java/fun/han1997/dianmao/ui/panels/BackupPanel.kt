@@ -395,7 +395,7 @@ internal fun ArchivedPanel(
                         Text(
                             text = "暂无归档事项",
                             style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.mutedText)
                         )
                     }
                 }

@@ -52,6 +52,13 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
@@ -409,7 +416,14 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
                     .fillMaxSize()
                     .padding(padding)
             ) {
-                if (activePriority == null) {
+                // Home ↔ quadrant detail: calm 150ms crossfade instead of a
+                // hard swap; snaps instantly when animations are disabled.
+                Crossfade(
+                    targetState = (activePriority != null),
+                    animationSpec = motionTween(150),
+                    label = "homeOrQuadrantDetail"
+                ) { isDetail ->
+                if (!isDetail) {
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
@@ -439,7 +453,17 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
                             selected = homeSmartView,
                             onSelect = { homeSmartView = it }
                         )
-                        if (homeSmartView == HomeSmartView.Quadrants) {
+                        Crossfade(
+                            targetState = homeSmartView,
+                            animationSpec = motionTween(150),
+                            label = "homeSmartView",
+                            modifier = Modifier.weight(1f).fillMaxWidth()
+                        ) { currentView ->
+                        if (currentView == HomeSmartView.Quadrants) {
+                            Column(
+                                modifier = Modifier.fillMaxSize(),
+                                verticalArrangement = Arrangement.spacedBy(14.dp)
+                            ) {
                             TimeFocusLane(
                                 tasks = homeVisibleTasks,
                                 onTaskSelected = { taskForDetail = it }
@@ -454,6 +478,7 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
                                     null
                                 }
                             )
+                            }
                         } else {
                             HomeSmartTaskList(
                                 items = homeSmartItems,
@@ -473,6 +498,7 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
                                     null
                                 }
                             )
+                            }
                         }
                     }
                 } else {
@@ -655,8 +681,22 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
                         }
                     }
                 }
+                }
 
-                taskForDetail?.let { task ->
+                // Detail overlays fade/slide in on top of the crossfaded base;
+                // the snapshot keeps content alive during the exit transition.
+                val detailTaskSnapshot = remember { mutableStateOf<TaskUiModel?>(null) }
+                if (taskForDetail != null) detailTaskSnapshot.value = taskForDetail
+                AnimatedVisibility(
+                    visible = taskForDetail != null,
+                    enter = (fadeIn(tween(150)) +
+                        slideInVertically(tween(220)) { it / 4 })
+                        .withReducedMotion(),
+                    exit = (fadeOut(tween(120)) +
+                        slideOutVertically(tween(180)) { it / 4 })
+                        .withReducedMotion()
+                ) {
+                    detailTaskSnapshot.value?.let { task ->
                     TaskDetailScreen(
                         task = task,
                         repository = repository,
@@ -711,6 +751,7 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
                         },
                         onOpenHistory = { taskForHistory = it }
                     )
+                    }
                 }
 
                 AddTaskPanel(
@@ -801,7 +842,18 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
                     }
                 )
 
-                taskForHistory?.let { task ->
+                val historyTaskSnapshot = remember { mutableStateOf<TaskUiModel?>(null) }
+                if (taskForHistory != null) historyTaskSnapshot.value = taskForHistory
+                AnimatedVisibility(
+                    visible = taskForHistory != null,
+                    enter = (fadeIn(tween(150)) +
+                        slideInVertically(tween(220)) { it / 4 })
+                        .withReducedMotion(),
+                    exit = (fadeOut(tween(120)) +
+                        slideOutVertically(tween(180)) { it / 4 })
+                        .withReducedMotion()
+                ) {
+                    historyTaskSnapshot.value?.let { task ->
                     RecurringTaskHistoryPanel(
                         task = task,
                         repository = repository,
@@ -841,8 +893,8 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
                             }
                         }
                     )
+                    }
                 }
-
                 BackupPanel(
                     visible = showBackupPanel,
                     initialSettings = webDavSettings,

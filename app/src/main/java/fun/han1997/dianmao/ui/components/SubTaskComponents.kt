@@ -232,7 +232,7 @@ internal fun SubTaskEditor(
             Text(
                 text = "还没有子事项，可在上方添加",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted)
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.mutedText)
             )
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {

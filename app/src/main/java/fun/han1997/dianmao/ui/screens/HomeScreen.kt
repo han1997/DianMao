@@ -71,6 +71,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
@@ -237,8 +238,11 @@ internal fun TimeFocusLane(
     // Pure projection over the task list — remember it so scrolling/recomposing
     // the lane does not re-run the repeat-cycle math for every task.
     val focusItems = remember(tasks) { buildTimeFocusItems(tasks) }
-    if (focusItems.isEmpty()) return
-
+    AnimatedVisibility(
+        visible = focusItems.isNotEmpty(),
+        enter = (fadeIn(tween(150)) + slideInVertically(tween(220)) { it / 4 }).withReducedMotion(),
+        exit = (fadeOut(tween(120)) + slideOutVertically(tween(180)) { it / 4 }).withReducedMotion()
+    ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surface,
@@ -281,8 +285,9 @@ internal fun TimeFocusLane(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                Text(
-                    text = "${focusItems.size} 项",
+                CountLabel(
+                    count = focusItems.size,
+                    suffix = "项",
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
                     color = MaterialTheme.colorScheme.secondary.copy(alpha = DianMaoAlpha.strong)
                 )
@@ -296,6 +301,7 @@ internal fun TimeFocusLane(
                 }
             }
         }
+    }
     }
 }
 
@@ -526,17 +532,23 @@ internal fun QuadrantPane(
                 contentColor = quadrant.color,
                 shape = ChipShape
             ) {
-                Text(
-                    text = "$openCount 项",
+                CountLabel(
+                    count = openCount,
+                    suffix = "项",
                     modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
                     style = MaterialTheme.typography.labelMedium,
-                    maxLines = 1
+                    color = LocalContentColor.current
                 )
             }
         }
-        if (visibleTasks.isEmpty()) {
+        AnimatedVisibility(
+            visible = visibleTasks.isEmpty(),
+            enter = fadeIn(motionTween(150)).withReducedMotion(),
+            exit = fadeOut(motionTween(120)).withReducedMotion()
+        ) {
             EmptyQuadrantHint(quadrant)
-        } else {
+        }
+        if (visibleTasks.isNotEmpty()) {
             visibleTasks.forEach { task ->
                 CompactQuadrantTask(task = task)
             }
@@ -570,7 +582,7 @@ internal fun EmptyQuadrantHint(quadrant: TaskPriority) {
             style = MaterialTheme.typography.labelMedium.copy(
                 letterSpacing = 0.sp
             ),
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted)
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.mutedText)
         )
     }
 }
@@ -601,7 +613,7 @@ internal fun CompactQuadrantTask(
                 letterSpacing = 0.sp
             ),
             color = if (task.completed)
-                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted)
+                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.mutedText)
             else
                 MaterialTheme.colorScheme.onSurface,
             maxLines = 2,

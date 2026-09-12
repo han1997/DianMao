@@ -3,7 +3,7 @@ package `fun`.han1997.dianmao
 import android.provider.Settings
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
-import androidx.compose.animation.core.AnimationSpec
+import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
@@ -44,7 +44,7 @@ private fun rememberMotionScale(context: android.content.Context): Boolean {
  * when system animations are disabled.
  */
 @Composable
-internal fun <T> motionTween(durationMillis: Int): AnimationSpec<T> {
+internal fun <T> motionTween(durationMillis: Int): FiniteAnimationSpec<T> {
     return if (LocalAnimationsEnabled.current) {
         tween(durationMillis)
     } else {

@@ -158,7 +158,7 @@ internal fun QuadrantDetailSectionLabel(
             Text(
                 text = count.toString(),
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted)
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.mutedText)
             )
         }
     }
@@ -216,7 +216,7 @@ internal fun QuadrantDetailCompletedGroup(
                 Text(
                     text = tasks.size.toString(),
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted)
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.mutedText)
                 )
                 Icon(
                     imageVector = if (expanded) {
