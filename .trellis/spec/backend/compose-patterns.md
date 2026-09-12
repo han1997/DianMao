@@ -1181,6 +1181,89 @@ gesture-driven recomposition to the nodes that actually change appearance.
 
 ---
 
+## Pattern: Global Reduced-Motion Gate
+
+**Problem**: The app had ~6 animation sites (`animateFloatAsState`,
+`animateColorAsState`, `AnimatedVisibility`) that ignored the system
+"remove animations" setting (`Settings.Global.ANIMATOR_DURATION_SCALE == 0f`),
+leaving users who disable animations motion stuck with decorative motion.
+
+**Contracts**:
+- `DianMaoTheme` owns the flag: it reads `ANIMATOR_DURATION_SCALE` via
+  `rememberAnimationsEnabled()` and provides `LocalAnimationsEnabled` to the
+  whole tree. No call site reads `Settings.Global` itself.
+- New tweened animations must use `motionTween(durationMillis)` instead of
+  `tween(...)` — it returns an instant `snap()` when animations are off.
+- New `AnimatedVisibility` uses `.withReducedMotion()` on the enter/exit
+  expressions so the entire transition collapses to `None`.
+- Reduced motion must jump to the end state, never play a shorter animation.
+
+**Good**:
+```kotlin
+val scale by animateFloatAsState(targetValue = x, animationSpec = motionTween(180), label = "s")
+
+AnimatedVisibility(
+    visible = expanded,
+    enter = (fadeIn(tween(200)) + slideInVertically(tween(220)) { it / 4 }).withReducedMotion(),
+    exit = (fadeOut(tween(160)) + slideOutVertically(tween(180)) { it / 4 }).withReducedMotion()
+) { /* ... */ }
+```
+
+**Bad**: `tween(180)` / bare `fadeIn(tween(200))` — plays regardless of the
+system animation switch; a partial fix that only wraps `fadeIn` still leaves
+the slide transition animating. Wrap the whole `+` expression, not one side.
+
+**Reference implementation**: `ui/theme/ReducedMotion.kt` (added 2026-09
+ui-polish task); call sites in `ui/components/TaskRow.kt`,
+`ui/screens/HomeScreen.kt`, `ui/screens/QuadrantDetailScreen.kt`,
+`ui/screens/TaskDetailScreen.kt`, `ui/panels/AddTaskPanel.kt`.
+
+**Verification**: toggle developer-option "Animator duration scale: off";
+panels and completion scale must snap instantly.
+
+---
+
+## Pattern: DianMaoAlpha Token Scale
+
+**Problem**: `copy(alpha = X)` had ~15 distinct literal values for the same
+visual intent (e.g. secondary text at 0.62 / 0.7 / 0.72 / 0.78), so tone
+drifted between screens.
+
+**Contracts**:
+- New secondary text / tint / border code uses one of three tokens from
+  `ui/theme/DianMaoTokens.kt`: `DianMaoAlpha.subtle` (0.08, faint tints and
+  ghost borders), `DianMaoAlpha.muted` (0.62, secondary text / disabled
+  icons), `DianMaoAlpha.strong` (0.78, emphasized secondary text).
+- Tonal container fills (e.g. `surfaceVariant.copy(alpha = 0.26f)` chips and
+  `IconTile` backgrounds at 0.10–0.20) are *not* tokens; they stay literal.
+- Do not introduce a fourth value; if a design needs it, discuss first.
+
+**Verification**: grep `copy(alpha = 0\.` and confirm remaining hits are
+tonal fills or `DianMaoTokens.kt` itself.
+
+---
+
+## Pattern: Async Panel Action Feedback
+
+**Problem**: WebDAV upload/restore ran for seconds with no in-flight
+indication; users double-tapped and thought the app froze.
+
+**Contracts**:
+- The owner of the coroutine (`MainActivity`) keeps a single
+  `backupSyncInProgress: Boolean` state, sets it before launch, and clears it
+  in `finally`.
+- `BackupPanel` takes `syncInProgress: Boolean = false`; while true the
+  upload/restore buttons are disabled and the primary button swaps its icon
+  for an 18dp `CircularProgressIndicator` + "正在同步…" label.
+- Snackbars still report success/failure; the indicator is for progress,
+  not outcome.
+
+**Related**: the period-completion race in `TaskRow.canComplete` is keyed by
+`(task.id, lastCompletedAtMillis, completed, repeatRule)` in one
+`LaunchedEffect` — adding keys, not `snapshotFlow`, is the accepted pattern.
+
+---
+
 ## Related Specs
 
 - [Overlay Navigation Thinking Guide](../guides/overlay-navigation-thinking-guide.md) - Checklist for back navigation design
