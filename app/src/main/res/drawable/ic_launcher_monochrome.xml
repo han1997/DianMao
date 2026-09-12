@@ -3,22 +3,20 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- Monochrome themed-icon silhouette of the paw-quadrant mark. -->
     <path
         android:fillColor="#000000"
-        android:pathData="M26,24h56v60h-56z" />
+        android:pathData="M50,42 A7,7 0 1 1 36,42 A7,7 0 1 1 50,42 Z" />
     <path
         android:fillColor="#000000"
-        android:pathData="M32,30h18v18h-18z" />
+        android:pathData="M72,42 A7,7 0 1 1 58,42 A7,7 0 1 1 72,42 Z" />
     <path
         android:fillColor="#000000"
-        android:pathData="M58,30h18v18h-18z" />
+        android:pathData="M50,60 A7,7 0 1 1 36,60 A7,7 0 1 1 50,60 Z" />
     <path
         android:fillColor="#000000"
-        android:pathData="M32,56h18v18h-18z" />
+        android:pathData="M72,60 A7,7 0 1 1 58,60 A7,7 0 1 1 72,60 Z" />
     <path
         android:fillColor="#000000"
-        android:pathData="M58,56h18v18h-18z" />
-    <path
-        android:fillColor="#000000"
-        android:pathData="M58,52 C58,54.21 56.21,56 54,56 C51.79,56 50,54.21 50,52 C50,49.79 51.79,48 54,48 C56.21,48 58,49.79 58,52 Z" />
+        android:pathData="M54,66 C62,66 67,70.5 67,75 C67,79.5 62,82 54,82 C46,82 41,79.5 41,75 C41,70.5 46,66 54,66 Z" />
 </vector>

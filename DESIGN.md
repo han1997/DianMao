@@ -370,3 +370,7 @@ A signature DianMao flow. When the user saves a newly-created task from the add/
 - **Don't** add shadows to task rows at rest. If a row looks like a floating card, the elevation is wrong.
 - **Don't** use gradient text, side-stripe borders >1px, glassmorphism, or hero-metric templates.
 - **Don't** add entrance choreography, scroll-driven sequences, custom easing curves, bounce, or elastic. Motion conveys state only — see The State-Change Only Rule.
+
+## Launcher icon (2026-09 redesign)
+
+The launcher mark is the **paw-print quadrant**: four toe beans colored with the quadrant palette (terracotta/ochre/blue/sage) arranged 2×2, with a larger terracotta main pad below — the '点' in 点猫. Toes stay inside the 66dp adaptive safe circle. Monochrome uses the same silhouette. Sources: `res/drawable/ic_launcher_foreground.xml`, `ic_launcher_monochrome.xml`; the warm paper background layer is unchanged.
