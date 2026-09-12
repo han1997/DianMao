@@ -1784,3 +1784,37 @@ Version source in gradle.properties, bumpVersion task, PKCS12 signing, dianmao-v
 ### Next Steps
 
 - None - task complete
+
+
+## Session 53: UI polish round 2
+
+**Date**: 2026-09-12
+**Task**: UI polish round 2
+**Branch**: `master`
+
+### Summary
+
+Screen crossfades + overlay snapshots, mutedText 0.75 dark contrast fix, QuietSwitch/QuietDropdownMenu/CountLabel, shared completion-history empty hint
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `15623ed` | (see git log) |
+| `47c0002` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
