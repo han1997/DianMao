@@ -6,6 +6,12 @@
 - `app/build.gradle.kts` reads them into `defaultConfig` with fallbacks
   (`1` / `"1.0.0"`); never hardcode versions in the build script again.
 
+**HARD RULE (user directive, 2026-09-12)**: every code-change session MUST
+bump the version before finishing. At Phase 3.4 (or when producing a release
+APK), run `.\gradlew.bat :app:bumpVersion` and commit the resulting
+`gradle.properties` change together with the work. A session that ships code
+without a versionCode increment violates this rule.
+
 ## Releasing
 
 ```powershell
