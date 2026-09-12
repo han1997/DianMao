@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -15,6 +16,8 @@ import androidx.compose.ui.unit.sp
 @Composable
 internal fun DianMaoTheme(content: @Composable () -> Unit) {
     val colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()
+
+    val animationsEnabled = rememberAnimationsEnabled()
 
     MaterialTheme(
         colorScheme = colorScheme,
@@ -86,7 +89,11 @@ internal fun DianMaoTheme(content: @Composable () -> Unit) {
                 letterSpacing = 0.sp
             )
         ),
-        content = content
+        content = {
+            CompositionLocalProvider(LocalAnimationsEnabled provides animationsEnabled) {
+                content()
+            }
+        }
     )
 }
 

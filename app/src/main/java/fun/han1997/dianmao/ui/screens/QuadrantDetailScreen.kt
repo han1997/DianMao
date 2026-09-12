@@ -64,7 +64,7 @@ internal fun QuadrantDetailHeader(
     val openTasks = tasks.count { !it.completed }
 
     Surface(
-        color = quadrant.color.copy(alpha = 0.08f),
+        color = quadrant.color.copy(alpha = DianMaoAlpha.subtle),
         shape = InlineShape,
         border = quietBorder(0.16f)
     ) {
@@ -158,7 +158,7 @@ internal fun QuadrantDetailSectionLabel(
             Text(
                 text = count.toString(),
                 style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.62f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted)
             )
         }
     }
@@ -201,7 +201,7 @@ internal fun QuadrantDetailCompletedGroup(
                 Icon(
                     imageVector = Icons.Rounded.CheckCircle,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.62f),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted),
                     modifier = Modifier.size(16.dp)
                 )
                 Text(
@@ -216,7 +216,7 @@ internal fun QuadrantDetailCompletedGroup(
                 Text(
                     text = tasks.size.toString(),
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.62f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted)
                 )
                 Icon(
                     imageVector = if (expanded) {
@@ -225,14 +225,14 @@ internal fun QuadrantDetailCompletedGroup(
                         Icons.Rounded.KeyboardArrowDown
                     },
                     contentDescription = if (expanded) "收起已完成" else "展开已完成",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong),
                     modifier = Modifier.size(20.dp)
                 )
             }
             AnimatedVisibility(
                 visible = expanded,
-                enter = fadeIn(tween(200)) + slideInVertically(tween(220)) { it / 4 },
-                exit = fadeOut(tween(160)) + slideOutVertically(tween(180)) { it / 4 }
+                enter = (fadeIn(tween(200)) + slideInVertically(tween(220)) { it / 4 }).withReducedMotion(),
+                exit = (fadeOut(tween(160)) + slideOutVertically(tween(180)) { it / 4 }).withReducedMotion()
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     tasks.forEach { task ->
@@ -257,7 +257,7 @@ internal fun QuadrantDetailCompletedGroup(
 @Composable
 internal fun QuadrantDetailEmptyState(quadrant: TaskPriority) {
     Surface(
-        color = quadrant.color.copy(alpha = 0.07f),
+        color = quadrant.color.copy(alpha = DianMaoAlpha.subtle),
         shape = InlineShape,
         border = quietBorder(0.12f)
     ) {
@@ -275,7 +275,7 @@ internal fun QuadrantDetailEmptyState(quadrant: TaskPriority) {
                     icon = Icons.Rounded.Inventory2,
                     contentDescription = null,
                     tint = quadrant.color,
-                    containerColor = quadrant.color.copy(alpha = 0.10f),
+                    containerColor = quadrant.color.copy(alpha = DianMaoAlpha.subtle),
                     iconSize = 18.dp
                 )
                 Text(

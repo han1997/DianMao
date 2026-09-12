@@ -380,7 +380,7 @@ internal fun AddTaskPanel(
                             !hasDate -> "需先设置到期日"
                             else -> "选择当天提醒的几点几分"
                         },
-                        iconTint = if (hasDate) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.58f),
+                        iconTint = if (hasDate) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted),
                         enabled = hasDate,
                         onClick = { showTimePickerDialog = true }
                     )
@@ -395,7 +395,7 @@ internal fun AddTaskPanel(
                             !hasDate -> "需先设置到期日"
                             else -> "在系统日历中创建日程"
                         },
-                        iconTint = if (useCalendar) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.58f),
+                        iconTint = if (useCalendar) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted),
                         enabled = hasDate,
                         onClick = {
                             useCalendar = !useCalendar
@@ -427,7 +427,7 @@ internal fun AddTaskPanel(
                             !useCalendar -> "需先同步到系统日历"
                             else -> "开启后系统日历日程带响铃"
                         },
-                        iconTint = if (useAlarm) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.58f),
+                        iconTint = if (useAlarm) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted),
                         enabled = alarmReady,
                         onClick = {
                             useAlarm = !useAlarm
@@ -457,7 +457,7 @@ internal fun AddTaskPanel(
                             !hasDate -> "需先设置到期日"
                             else -> "在 DianMao 内发出通知，不依赖日历"
                         },
-                        iconTint = if (useLocalReminder) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.58f),
+                        iconTint = if (useLocalReminder) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted),
                         enabled = reminderReady,
                         onClick = {
                             useLocalReminder = !useLocalReminder
@@ -486,7 +486,7 @@ internal fun AddTaskPanel(
                             !useLocalReminder -> "需先开启到点提醒"
                             else -> "点按修改提醒提前量"
                         },
-                        iconTint = if (reminderLeadReady) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.58f),
+                        iconTint = if (reminderLeadReady) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted),
                         enabled = reminderLeadReady,
                         onClick = { leadMenuExpanded = true }
                     )
@@ -532,7 +532,7 @@ internal fun AddTaskPanel(
                                 !useAlarm -> "需先开启日历响铃"
                                 else -> "可设为每天、每周或每月"
                             },
-                            iconTint = if (repeatReady) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.58f),
+                            iconTint = if (repeatReady) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted),
                             enabled = repeatReady,
                             onClick = { repeatMenuExpanded = true }
                         )
@@ -568,8 +568,8 @@ internal fun AddTaskPanel(
                 // Save feedback pill (add-mode confirmation / save failure).
                 AnimatedVisibility(
                     visible = saveFeedback != null,
-                    enter = fadeIn(tween(140)) + slideInVertically(tween(180)) { it / 3 },
-                    exit = fadeOut(tween(160))
+                    enter = (fadeIn(tween(140)) + slideInVertically(tween(180)) { it / 3 }).withReducedMotion(),
+                    exit = fadeOut(tween(160)).withReducedMotion()
                 ) {
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
@@ -577,7 +577,7 @@ internal fun AddTaskPanel(
                         color = if (saveFailed) {
                             MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.66f)
                         } else {
-                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.54f)
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = DianMaoAlpha.muted)
                         },
                         contentColor = if (saveFailed) {
                             MaterialTheme.colorScheme.onErrorContainer
@@ -737,7 +737,7 @@ private fun SettingRow(
                 color = if (enabled) {
                     MaterialTheme.colorScheme.onSurface
                 } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong)
                 },
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
@@ -757,7 +757,7 @@ private fun SettingRow(
                 imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
                 contentDescription = null,
                 tint = if (enabled) {
-                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
+                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong)
                 } else {
                     MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
                 },

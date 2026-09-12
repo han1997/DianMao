@@ -173,16 +173,16 @@ internal fun AppHeader(
         }
         AnimatedVisibility(
             visible = searchVisible,
-            enter = fadeIn(animationSpec = tween(200)) +
+            enter = (fadeIn(animationSpec = tween(200)) +
                 slideInVertically(
                     animationSpec = tween(220),
                     initialOffsetY = { it / 4 }
-                ),
-            exit = fadeOut(animationSpec = tween(160)) +
+                )).withReducedMotion(),
+            exit = (fadeOut(animationSpec = tween(160)) +
                 slideOutVertically(
                     animationSpec = tween(180),
                     targetOffsetY = { it / 4 }
-                )
+                )).withReducedMotion()
         ) {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
@@ -258,7 +258,7 @@ internal fun TimeFocusLane(
                     icon = Icons.Rounded.Schedule,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.secondary,
-                    containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = 0.10f),
+                    containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = DianMaoAlpha.subtle),
                     iconSize = 15.dp
                 )
                 Column(
@@ -276,7 +276,7 @@ internal fun TimeFocusLane(
                     Text(
                         text = "过期、今天和最近安排",
                         style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 0.sp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -284,7 +284,7 @@ internal fun TimeFocusLane(
                 Text(
                     text = "${focusItems.size} 项",
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
-                    color = MaterialTheme.colorScheme.secondary.copy(alpha = 0.82f)
+                    color = MaterialTheme.colorScheme.secondary.copy(alpha = DianMaoAlpha.strong)
                 )
             }
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -320,15 +320,15 @@ internal fun TimeFocusRow(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 48.dp)
-            .background(color.copy(alpha = 0.07f), RowShape)
-            .border(1.dp, color.copy(alpha = 0.12f), RowShape)
+            .background(color.copy(alpha = DianMaoAlpha.subtle), RowShape)
+            .border(1.dp, color.copy(alpha = DianMaoAlpha.subtle), RowShape)
             .clickable(onClick = onClick, role = Role.Button)
             .padding(horizontal = 10.dp, vertical = 8.dp),
         verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Surface(
-            color = color.copy(alpha = 0.10f),
+            color = color.copy(alpha = DianMaoAlpha.subtle),
             contentColor = color,
             shape = ChipShape
         ) {
@@ -460,12 +460,12 @@ internal fun BoardDivider(vertical: Boolean) {
             Modifier
                 .width(1.dp)
                 .fillMaxHeight()
-                .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.14f))
+                .background(MaterialTheme.colorScheme.outline.copy(alpha = DianMaoAlpha.subtle))
         } else {
             Modifier
                 .height(1.dp)
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.14f))
+                .background(MaterialTheme.colorScheme.outline.copy(alpha = DianMaoAlpha.subtle))
         }
     )
 }
@@ -481,8 +481,8 @@ internal fun QuadrantPane(
     val visibleTasks = tasks.take(5)
     val openCount = tasks.count { !it.completed }
     val paneColor by animateColorAsState(
-        targetValue = quadrant.color.copy(alpha = 0.045f),
-        animationSpec = tween(durationMillis = 200),
+        targetValue = quadrant.color.copy(alpha = DianMaoAlpha.subtle),
+        animationSpec = motionTween(durationMillis = 200),
         label = "quadrantPaneColor"
     )
 
@@ -516,13 +516,13 @@ internal fun QuadrantPane(
                     style = MaterialTheme.typography.labelSmall.copy(
                         letterSpacing = 0.sp
                     ),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
             }
             Surface(
-                color = quadrant.color.copy(alpha = 0.10f),
+                color = quadrant.color.copy(alpha = DianMaoAlpha.subtle),
                 contentColor = quadrant.color,
                 shape = ChipShape
             ) {
@@ -546,7 +546,7 @@ internal fun QuadrantPane(
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.Medium
                     ),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -561,7 +561,7 @@ internal fun EmptyQuadrantHint(quadrant: TaskPriority) {
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.50f), ChipShape)
-            .border(1.dp, quadrant.color.copy(alpha = 0.08f), ChipShape)
+            .border(1.dp, quadrant.color.copy(alpha = DianMaoAlpha.subtle), ChipShape)
             .padding(horizontal = 10.dp, vertical = 8.dp),
         contentAlignment = Alignment.CenterStart
     ) {
@@ -570,7 +570,7 @@ internal fun EmptyQuadrantHint(quadrant: TaskPriority) {
             style = MaterialTheme.typography.labelMedium.copy(
                 letterSpacing = 0.sp
             ),
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.68f)
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted)
         )
     }
 }
@@ -601,7 +601,7 @@ internal fun CompactQuadrantTask(
                 letterSpacing = 0.sp
             ),
             color = if (task.completed)
-                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f)
+                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted)
             else
                 MaterialTheme.colorScheme.onSurface,
             maxLines = 2,
@@ -612,7 +612,7 @@ internal fun CompactQuadrantTask(
                 imageVector = Icons.Rounded.Schedule,
                 contentDescription = "有提醒",
                 modifier = Modifier.size(14.dp),
-                tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.68f)
+                tint = MaterialTheme.colorScheme.secondary.copy(alpha = DianMaoAlpha.muted)
             )
         }
     }
@@ -690,7 +690,7 @@ internal fun HomeSmartTaskList(
                 IconTile(
                     icon = Icons.Rounded.Inventory2,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong),
                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.48f),
                     iconSize = 22.dp,
                     modifier = Modifier.size(48.dp)
@@ -698,7 +698,7 @@ internal fun HomeSmartTaskList(
                 Text(
                     text = emptyMessage ?: "这里还没有事项",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong)
                 )
                 FilledTonalButton(
                     onClick = onAddTask,
@@ -711,7 +711,7 @@ internal fun HomeSmartTaskList(
                     InlineButtonIcon(
                         icon = Icons.Rounded.Add,
                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        containerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.10f)
+                        containerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = DianMaoAlpha.subtle)
                     )
                     Spacer(Modifier.width(6.dp))
                     Text("新增事项")
@@ -739,7 +739,7 @@ internal fun HomeSmartTaskList(
                             fontWeight = FontWeight.Medium,
                             letterSpacing = 0.sp
                         ),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong)
                     )
                 }
             }

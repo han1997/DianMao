@@ -144,7 +144,7 @@ internal fun FullScreenTopBar(
                         style = MaterialTheme.typography.labelMedium.copy(
                             letterSpacing = 0.sp
                         ),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )

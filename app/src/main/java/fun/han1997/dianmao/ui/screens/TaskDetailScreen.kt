@@ -353,7 +353,7 @@ internal fun TaskDetailScreen(
                                             fontWeight = FontWeight.Medium,
                                             letterSpacing = 0.sp
                                         ),
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f)
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong)
                                     )
                                 }
                             }
@@ -482,7 +482,7 @@ internal fun DetailMetaRow(
             Icon(
                 imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted),
                 modifier = Modifier.size(18.dp)
             )
         }
@@ -522,7 +522,7 @@ internal fun CompletionHistoryGroup(
                 Icon(
                     imageVector = Icons.Rounded.History,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.64f),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted),
                     modifier = Modifier.size(16.dp)
                 )
                 Text(
@@ -537,7 +537,7 @@ internal fun CompletionHistoryGroup(
                 Text(
                     text = completions.size.toString(),
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.62f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted)
                 )
                 Icon(
                     imageVector = if (expanded) {
@@ -546,14 +546,14 @@ internal fun CompletionHistoryGroup(
                         Icons.Rounded.KeyboardArrowDown
                     },
                     contentDescription = if (expanded) "收起完成历史" else "展开完成历史",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong),
                     modifier = Modifier.size(20.dp)
                 )
             }
             AnimatedVisibility(
                 visible = expanded,
-                enter = fadeIn(tween(200)) + slideInVertically(tween(220)) { it / 4 },
-                exit = fadeOut(tween(160)) + slideOutVertically(tween(180)) { it / 4 }
+                enter = (fadeIn(tween(200)) + slideInVertically(tween(220)) { it / 4 }).withReducedMotion(),
+                exit = (fadeOut(tween(160)) + slideOutVertically(tween(180)) { it / 4 }).withReducedMotion()
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     if (completions.isEmpty()) {
@@ -799,7 +799,7 @@ fun RecurringTaskHistoryPanel(
                             style = MaterialTheme.typography.labelMedium.copy(
                                 letterSpacing = 0.sp
                             ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong)
                         )
                     }
                     Column(horizontalAlignment = Alignment.End) {
@@ -813,7 +813,7 @@ fun RecurringTaskHistoryPanel(
                             style = MaterialTheme.typography.labelMedium.copy(
                                 letterSpacing = 0.sp
                             ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong)
                         )
                     }
                 }
@@ -851,7 +851,7 @@ fun RecurringTaskHistoryPanel(
                         IconTile(
                             icon = Icons.Rounded.History,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.68f),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted),
                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.48f),
                             iconSize = 22.dp,
                             modifier = Modifier.size(44.dp)
@@ -863,7 +863,7 @@ fun RecurringTaskHistoryPanel(
                                 "暂无完成记录"
                             },
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong)
                         )
                     }
                 }

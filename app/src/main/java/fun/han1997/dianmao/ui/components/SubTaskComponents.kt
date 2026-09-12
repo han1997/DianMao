@@ -141,7 +141,7 @@ internal fun FormSettingBlock(
                     IconTile(
                         icon = icon,
                         contentDescription = null,
-                        tint = if (enabled) iconTint else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.58f),
+                        tint = if (enabled) iconTint else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted),
                         containerColor = if (enabled) iconTint.copy(alpha = 0.10f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.20f),
                         iconSize = 15.dp
                     )
@@ -232,7 +232,7 @@ internal fun SubTaskEditor(
             Text(
                 text = "还没有子事项，可在上方添加",
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.62f)
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted)
             )
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -259,7 +259,7 @@ internal fun SubTaskEditRow(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RowShape,
-        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.72f),
+        color = MaterialTheme.colorScheme.surface.copy(alpha = DianMaoAlpha.strong),
         border = quietBorder(0.10f)
     ) {
         Row(

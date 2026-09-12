@@ -85,7 +85,7 @@ internal fun CompassCell(color: Color, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .fillMaxHeight()
-            .background(color.copy(alpha = 0.82f), RoundedCornerShape(4.dp))
+            .background(color.copy(alpha = DianMaoAlpha.strong), RoundedCornerShape(4.dp))
     )
 }
 
@@ -219,7 +219,7 @@ internal fun CompactMeta(
         IconTile(
             icon = icon,
             contentDescription = null,
-            tint = tint.copy(alpha = 0.82f),
+            tint = tint.copy(alpha = DianMaoAlpha.strong),
             containerColor = tint.copy(alpha = 0.10f),
             iconSize = 12.dp
         )
@@ -228,7 +228,7 @@ internal fun CompactMeta(
             style = MaterialTheme.typography.labelMedium.copy(
                 letterSpacing = 0.sp
             ),
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.82f),
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -252,7 +252,7 @@ internal fun InlineStatDot(count: Int, label: String, color: Color) {
                 fontWeight = FontWeight.Medium,
                 letterSpacing = 0.sp
             ),
-            color = color.copy(alpha = 0.78f)
+            color = color.copy(alpha = DianMaoAlpha.strong)
         )
     }
 }
@@ -279,7 +279,7 @@ internal fun SummaryPill(value: String, label: String, color: Color, modifier: M
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.76f)
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong)
         )
     }
 }

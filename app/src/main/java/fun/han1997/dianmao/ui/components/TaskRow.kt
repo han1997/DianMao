@@ -8,7 +8,6 @@ import `fun`.han1997.dianmao.CompletionMark
 import `fun`.han1997.dianmao.IconTile
 import `fun`.han1997.dianmao.quietBorder
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -65,6 +64,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -95,7 +95,7 @@ internal fun TaskRow(
     val displayedDueLabel = dueLabelOverride ?: task.dueLabel
     val scale by animateFloatAsState(
         targetValue = if (task.completed) 0.985f else 1f,
-        animationSpec = tween(durationMillis = 180),
+        animationSpec = motionTween(durationMillis = 180),
         label = "taskScale"
     )
 
@@ -143,6 +143,7 @@ internal fun TaskRow(
                     }
                     .semantics {
                         contentDescription = if (task.completed) "标记为未完成" else "标记为完成"
+                        stateDescription = if (task.completed) "已完成" else "未完成"
                     },
                 contentAlignment = Alignment.TopCenter
             ) {
@@ -168,7 +169,7 @@ internal fun TaskRow(
                         fontSize = 15.sp,
                         letterSpacing = 0.sp
                     ),
-                    color = if (task.completed) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f) else MaterialTheme.colorScheme.onSurface,
+                    color = if (task.completed) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong) else MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -314,7 +315,7 @@ internal fun SubTaskProgressSummary(
                 modifier = Modifier
                     .fillMaxWidth(progress.coerceIn(0f, 1f))
                     .height(4.dp)
-                    .background(color.copy(alpha = 0.82f), PillShape)
+                    .background(color.copy(alpha = DianMaoAlpha.strong), PillShape)
             )
         }
     }

@@ -105,8 +105,11 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -169,6 +172,7 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
     var activePriority by rememberSaveable { mutableStateOf<TaskPriority?>(null) }
     var showAddSheet by rememberSaveable { mutableStateOf(false) }
     var showBackupPanel by rememberSaveable { mutableStateOf(false) }
+    var backupSyncInProgress by remember { mutableStateOf(false) }
     var showArchivedPanel by rememberSaveable { mutableStateOf(false) }
     var taskForNote by remember { mutableStateOf<TaskUiModel?>(null) }
     var taskForEdit by remember { mutableStateOf<TaskUiModel?>(null) }
@@ -597,6 +601,37 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
                                             0f
                                         },
                                         modifier = Modifier.animateItem()
+                                            // TalkBack cannot perform the
+                                            // long-press drag gesture; expose
+                                            // 上移/下移 custom actions that run
+                                            // the same reorder + persist path.
+                                            .semantics {
+                                                val lastOpenIndex = openDetailTaskCount - 1
+                                                val actions = mutableListOf<CustomAccessibilityAction>()
+                                                if (index > 0) {
+                                                    actions.add(CustomAccessibilityAction("上移") {
+                                                        val openTasks = reorderableDetailTasks.filter { !it.completed }
+                                                        val list = openTasks.toMutableList()
+                                                        val item = list.removeAt(index)
+                                                        list.add(index - 1, item)
+                                                        reorderableDetailTasks = list + reorderableDetailTasks.filter { it.completed }
+                                                        scope.launch { repository.reorderTasks(reorderableDetailTasks) }
+                                                        true
+                                                    })
+                                                }
+                                                if (index < lastOpenIndex) {
+                                                    actions.add(CustomAccessibilityAction("下移") {
+                                                        val openTasks = reorderableDetailTasks.filter { !it.completed }
+                                                        val list = openTasks.toMutableList()
+                                                        val item = list.removeAt(index)
+                                                        list.add(index + 1, item)
+                                                        reorderableDetailTasks = list + reorderableDetailTasks.filter { it.completed }
+                                                        scope.launch { repository.reorderTasks(reorderableDetailTasks) }
+                                                        true
+                                                    })
+                                                }
+                                                customActions = actions
+                                            }
                                     )
                                 }
                                 val completedDetailTasks = reorderableDetailTasks.filter { it.completed }
@@ -811,6 +846,7 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
                 BackupPanel(
                     visible = showBackupPanel,
                     initialSettings = webDavSettings,
+                    syncInProgress = backupSyncInProgress,
                     onDismiss = { showBackupPanel = false },
                     onLocalExport = {
                         localBackupExportLauncher.launch(defaultBackupFileName())
@@ -825,31 +861,41 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
                     },
                     onUploadWebDav = { settings ->
                         scope.launch {
-                            runCatching {
-                                backupSettingsStore.saveWebDavSettings(settings)
-                                webDavSettings = settings
-                                webDavClient.upload(settings, repository.exportBackupJson())
-                            }.onSuccess {
-                                snackbarHostState.showSnackbar("WebDAV 备份已上传")
-                            }.onFailure { error ->
-                                snackbarHostState.showSnackbar("上传失败：${error.message.orEmpty()}")
+                            backupSyncInProgress = true
+                            try {
+                                runCatching {
+                                    backupSettingsStore.saveWebDavSettings(settings)
+                                    webDavSettings = settings
+                                    webDavClient.upload(settings, repository.exportBackupJson())
+                                }.onSuccess {
+                                    snackbarHostState.showSnackbar("WebDAV 备份已上传")
+                                }.onFailure { error ->
+                                    snackbarHostState.showSnackbar("上传失败：${error.message.orEmpty()}")
+                                }
+                            } finally {
+                                backupSyncInProgress = false
                             }
                         }
                     },
                     onRestoreWebDav = { settings ->
                         scope.launch {
-                            runCatching {
-                                backupSettingsStore.saveWebDavSettings(settings)
-                                webDavSettings = settings
-                                val count = repository.importBackupJson(webDavClient.download(settings))
-                                repository.restoreScheduledReminders().forEach { task ->
-                                    scheduler.schedule(task)
+                            backupSyncInProgress = true
+                            try {
+                                runCatching {
+                                    backupSettingsStore.saveWebDavSettings(settings)
+                                    webDavSettings = settings
+                                    val count = repository.importBackupJson(webDavClient.download(settings))
+                                    repository.restoreScheduledReminders().forEach { task ->
+                                        scheduler.schedule(task)
+                                    }
+                                    count
+                                }.onSuccess { count ->
+                                    snackbarHostState.showSnackbar("已从 WebDAV 恢复 $count 个事项")
+                                }.onFailure { error ->
+                                    snackbarHostState.showSnackbar("恢复失败：${error.message.orEmpty()}")
                                 }
-                                count
-                            }.onSuccess { count ->
-                                snackbarHostState.showSnackbar("已从 WebDAV 恢复 $count 个事项")
-                            }.onFailure { error ->
-                                snackbarHostState.showSnackbar("恢复失败：${error.message.orEmpty()}")
+                            } finally {
+                                backupSyncInProgress = false
                             }
                         }
                     }

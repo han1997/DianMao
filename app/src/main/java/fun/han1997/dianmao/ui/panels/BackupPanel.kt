@@ -42,6 +42,7 @@ import androidx.compose.material.icons.rounded.Unarchive
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -50,6 +51,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
@@ -75,7 +77,8 @@ internal fun BackupPanel(
     onLocalImport: () -> Unit,
     onSaveWebDav: (WebDavSettings) -> Unit,
     onUploadWebDav: (WebDavSettings) -> Unit,
-    onRestoreWebDav: (WebDavSettings) -> Unit
+    onRestoreWebDav: (WebDavSettings) -> Unit,
+    syncInProgress: Boolean = false
 ) {
     var url by rememberSaveable { mutableStateOf(initialSettings.url) }
     var username by rememberSaveable { mutableStateOf(initialSettings.username) }
@@ -164,21 +167,21 @@ internal fun BackupPanel(
                                         "配置下方地址后可上传与恢复"
                                     },
                                     style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.82f),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong),
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
                                 }
                                 Surface(
                                     color = if (webDavReady) {
-                                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.54f)
+                                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = DianMaoAlpha.muted)
                                     } else {
                                         MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.48f)
                                     },
                                     contentColor = if (webDavReady) {
                                         MaterialTheme.colorScheme.onPrimaryContainer
                                     } else {
-                                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f)
+                                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong)
                                     },
                                     shape = ChipShape
                                 ) {
@@ -289,7 +292,9 @@ internal fun BackupPanel(
                                         },
                                         contentDescription = if (passwordVisible) "隐藏密码" else "显示密码",
                                         onClick = { passwordVisible = !passwordVisible },
-                                        modifier = Modifier.size(40.dp),
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .minimumInteractiveComponentSize(),
                                         iconSize = 18.dp,
                                         tileShape = ChipShape
                                     )
@@ -313,22 +318,30 @@ internal fun BackupPanel(
                         FormSettingBlock(title = "云端同步", subtitle = "上传当前数据到 WebDAV，或从云端恢复") {
                             Button(
                                 onClick = { onUploadWebDav(webDavSettings) },
-                                enabled = webDavReady,
+                                enabled = webDavReady && !syncInProgress,
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RowShape,
                                 contentPadding = PaddingValues(vertical = 13.dp)
                             ) {
-                                InlineButtonIcon(
-                                    icon = Icons.Rounded.CloudUpload,
-                                    tint = MaterialTheme.colorScheme.onPrimary,
-                                    containerColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.12f)
-                                )
+                                if (syncInProgress) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(18.dp),
+                                        strokeWidth = 2.dp,
+                                        color = MaterialTheme.colorScheme.onPrimary
+                                    )
+                                } else {
+                                    InlineButtonIcon(
+                                        icon = Icons.Rounded.CloudUpload,
+                                        tint = MaterialTheme.colorScheme.onPrimary,
+                                        containerColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.12f)
+                                    )
+                                }
                                 Spacer(Modifier.width(6.dp))
-                                Text("上传备份")
+                                Text(if (syncInProgress) "正在同步…" else "上传备份")
                             }
                             OutlinedButton(
                                 onClick = { onRestoreWebDav(webDavSettings) },
-                                enabled = webDavReady,
+                                enabled = webDavReady && !syncInProgress,
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RowShape,
                                 contentPadding = PaddingValues(vertical = 13.dp)
@@ -374,7 +387,7 @@ internal fun ArchivedPanel(
                         IconTile(
                             icon = Icons.Rounded.Inventory2,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.72f),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong),
                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.48f),
                             iconSize = 24.dp,
                             modifier = Modifier.size(48.dp)
@@ -382,7 +395,7 @@ internal fun ArchivedPanel(
                         Text(
                             text = "暂无归档事项",
                             style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted)
                         )
                     }
                 }
@@ -453,7 +466,7 @@ internal fun ArchivedTaskItem(
                     Text(
                         text = metaLine,
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.78f),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
