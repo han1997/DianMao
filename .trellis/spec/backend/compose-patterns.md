@@ -1230,13 +1230,17 @@ visual intent (e.g. secondary text at 0.62 / 0.7 / 0.72 / 0.78), so tone
 drifted between screens.
 
 **Contracts**:
-- New secondary text / tint / border code uses one of three tokens from
+- New secondary text / tint / border code uses one of four tokens from
   `ui/theme/DianMaoTokens.kt`: `DianMaoAlpha.subtle` (0.08, faint tints and
-  ghost borders), `DianMaoAlpha.muted` (0.62, secondary text / disabled
-  icons), `DianMaoAlpha.strong` (0.78, emphasized secondary text).
+  ghost borders), `DianMaoAlpha.muted` (0.62, icons/dividers ONLY — 0.62
+  onSurfaceVariant on the dark background is ~3.5:1, below WCAG 4.5:1),
+  `DianMaoAlpha.mutedText` (0.75, secondary body text and empty-state copy),
+  `DianMaoAlpha.strong` (0.78, emphasized secondary text).
+- Any `Text(color = onSurfaceVariant.copy(alpha = …))` must use `mutedText`
+  or `strong`, never `muted`.
 - Tonal container fills (e.g. `surfaceVariant.copy(alpha = 0.26f)` chips and
   `IconTile` backgrounds at 0.10–0.20) are *not* tokens; they stay literal.
-- Do not introduce a fourth value; if a design needs it, discuss first.
+- Do not introduce another value; if a design needs it, discuss first.
 
 **Verification**: grep `copy(alpha = 0\.` and confirm remaining hits are
 tonal fills or `DianMaoTokens.kt` itself.
@@ -1261,6 +1265,37 @@ indication; users double-tapped and thought the app froze.
 **Related**: the period-completion race in `TaskRow.canComplete` is keyed by
 `(task.id, lastCompletedAtMillis, completed, repeatRule)` in one
 `LaunchedEffect` — adding keys, not `snapshotFlow`, is the accepted pattern.
+
+---
+
+## Pattern: Calm Screen Transitions and Quiet Controls (round 2)
+
+**Problem**: Every navigation surface (home ↔ quadrant detail, task detail
+overlay, recurring-history overlay, smart-view switch) swapped in one frame,
+while panels already used a 150ms fade+slide vocabulary. Switches and
+DropdownMenus still used default M3 chrome.
+
+**Contracts**:
+- Root-level screen swaps in `MainActivity` use
+  `Crossfade(targetState, animationSpec = motionTween(150))`; full-screen
+  overlays (task detail, recurring history) use `AnimatedVisibility` with the
+  standard sheet vocabulary, and the content is fed from a
+  `remember { mutableStateOf<TaskUiModel?>(null) }` **snapshot** that is
+  updated only while the overlay is visible — this keeps the exit animation
+  rendering the last task instead of vanishing instantly.
+- `AnimatedContent.transitionSpec` is NOT a composable scope: do not call
+  the `@Composable` `motionTween()` inside it. Read
+  `LocalAnimationsEnabled.current` outside and choose `tween(...) / snap()`
+  inside the lambda (see `CountLabel` in `ui/components/QuietControls.kt`).
+- New `Switch` must go through `QuietSwitch` (unchecked track =
+  `outline @ subtle`, no loud default) and new `DropdownMenu` must go through
+  `QuietDropdownMenu` (RowShape, quiet hairline border, zero default shadow).
+- High-frequency counts (focus lane, quadrant open count, history count)
+  render through `CountLabel`, which crossfades on change.
+- When two surfaces render the same entity list (inline history group vs
+  `RecurringTaskHistoryPanel`), share the empty-state composable
+  (`CompletionHistoryEmptyHint`) — the two copies had already drifted in copy
+  before round 2.
 
 ---
 
