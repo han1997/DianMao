@@ -403,14 +403,10 @@ internal fun AddTaskPanel(
                             if (useCalendar) onRequestCalendarPermission()
                         },
                         trailing = {
-                            Switch(
+                            QuietSwitch(
                                 checked = useCalendar,
                                 onCheckedChange = null,
-                                enabled = hasDate,
-                                colors = SwitchDefaults.colors(
-                                    checkedTrackColor = MaterialTheme.colorScheme.secondary,
-                                    checkedThumbColor = MaterialTheme.colorScheme.surface
-                                )
+                                enabled = hasDate
                             )
                         }
                     )
@@ -434,14 +430,10 @@ internal fun AddTaskPanel(
                             if (!useAlarm) repeatRule = RepeatRule.None
                         },
                         trailing = {
-                            Switch(
+                            QuietSwitch(
                                 checked = useAlarm,
                                 onCheckedChange = null,
-                                enabled = alarmReady,
-                                colors = SwitchDefaults.colors(
-                                    checkedTrackColor = MaterialTheme.colorScheme.secondary,
-                                    checkedThumbColor = MaterialTheme.colorScheme.surface
-                                )
+                                enabled = alarmReady
                             )
                         }
                     )
@@ -463,14 +455,10 @@ internal fun AddTaskPanel(
                             useLocalReminder = !useLocalReminder
                         },
                         trailing = {
-                            Switch(
+                            QuietSwitch(
                                 checked = useLocalReminder,
                                 onCheckedChange = null,
-                                enabled = reminderReady,
-                                colors = SwitchDefaults.colors(
-                                    checkedTrackColor = MaterialTheme.colorScheme.secondary,
-                                    checkedThumbColor = MaterialTheme.colorScheme.surface
-                                )
+                                enabled = reminderReady
                             )
                         }
                     )
@@ -490,7 +478,7 @@ internal fun AddTaskPanel(
                         enabled = reminderLeadReady,
                         onClick = { leadMenuExpanded = true }
                     )
-                    DropdownMenu(
+                    QuietDropdownMenu(
                         expanded = leadMenuExpanded,
                         onDismissRequest = { leadMenuExpanded = false }
                     ) {
@@ -536,7 +524,7 @@ internal fun AddTaskPanel(
                             enabled = repeatReady,
                             onClick = { repeatMenuExpanded = true }
                         )
-                        DropdownMenu(
+                        QuietDropdownMenu(
                             expanded = repeatMenuExpanded,
                             onDismissRequest = { repeatMenuExpanded = false }
                         ) {

@@ -218,7 +218,7 @@ internal fun TaskRow(
                         onClick = { actionsExpanded = true },
                         iconSize = 18.dp
                     )
-                    DropdownMenu(
+                    QuietDropdownMenu(
                         expanded = actionsExpanded,
                         onDismissRequest = { actionsExpanded = false }
                     ) {

@@ -534,10 +534,11 @@ internal fun CompletionHistoryGroup(
                     ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Text(
-                    text = completions.size.toString(),
+                CountLabel(
+                    count = completions.size,
+                    suffix = "",
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.mutedText)
                 )
                 Icon(
                     imageVector = if (expanded) {
@@ -557,10 +558,8 @@ internal fun CompletionHistoryGroup(
             ) {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     if (completions.isEmpty()) {
-                        Text(
-                            text = if (isRecurring) "完成循环事项后这里会记录每次完成" else "暂无完成记录",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        CompletionHistoryEmptyHint(
+                            isRecurring = isRecurring,
                             modifier = Modifier.padding(horizontal = 4.dp, vertical = 6.dp)
                         )
                     } else {
@@ -576,6 +575,25 @@ internal fun CompletionHistoryGroup(
             }
         }
     }
+}
+
+/**
+ * Shared completion-history empty copy (ui-polish round 2). The inline
+ * collapsible group and the full-screen history panel used two slightly
+ * different strings ("," vs "，"); both now render through this hint so the
+ * copy cannot drift again.
+ */
+@Composable
+internal fun CompletionHistoryEmptyHint(
+    isRecurring: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Text(
+        text = if (isRecurring) "完成循环事项后，这里会记录每次完成" else "暂无完成记录",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.mutedText),
+        modifier = modifier
+    )
 }
 
 @Composable
@@ -856,14 +874,8 @@ fun RecurringTaskHistoryPanel(
                             iconSize = 22.dp,
                             modifier = Modifier.size(44.dp)
                         )
-                        Text(
-                            text = if (task.repeatRule != RepeatRule.None) {
-                                "完成循环事项后,这里会记录每次完成"
-                            } else {
-                                "暂无完成记录"
-                            },
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong)
+                        CompletionHistoryEmptyHint(
+                            isRecurring = task.repeatRule != RepeatRule.None
                         )
                     }
                 }
