@@ -1750,3 +1750,37 @@ Reduced-motion gate + DianMaoAlpha tokens + backup sync progress + TalkBack reor
 ### Next Steps
 
 - None - task complete
+
+
+## Session 52: App release packaging
+
+**Date**: 2026-09-12
+**Task**: App release packaging
+**Branch**: `master`
+
+### Summary
+
+Version source in gradle.properties, bumpVersion task, PKCS12 signing, dianmao-version.apk naming; dianmao-1.0.1.apk signed and verified
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `34d30d2` | (see git log) |
+| `a8444a3` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
