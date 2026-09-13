@@ -18,6 +18,20 @@ class TaskConverters {
     fun fromRepeatRule(value: RepeatRule): String = value.name
 
     @TypeConverter
+    fun toRepeatWeekdays(value: String): Set<Int> {
+        if (value.isBlank()) return emptySet()
+        return value.split(',')
+            .mapNotNull { it.trim().toIntOrNull() }
+            .filter { it in 1..7 }
+            .toSet()
+    }
+
+    @TypeConverter
+    fun fromRepeatWeekdays(value: Set<Int>): String {
+        return value.filter { it in 1..7 }.sorted().joinToString(",")
+    }
+
+    @TypeConverter
     fun toSubTasks(value: String): List<TaskSubTask> {
         if (value.isBlank()) return emptyList()
         val array = JSONArray(value)

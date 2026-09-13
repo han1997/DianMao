@@ -29,7 +29,7 @@ class TaskFormStateTest {
     }
 
     @Test
-    fun repeatRuleRequiresDateAndAlarm() {
+    fun repeatRuleRequiresOnlyADueDate() {
         val withoutAlarm = TaskFormState(
             dueDateMillis = 1_000L,
             useCalendar = true,
@@ -39,7 +39,21 @@ class TaskFormStateTest {
 
         assertTrue(withoutAlarm.useCalendar)
         assertFalse(withoutAlarm.useAlarm)
-        assertEquals(RepeatRule.None, withoutAlarm.repeatRule)
+        assertEquals(RepeatRule.Weekly, withoutAlarm.repeatRule)
+    }
+
+    @Test
+    fun repeatWithoutDateIsCleared() {
+        val withoutDate = TaskFormState(
+            dueDateMillis = null,
+            useAlarm = false,
+            repeatRule = RepeatRule.Yearly,
+            repeatInterval = 2
+        ).normalizedTimeSettings()
+
+        assertEquals(RepeatRule.None, withoutDate.repeatRule)
+        assertEquals(1, withoutDate.repeatInterval)
+        assertTrue(withoutDate.repeatWeekdays.isEmpty())
     }
 
     @Test
@@ -54,5 +68,35 @@ class TaskFormStateTest {
         assertEquals(RepeatRule.Monthly, normalized.repeatRule)
         assertTrue(normalized.useAlarm)
         assertEquals(540, normalized.dueTimeMinutes)
+    }
+
+    @Test
+    fun repeatIntervalIsCoercedToOne() {
+        val normalized = TaskFormState(
+            dueDateMillis = 1_000L,
+            repeatRule = RepeatRule.Daily,
+            repeatInterval = 0
+        ).normalizedTimeSettings()
+
+        assertEquals(1, normalized.repeatInterval)
+    }
+
+    @Test
+    fun repeatWeekdaysAreOnlyKeptForWeeklyRules() {
+        val weekly = TaskFormState(
+            dueDateMillis = 1_000L,
+            repeatRule = RepeatRule.Weekly,
+            repeatWeekdays = setOf(1, 3, 9, 0)
+        ).normalizedTimeSettings()
+
+        assertEquals(setOf(1, 3), weekly.repeatWeekdays)
+
+        val daily = TaskFormState(
+            dueDateMillis = 1_000L,
+            repeatRule = RepeatRule.Daily,
+            repeatWeekdays = setOf(1, 3)
+        ).normalizedTimeSettings()
+
+        assertTrue(daily.repeatWeekdays.isEmpty())
     }
 }

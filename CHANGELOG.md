@@ -1,5 +1,18 @@
 # Changelog
 
+- Extended the repeat-rule model beyond the plain frequency enum: tasks can now
+  repeat 每年 (with Feb 29 clamping to 2/28 in non-leap years), on a custom
+  interval (每 N 天/周/月/年), and on selected weekdays (指定周几, with a
+  工作日 preset for Monday–Friday). The add/edit form's repeat row is no longer
+  gated behind the calendar ring toggle — repeat only requires a due date;
+  calendar ring controls RRULE sync and local reminders control per-cycle
+  rescheduling independently. The repeat dropdown became a branded picker
+  dialog (presets + inline custom editor with frequency, interval stepper, and
+  weekday chips), task rows/detail show dynamic labels (每周一、三, 每 2 周 ·
+  周一、三, 每 3 个月), and the generated calendar RRULE now carries
+  INTERVAL/BYDAY/YEARLY. Database migrated to version 12, backup format
+  upgraded to version 6 (v3/v4/v5 still import).
+
 - Reworked the smart-view row swipes to the settle-back pattern: the row
   always returns to place after a swipe — completing a task lets it leave the
   list through the data flow, and a left swipe opens the delete confirmation

@@ -151,7 +151,9 @@ object CalendarWriter {
             if (task.useAlarm) {
                 reminderIntentExtras().forEach { (key, value) -> putExtra(key, value) }
             }
-            repeatRuleToRRule(task.repeatRule)?.let { putExtra(CalendarContract.Events.RRULE, it) }
+            repeatRuleToRRule(task.repeatRule, task.repeatInterval, task.repeatWeekdays)?.let {
+                putExtra(CalendarContract.Events.RRULE, it)
+            }
         }
     }
 
@@ -208,7 +210,7 @@ object CalendarWriter {
             put(CalendarContract.Events.EVENT_TIMEZONE, TimeZone.getDefault().id)
             put(CalendarContract.Events.DESCRIPTION, "DianMao")
             put(CalendarContract.Events.HAS_ALARM, if (task.useAlarm) 1 else 0)
-            val rRule = repeatRuleToRRule(task.repeatRule)
+            val rRule = repeatRuleToRRule(task.repeatRule, task.repeatInterval, task.repeatWeekdays)
             if (rRule == null) {
                 putNull(CalendarContract.Events.RRULE)
             } else {
@@ -216,14 +218,44 @@ object CalendarWriter {
             }
         }
     }
+}
 
-    private fun repeatRuleToRRule(repeatRule: RepeatRule): String? {
-        return when (repeatRule) {
-            RepeatRule.None, RepeatRule.Count -> null
-            RepeatRule.Daily -> "FREQ=DAILY"
-            RepeatRule.Weekly -> "FREQ=WEEKLY"
-            RepeatRule.Monthly -> "FREQ=MONTHLY"
+/**
+ * Maps the extended repeat model onto an RFC 5545 RRULE. Interval N > 1 adds
+ * `INTERVAL=N`; weekly weekday selections add `BYDAY`. `null` for rules that
+ * do not repeat.
+ */
+internal fun repeatRuleToRRule(
+    repeatRule: RepeatRule,
+    repeatInterval: Int = 1,
+    repeatWeekdays: Set<Int> = emptySet()
+): String? {
+    val interval = repeatInterval.coerceAtLeast(1)
+    val intervalPart = if (interval > 1) ";INTERVAL=$interval" else ""
+    return when (repeatRule) {
+        RepeatRule.None, RepeatRule.Count -> null
+        RepeatRule.Daily -> "FREQ=DAILY$intervalPart"
+        RepeatRule.Monthly -> "FREQ=MONTHLY$intervalPart"
+        RepeatRule.Yearly -> "FREQ=YEARLY$intervalPart"
+        RepeatRule.Weekly -> {
+            val days = repeatWeekdays.filter { it in 1..7 }.toSet()
+            val byDay = days.sorted().joinToString(",") { isoDay -> weekdayCode(isoDay) }
+            val byDayPart = if (byDay.isEmpty()) "" else ";BYDAY=$byDay"
+            "FREQ=WEEKLY$intervalPart$byDayPart"
         }
+    }
+}
+
+/** ISO day-of-week (Mon=1..Sun=7) → RFC 5545 BYDAY two-letter code. */
+private fun weekdayCode(isoDay: Int): String {
+    return when (isoDay) {
+        1 -> "MO"
+        2 -> "TU"
+        3 -> "WE"
+        4 -> "TH"
+        5 -> "FR"
+        6 -> "SA"
+        else -> "SU"
     }
 }
 

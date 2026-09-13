@@ -5,6 +5,7 @@ import `fun`.han1997.dianmao.data.RepeatRule
 import `fun`.han1997.dianmao.data.TaskCompletionEntity
 import `fun`.han1997.dianmao.data.TaskRepository
 import `fun`.han1997.dianmao.data.TaskUiModel
+import `fun`.han1997.dianmao.data.repeatRuleLabel
 import `fun`.han1997.dianmao.CompletionMark
 import `fun`.han1997.dianmao.HeaderActionButton
 import `fun`.han1997.dianmao.IconTile
@@ -256,7 +257,7 @@ internal fun TaskDetailScreen(
                             icon = Icons.Rounded.Repeat,
                             iconTint = MaterialTheme.colorScheme.secondary,
                             label = if (task.repeatRule != RepeatRule.None) {
-                                task.repeatRule.label
+                                repeatRuleLabel(task.repeatRule, task.repeatInterval, task.repeatWeekdays)
                             } else {
                                 "不重复"
                             }
@@ -799,7 +800,7 @@ fun RecurringTaskHistoryPanel(
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
-                            text = task.repeatRule.label,
+                            text = repeatRuleLabel(task.repeatRule, task.repeatInterval, task.repeatWeekdays),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,

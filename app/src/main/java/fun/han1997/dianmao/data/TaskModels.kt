@@ -10,9 +10,10 @@ enum class RepeatRule(val label: String) {
     Daily("每天"),
     Weekly("每周"),
     Monthly("每月"),
+    Yearly("每年"),
     Count("计数");
 
-    fun isCycleBased(): Boolean = this in listOf(Daily, Weekly, Monthly)
+    fun isCycleBased(): Boolean = this in listOf(Daily, Weekly, Monthly, Yearly)
     fun isCountBased(): Boolean = this == Count
 }
 
@@ -52,6 +53,8 @@ data class TaskEntity(
     val useLocalReminder: Boolean = false,
     val reminderLeadMinutes: Int = 0,
     val repeatRule: RepeatRule = RepeatRule.None,
+    val repeatInterval: Int = 1,
+    val repeatWeekdays: Set<Int> = emptySet(),
     val subTasks: List<TaskSubTask> = emptyList(),
     val completionCount: Int = 0,
     val lastCompletedAtMillis: Long? = null,
@@ -74,6 +77,8 @@ data class TaskFormState(
     val useLocalReminder: Boolean = false,
     val reminderLeadMinutes: Int = 0,
     val repeatRule: RepeatRule = RepeatRule.None,
+    val repeatInterval: Int = 1,
+    val repeatWeekdays: Set<Int> = emptySet(),
     val subTasks: List<TaskSubTask> = emptyList()
 )
 
@@ -81,13 +86,20 @@ fun TaskFormState.normalizedTimeSettings(): TaskFormState {
     val hasDueDate = dueDateMillis != null
     val normalizedAlarm = useAlarm && hasDueDate
     val normalizedLocalReminder = useLocalReminder && hasDueDate
+    val normalizedRepeat = repeatRule.takeIf { hasDueDate } ?: RepeatRule.None
     return copy(
         dueTimeMinutes = if (hasDueDate) dueTimeMinutes else null,
         useCalendar = useCalendar && hasDueDate,
         useAlarm = normalizedAlarm,
         useLocalReminder = normalizedLocalReminder,
         reminderLeadMinutes = if (normalizedLocalReminder) reminderLeadMinutes else 0,
-        repeatRule = if (normalizedAlarm) repeatRule else RepeatRule.None
+        repeatRule = normalizedRepeat,
+        repeatInterval = if (normalizedRepeat == RepeatRule.None) 1 else repeatInterval.coerceAtLeast(1),
+        repeatWeekdays = if (normalizedRepeat == RepeatRule.Weekly) {
+            repeatWeekdays.filter { it in 1..7 }.toSet()
+        } else {
+            emptySet()
+        }
     )
 }
 
@@ -104,6 +116,8 @@ data class TaskUiModel(
     val useLocalReminder: Boolean = false,
     val reminderLeadMinutes: Int = 0,
     val repeatRule: RepeatRule,
+    val repeatInterval: Int = 1,
+    val repeatWeekdays: Set<Int> = emptySet(),
     val subTasks: List<TaskSubTask>,
     val completionCount: Int,
     val lastCompletedAtMillis: Long?,
@@ -126,6 +140,8 @@ fun TaskEntity.toUiModel(): TaskUiModel {
         useLocalReminder = useLocalReminder,
         reminderLeadMinutes = reminderLeadMinutes,
         repeatRule = repeatRule,
+        repeatInterval = repeatInterval,
+        repeatWeekdays = repeatWeekdays,
         subTasks = subTasks,
         completionCount = completionCount,
         lastCompletedAtMillis = lastCompletedAtMillis,

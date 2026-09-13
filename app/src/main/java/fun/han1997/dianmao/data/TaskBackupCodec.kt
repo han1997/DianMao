@@ -8,9 +8,9 @@ import org.json.JSONObject
 
 object TaskBackupCodec {
     private const val FORMAT = "dianmao.tasks"
-    private const val BACKUP_VERSION = 5
+    private const val BACKUP_VERSION = 6
     /** Highest backup version this build accepts on import. */
-    private const val SUPPORTED_BACKUP_VERSION = 5
+    private const val SUPPORTED_BACKUP_VERSION = 6
 
     fun encode(
         tasks: List<TaskEntity>,
@@ -98,7 +98,9 @@ object TaskBackupCodec {
             .put("useLocalReminder", task.useLocalReminder)
             .put("reminderLeadMinutes", task.reminderLeadMinutes)
             .put("repeatRule", task.repeatRule.name)
-            .put("repeatRuleLabel", task.repeatRule.label)
+            .put("repeatRuleLabel", repeatRuleLabel(task.repeatRule, task.repeatInterval, task.repeatWeekdays))
+            .put("repeatInterval", task.repeatInterval)
+            .put("repeatWeekdays", JSONArray().apply { task.repeatWeekdays.sorted().forEach { put(it) } })
             .put("subTasks", subTasksToJson(task.subTasks))
             .put("completionCount", task.completionCount)
             .putNullable("lastCompletedAtMillis", task.lastCompletedAtMillis)
@@ -127,6 +129,8 @@ object TaskBackupCodec {
             useLocalReminder = json.optBoolean("useLocalReminder", false),
             reminderLeadMinutes = json.optInt("reminderLeadMinutes", 0),
             repeatRule = RepeatRule.valueOf(json.getString("repeatRule")),
+            repeatInterval = json.optInt("repeatInterval", 1),
+            repeatWeekdays = repeatWeekdaysFromJson(json),
             subTasks = subTasksFromJson(json),
             completionCount = json.optInt("completionCount", 0),
             lastCompletedAtMillis = json.nullableLong("lastCompletedAtMillis"),
@@ -172,6 +176,14 @@ object TaskBackupCodec {
                 completed = item.optBoolean("completed", false)
             )
         }
+    }
+
+    private fun repeatWeekdaysFromJson(json: JSONObject): Set<Int> {
+        if (!json.has("repeatWeekdays") || json.isNull("repeatWeekdays")) return emptySet()
+        val array = json.getJSONArray("repeatWeekdays")
+        return List(array.length()) { index -> array.optInt(index) }
+            .filter { it in 1..7 }
+            .toSet()
     }
 
     private fun completionFromJson(json: JSONObject): TaskCompletionEntity {

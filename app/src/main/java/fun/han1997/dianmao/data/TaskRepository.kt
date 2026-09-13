@@ -45,6 +45,8 @@ class TaskRepository(context: Context) {
             useLocalReminder = normalizedForm.useLocalReminder && dueAtMillis != null,
             reminderLeadMinutes = normalizedForm.reminderLeadMinutes,
             repeatRule = normalizedForm.repeatRule,
+            repeatInterval = normalizedForm.repeatInterval,
+            repeatWeekdays = normalizedForm.repeatWeekdays,
             subTasks = normalizedSubTasks(normalizedForm.subTasks),
             completed = false,
             completionNote = null,
@@ -70,6 +72,8 @@ class TaskRepository(context: Context) {
             useLocalReminder = normalizedForm.useLocalReminder && dueAtMillis != null,
             reminderLeadMinutes = normalizedForm.reminderLeadMinutes,
             repeatRule = normalizedForm.repeatRule,
+            repeatInterval = normalizedForm.repeatInterval,
+            repeatWeekdays = normalizedForm.repeatWeekdays,
             subTasks = normalizedSubTasks(normalizedForm.subTasks),
             updatedAtMillis = System.currentTimeMillis()
         )
@@ -124,7 +128,12 @@ class TaskRepository(context: Context) {
                 )
             } else if (completed && existing.repeatRule.isCycleBased() && existing.useAlarm && existing.dueAtMillis != null) {
                 // Cycle-based with alarm: advance to next cycle
-                val nextDue = RepeatReminderCalculator.nextDueAt(existing.dueAtMillis, existing.repeatRule)
+                val nextDue = RepeatReminderCalculator.nextDueAt(
+                    existing.dueAtMillis,
+                    existing.repeatRule,
+                    repeatInterval = existing.repeatInterval,
+                    repeatWeekdays = existing.repeatWeekdays
+                )
                 existing.copy(
                     completed = false,
                     lastCompletedAtMillis = now,
@@ -213,7 +222,12 @@ class TaskRepository(context: Context) {
                 )
             } else if (existing.repeatRule.isCycleBased() && existing.useAlarm && existing.dueAtMillis != null) {
                 // Cycle-based with alarm: advance to next cycle
-                val nextDue = RepeatReminderCalculator.nextDueAt(existing.dueAtMillis, existing.repeatRule)
+                val nextDue = RepeatReminderCalculator.nextDueAt(
+                    existing.dueAtMillis,
+                    existing.repeatRule,
+                    repeatInterval = existing.repeatInterval,
+                    repeatWeekdays = existing.repeatWeekdays
+                )
                 existing.copy(
                     completed = false,
                     completionCount = existing.completionCount + 1,
@@ -305,6 +319,7 @@ class TaskRepository(context: Context) {
                 week1 == week2
             }
             RepeatRule.Monthly -> date1.year == date2.year && date1.monthValue == date2.monthValue
+            RepeatRule.Yearly -> date1.year == date2.year
             else -> false
         }
     }
@@ -323,7 +338,13 @@ class TaskRepository(context: Context) {
             val dueAt = task.dueAtMillis ?: return@mapNotNull null
             when {
                 task.repeatRule != RepeatRule.None && dueAt <= nowMillis -> {
-                    val nextDue = RepeatReminderCalculator.nextFutureDueAfter(dueAt, task.repeatRule, nowMillis)
+                    val nextDue = RepeatReminderCalculator.nextFutureDueAfter(
+                        dueAt,
+                        task.repeatRule,
+                        nowMillis,
+                        repeatInterval = task.repeatInterval,
+                        repeatWeekdays = task.repeatWeekdays
+                    )
                     updateTaskDue(task, nextDue).toUiModel()
                 }
                 dueAt > nowMillis -> task.toUiModel()
@@ -343,7 +364,9 @@ class TaskRepository(context: Context) {
         val nextDue = RepeatReminderCalculator.nextFutureDueAfter(
             currentMillis = currentDue,
             repeatRule = existing.repeatRule,
-            nowMillis = System.currentTimeMillis()
+            nowMillis = System.currentTimeMillis(),
+            repeatInterval = existing.repeatInterval,
+            repeatWeekdays = existing.repeatWeekdays
         )
         return updateTaskDue(existing, nextDue).toUiModel()
     }
@@ -490,6 +513,7 @@ class TaskRepository(context: Context) {
             RepeatRule.Monthly -> {
                 time1.year == time2.year && time1.monthValue == time2.monthValue
             }
+            RepeatRule.Yearly -> time1.year == time2.year
             else -> false
         }
     }

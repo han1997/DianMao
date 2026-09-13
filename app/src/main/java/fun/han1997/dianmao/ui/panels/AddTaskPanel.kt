@@ -6,6 +6,7 @@ import `fun`.han1997.dianmao.data.TaskPriority
 import `fun`.han1997.dianmao.data.TaskSubTask
 import `fun`.han1997.dianmao.data.TaskUiModel
 import `fun`.han1997.dianmao.data.normalizedTimeSettings
+import `fun`.han1997.dianmao.data.repeatRuleLabel
 import `fun`.han1997.dianmao.ColorDot
 import `fun`.han1997.dianmao.DianMaoDatePickerDialog
 import `fun`.han1997.dianmao.DianMaoTimePickerDialog
@@ -122,12 +123,14 @@ internal fun AddTaskPanel(
     var useLocalReminder by rememberSaveable { mutableStateOf(false) }
     var reminderLeadMinutes by rememberSaveable { mutableStateOf(0) }
     var repeatRule by rememberSaveable { mutableStateOf(RepeatRule.None) }
+    var repeatInterval by rememberSaveable { mutableStateOf(1) }
+    var repeatWeekdays by rememberSaveable { mutableStateOf(emptySet<Int>()) }
     var subTasks by remember { mutableStateOf<List<TaskSubTask>>(emptyList()) }
     var subTaskDraft by rememberSaveable { mutableStateOf("") }
     var saveFeedback by rememberSaveable { mutableStateOf<String?>(null) }
     var saveFailed by rememberSaveable { mutableStateOf(false) }
     var isSaving by rememberSaveable { mutableStateOf(false) }
-    var repeatMenuExpanded by rememberSaveable { mutableStateOf(false) }
+    var showRepeatDialog by rememberSaveable { mutableStateOf(false) }
     var leadMenuExpanded by rememberSaveable { mutableStateOf(false) }
     var showDatePickerDialog by rememberSaveable { mutableStateOf(false) }
     var showTimePickerDialog by rememberSaveable { mutableStateOf(false) }
@@ -152,6 +155,8 @@ internal fun AddTaskPanel(
             useLocalReminder = editingTask?.useLocalReminder ?: false
             reminderLeadMinutes = editingTask?.reminderLeadMinutes ?: 0
             repeatRule = editingTask?.repeatRule ?: RepeatRule.None
+            repeatInterval = editingTask?.repeatInterval ?: 1
+            repeatWeekdays = editingTask?.repeatWeekdays ?: emptySet()
             subTasks = editingTask?.subTasks ?: emptyList()
             subTaskDraft = ""
             saveFeedback = null
@@ -207,6 +212,8 @@ internal fun AddTaskPanel(
                         useLocalReminder = useLocalReminder,
                         reminderLeadMinutes = reminderLeadMinutes,
                         repeatRule = repeatRule,
+                        repeatInterval = repeatInterval,
+                        repeatWeekdays = repeatWeekdays,
                         subTasks = subTasks
                     ).normalizedTimeSettings()
                 )
@@ -427,7 +434,6 @@ internal fun AddTaskPanel(
                         enabled = alarmReady,
                         onClick = {
                             useAlarm = !useAlarm
-                            if (!useAlarm) repeatRule = RepeatRule.None
                         },
                         trailing = {
                             QuietSwitch(
@@ -506,51 +512,25 @@ internal fun AddTaskPanel(
                     }
                     SettingDivider()
 
-                    // 重复
-                    Box {
-                        val repeatReady = hasDate && useCalendar && useAlarm
-                        val repeatText = if (repeatRule == RepeatRule.None) null else repeatRule.label
-                        SettingRow(
-                            icon = Icons.Rounded.Repeat,
-                            title = repeatText ?: "不重复",
-                            subtitle = when {
-                                repeatText != null -> "点按修改重复规则"
-                                !hasDate -> "需先设置到期日"
-                                !useCalendar -> "需先同步到系统日历"
-                                !useAlarm -> "需先开启日历响铃"
-                                else -> "可设为每天、每周或每月"
-                            },
-                            iconTint = if (repeatReady) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted),
-                            enabled = repeatReady,
-                            onClick = { repeatMenuExpanded = true }
-                        )
-                        QuietDropdownMenu(
-                            expanded = repeatMenuExpanded,
-                            onDismissRequest = { repeatMenuExpanded = false }
-                        ) {
-                            RepeatRule.entries.forEach { rule ->
-                                DropdownMenuItem(
-                                    text = { Text(rule.label) },
-                                    leadingIcon = if (rule == repeatRule) {
-                                        {
-                                            Icon(
-                                                imageVector = Icons.Rounded.Check,
-                                                contentDescription = null,
-                                                tint = MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.size(16.dp)
-                                            )
-                                        }
-                                    } else {
-                                        null
-                                    },
-                                    onClick = {
-                                        repeatRule = rule
-                                        repeatMenuExpanded = false
-                                    }
-                                )
-                            }
-                        }
+                    // 重复（门禁只需到期日：日历响铃控制 RRULE 同步，到点提醒控制本机重排）
+                    val repeatReady = hasDate
+                    val repeatText = if (repeatRule == RepeatRule.None) {
+                        null
+                    } else {
+                        repeatRuleLabel(repeatRule, repeatInterval, repeatWeekdays)
                     }
+                    SettingRow(
+                        icon = Icons.Rounded.Repeat,
+                        title = repeatText ?: "不重复",
+                        subtitle = when {
+                            repeatText != null -> "点按修改重复规则"
+                            !hasDate -> "需先设置到期日"
+                            else -> "可设为每天、工作日、每年或自定义"
+                        },
+                        iconTint = if (repeatReady) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted),
+                        enabled = repeatReady,
+                        onClick = { showRepeatDialog = true }
+                    )
                 }
 
                 // Save feedback pill (add-mode confirmation / save failure).
@@ -665,6 +645,21 @@ internal fun AddTaskPanel(
                 onConfirm = { selected ->
                     dueTimeMinutes = selected
                     showTimePickerDialog = false
+                }
+            )
+        }
+
+        if (showRepeatDialog) {
+            RepeatRulePickerDialog(
+                selectedRule = repeatRule,
+                selectedInterval = repeatInterval,
+                selectedWeekdays = repeatWeekdays,
+                onDismiss = { showRepeatDialog = false },
+                onConfirm = { rule, interval, weekdays ->
+                    repeatRule = rule
+                    repeatInterval = interval
+                    repeatWeekdays = weekdays
+                    showRepeatDialog = false
                 }
             )
         }

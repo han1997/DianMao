@@ -207,7 +207,9 @@ internal fun effectiveDueAtMillis(
         currentMillis = storedDueAt,
         repeatRule = task.repeatRule,
         nowMillis = nowMillis,
-        zoneId = zoneId
+        zoneId = zoneId,
+        repeatInterval = task.repeatInterval,
+        repeatWeekdays = task.repeatWeekdays
     )
 }
 

@@ -3,6 +3,7 @@ package `fun`.han1997.dianmao
 import `fun`.han1997.dianmao.data.RepeatRule
 import `fun`.han1997.dianmao.data.TaskRepository
 import `fun`.han1997.dianmao.data.TaskUiModel
+import `fun`.han1997.dianmao.data.repeatRuleLabel
 import `fun`.han1997.dianmao.CompactMeta
 import `fun`.han1997.dianmao.CompletionMark
 import `fun`.han1997.dianmao.IconTile
@@ -201,7 +202,10 @@ internal fun TaskRow(
                         CompactMeta(icon = Icons.Rounded.Alarm, text = "响铃")
                     }
                     if (task.repeatRule != RepeatRule.None) {
-                        CompactMeta(icon = Icons.Rounded.Repeat, text = task.repeatRule.label)
+                        CompactMeta(
+                            icon = Icons.Rounded.Repeat,
+                            text = repeatRuleLabel(task.repeatRule, task.repeatInterval, task.repeatWeekdays)
+                        )
                     }
                     if (task.subTasks.isNotEmpty()) {
                         CompactMeta(icon = Icons.Rounded.CheckCircle, text = task.subTaskProgressLabel)
