@@ -335,6 +335,11 @@ reminders after boot, app launch, or delayed repeat delivery.
   notifications without an explicit product decision.
 * Past repeating reminders are advanced until their next due time is greater
   than the restoration time, then persisted and scheduled.
+* Multi-lead reminders (2026-09 reminder task): one alarm per lead time with a
+  stable request code distinct per (taskId, lead) via
+  `reminderRequestCode(...)`; cancelling a task's reminder must cancel every
+  lead (the caller passes the task's effective lead set), and notification ids
+  use the same per-lead code so multiple reminders stay visible.
 * Restoration may run from both boot receivers and app launch. It must be
   idempotent because pending intents use task ids with `FLAG_UPDATE_CURRENT`.
 
