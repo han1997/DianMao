@@ -1920,3 +1920,37 @@ Multi-lead local reminders (4 options multi-select), per-lead exact alarms with 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 57: Auto backup
+
+**Date**: 2026-09-13
+**Task**: Auto backup
+**Branch**: `master`
+
+### Summary
+
+WebDAV auto backup on app launch (daily interval, silent self-healing retries), backup-panel switch with last auto-backup status, zero new dependencies; version bumped to 1.0.5
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `06bc22b` | (see git log) |
+| `38266ed` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
