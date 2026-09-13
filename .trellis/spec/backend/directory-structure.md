@@ -33,6 +33,7 @@ Runtime Kotlin code lives under `app/src/main/java/fun/han1997/dianmao/`.
 | `alerts` | AlarmManager scheduling, notification channel setup, reminder delivery, boot restoration |
 | `calendar` | Calendar Provider read/write/update/delete and calendar insert/edit intents |
 | `backup` | Backup settings persistence and WebDAV transport |
+| `widget` | Glance home-screen widget (`DianMaoHomeWidget`, receiver, refresh helper); reads Room via `TaskRepository`, deep links back into `MainActivity` |
 
 Keep Android platform side effects in the package that owns the platform API:
 Calendar Provider code belongs in `calendar`, AlarmManager/notification code in
