@@ -7,8 +7,8 @@
 ## Current Status
 
 <!-- @@@auto:current-status -->
-- **Active File**: `journal-1.md`
-- **Total Sessions**: 58
+- **Active File**: `journal-2.md`
+- **Total Sessions**: 59
 - **Last Active**: 2026-09-13
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,8 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1990 | Active |
+| `journal-2.md` | ~41 | Active |
+| `journal-1.md` | ~1990 | Archived |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 59 | 2026-09-13 | Home widget | `690f4cc`, `0648ac8` | `master` |
 | 58 | 2026-09-13 | Review stats view | `922364f`, `c838200` | `master` |
 | 57 | 2026-09-13 | Auto backup | `06bc22b`, `38266ed` | `master` |
 | 56 | 2026-09-13 | Reminder enhancement | `09f4695`, `413bf77` | `master` |
