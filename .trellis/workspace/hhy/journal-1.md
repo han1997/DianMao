@@ -1954,3 +1954,37 @@ WebDAV auto backup on app launch (daily interval, silent self-healing retries), 
 ### Next Steps
 
 - None - task complete
+
+
+## Session 58: Review stats view
+
+**Date**: 2026-09-13
+**Task**: Review stats view
+**Branch**: `master`
+
+### Summary
+
+Full-screen review surface (tappable home stat pill entry): 7/30-day completion totals, 7-day daily distribution bars, quadrant share, recent completions with notes; cross-task completions JOIN query; ReviewPanel added to back-priority chain; version bumped to 1.0.6
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `922364f` | (see git log) |
+| `c838200` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
