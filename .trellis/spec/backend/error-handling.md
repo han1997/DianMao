@@ -456,6 +456,13 @@ WebDAV or another user-configured HTTP endpoint.
 * File-shaped URLs (`.json` suffix) PUT/GET the URL directly — legacy
   behavior preserved.
 * WebDAV restore uses `GET` on the resolved file URL.
+* Auto backup (2026-09 auto-backup task): the app uploads `exportBackupJson()`
+  to the configured WebDAV directory on launch when the panel switch is on,
+  WebDAV is configured, and the daily interval has elapsed (or the last
+  attempt failed). `shouldAutoBackupNow(...)` (backup/AutoBackupPolicy.kt,
+  pure) owns the gate; failures are silent and persist
+  `lastAutoBackupSucceeded = false` so the next start retries. It reuses the
+  manual upload path — no WorkManager dependency, no new transport code.
 * Optional Basic auth is sent only when username or password is present.
 * Local WebDAV servers may use `http://` LAN URLs; public or remote backup
   endpoints should prefer `https://`.
