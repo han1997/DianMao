@@ -22,13 +22,12 @@ class TaskConverters {
         if (value.isBlank()) return emptySet()
         return value.split(',')
             .mapNotNull { it.trim().toIntOrNull() }
-            .filter { it in 1..7 }
             .toSet()
     }
 
     @TypeConverter
     fun fromRepeatWeekdays(value: Set<Int>): String {
-        return value.filter { it in 1..7 }.sorted().joinToString(",")
+        return value.sorted().joinToString(",")
     }
 
     @TypeConverter

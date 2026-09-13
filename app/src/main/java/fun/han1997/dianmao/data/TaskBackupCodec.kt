@@ -8,9 +8,9 @@ import org.json.JSONObject
 
 object TaskBackupCodec {
     private const val FORMAT = "dianmao.tasks"
-    private const val BACKUP_VERSION = 6
+    private const val BACKUP_VERSION = 7
     /** Highest backup version this build accepts on import. */
-    private const val SUPPORTED_BACKUP_VERSION = 6
+    private const val SUPPORTED_BACKUP_VERSION = 7
 
     fun encode(
         tasks: List<TaskEntity>,
@@ -97,6 +97,7 @@ object TaskBackupCodec {
             .put("useAlarm", task.useAlarm)
             .put("useLocalReminder", task.useLocalReminder)
             .put("reminderLeadMinutes", task.reminderLeadMinutes)
+            .put("reminderLeadExtraMinutes", JSONArray().apply { task.reminderLeadExtraMinutes.sorted().forEach { put(it) } })
             .put("repeatRule", task.repeatRule.name)
             .put("repeatRuleLabel", repeatRuleLabel(task.repeatRule, task.repeatInterval, task.repeatWeekdays))
             .put("repeatInterval", task.repeatInterval)
@@ -128,6 +129,7 @@ object TaskBackupCodec {
             useAlarm = json.getBoolean("useAlarm"),
             useLocalReminder = json.optBoolean("useLocalReminder", false),
             reminderLeadMinutes = json.optInt("reminderLeadMinutes", 0),
+            reminderLeadExtraMinutes = reminderLeadExtraMinutesFromJson(json),
             repeatRule = RepeatRule.valueOf(json.getString("repeatRule")),
             repeatInterval = json.optInt("repeatInterval", 1),
             repeatWeekdays = repeatWeekdaysFromJson(json),
@@ -183,6 +185,14 @@ object TaskBackupCodec {
         val array = json.getJSONArray("repeatWeekdays")
         return List(array.length()) { index -> array.optInt(index) }
             .filter { it in 1..7 }
+            .toSet()
+    }
+
+    private fun reminderLeadExtraMinutesFromJson(json: JSONObject): Set<Int> {
+        if (!json.has("reminderLeadExtraMinutes") || json.isNull("reminderLeadExtraMinutes")) return emptySet()
+        val array = json.getJSONArray("reminderLeadExtraMinutes")
+        return List(array.length()) { index -> array.optInt(index) }
+            .filter { it >= 0 }
             .toSet()
     }
 

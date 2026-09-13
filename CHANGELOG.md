@@ -1,5 +1,14 @@
 # Changelog
 
+- Extended 到点提醒 to multiple lead times: a task can now fire at several
+  points at once (e.g. 准时 + 提前 5 分钟 + 提前 1 天) — the 提前量 dropdown
+  became a branded multi-select dialog, each lead time schedules its own exact
+  alarm with a distinct notification, and cancelling a task's reminder cancels
+  every alarm. Reminder state survives the upgrade (single lead → same value),
+  recurring tasks reschedule all lead times per cycle, and backup format was
+  upgraded to version 7 with the extra lead times included (v3–v6 still
+  import). Database migrated to version 13.
+
 - Extended the repeat-rule model beyond the plain frequency enum: tasks can now
   repeat 每年 (with Feb 29 clamping to 2/28 in non-leap years), on a custom
   interval (每 N 天/周/月/年), and on selected weekdays (指定周几, with a

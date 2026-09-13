@@ -52,6 +52,7 @@ data class TaskEntity(
     val useAlarm: Boolean,
     val useLocalReminder: Boolean = false,
     val reminderLeadMinutes: Int = 0,
+    val reminderLeadExtraMinutes: Set<Int> = emptySet(),
     val repeatRule: RepeatRule = RepeatRule.None,
     val repeatInterval: Int = 1,
     val repeatWeekdays: Set<Int> = emptySet(),
@@ -75,7 +76,7 @@ data class TaskFormState(
     val useCalendar: Boolean = false,
     val useAlarm: Boolean = false,
     val useLocalReminder: Boolean = false,
-    val reminderLeadMinutes: Int = 0,
+    val reminderLeadMinutes: Set<Int> = emptySet(),
     val repeatRule: RepeatRule = RepeatRule.None,
     val repeatInterval: Int = 1,
     val repeatWeekdays: Set<Int> = emptySet(),
@@ -92,7 +93,11 @@ fun TaskFormState.normalizedTimeSettings(): TaskFormState {
         useCalendar = useCalendar && hasDueDate,
         useAlarm = normalizedAlarm,
         useLocalReminder = normalizedLocalReminder,
-        reminderLeadMinutes = if (normalizedLocalReminder) reminderLeadMinutes else 0,
+        reminderLeadMinutes = if (normalizedLocalReminder) {
+            reminderLeadMinutes.filter { it >= 0 }.toSet()
+        } else {
+            emptySet()
+        },
         repeatRule = normalizedRepeat,
         repeatInterval = if (normalizedRepeat == RepeatRule.None) 1 else repeatInterval.coerceAtLeast(1),
         repeatWeekdays = if (normalizedRepeat == RepeatRule.Weekly) {
@@ -101,6 +106,31 @@ fun TaskFormState.normalizedTimeSettings(): TaskFormState {
             emptySet()
         }
     )
+}
+
+/**
+ * The scheduled lead minutes for a task: the primary stored value plus any
+ * extra lead times, valid only when the local reminder is enabled. An empty
+ * set means no reminder is scheduled.
+ */
+fun effectiveReminderLeadMinutes(
+    useLocalReminder: Boolean,
+    primaryLeadMinutes: Int,
+    extraLeadMinutes: Set<Int>
+): Set<Int> {
+    if (!useLocalReminder) return emptySet()
+    return (setOf(primaryLeadMinutes) + extraLeadMinutes.filter { it >= 0 }).toSet()
+}
+
+/**
+ * Splits a selected lead set into its persisted form: the smallest lead time
+ * stays in the primary INTEGER column, the rest go to the extras column. An
+ * empty selection persists as the on-time default (primary 0, no extras).
+ */
+fun reminderLeadSetToStorage(leadMinutes: Set<Int>): Pair<Int, Set<Int>> {
+    if (leadMinutes.isEmpty()) return Pair(0, emptySet())
+    val primary = leadMinutes.filter { it >= 0 }.minOrNull() ?: 0
+    return Pair(primary, (leadMinutes - primary).filter { it >= 0 }.toSet())
 }
 
 data class TaskUiModel(
@@ -114,7 +144,7 @@ data class TaskUiModel(
     val calendarEventId: Long?,
     val useAlarm: Boolean,
     val useLocalReminder: Boolean = false,
-    val reminderLeadMinutes: Int = 0,
+    val reminderLeadMinutes: Set<Int> = emptySet(),
     val repeatRule: RepeatRule,
     val repeatInterval: Int = 1,
     val repeatWeekdays: Set<Int> = emptySet(),
@@ -138,7 +168,7 @@ fun TaskEntity.toUiModel(): TaskUiModel {
         calendarEventId = calendarEventId,
         useAlarm = useAlarm,
         useLocalReminder = useLocalReminder,
-        reminderLeadMinutes = reminderLeadMinutes,
+        reminderLeadMinutes = effectiveReminderLeadMinutes(useLocalReminder, reminderLeadMinutes, reminderLeadExtraMinutes),
         repeatRule = repeatRule,
         repeatInterval = repeatInterval,
         repeatWeekdays = repeatWeekdays,

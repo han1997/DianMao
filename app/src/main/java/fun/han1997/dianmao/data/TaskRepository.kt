@@ -34,6 +34,7 @@ class TaskRepository(context: Context) {
         val normalizedForm = form.normalizedTimeSettings()
         val now = System.currentTimeMillis()
         val dueAtMillis = dueAtMillis(normalizedForm)
+        val (primaryLead, extraLeads) = reminderLeadSetToStorage(normalizedForm.reminderLeadMinutes)
         val entity = TaskEntity(
             title = normalizedForm.title.trim(),
             detail = normalizedForm.detail?.trim()?.takeIf { it.isNotEmpty() },
@@ -43,7 +44,8 @@ class TaskRepository(context: Context) {
             useCalendar = normalizedForm.useCalendar && dueAtMillis != null,
             useAlarm = normalizedForm.useAlarm && dueAtMillis != null,
             useLocalReminder = normalizedForm.useLocalReminder && dueAtMillis != null,
-            reminderLeadMinutes = normalizedForm.reminderLeadMinutes,
+            reminderLeadMinutes = primaryLead,
+            reminderLeadExtraMinutes = extraLeads,
             repeatRule = normalizedForm.repeatRule,
             repeatInterval = normalizedForm.repeatInterval,
             repeatWeekdays = normalizedForm.repeatWeekdays,
@@ -61,6 +63,7 @@ class TaskRepository(context: Context) {
         val existing = dao.findById(taskId) ?: return null
         val normalizedForm = form.normalizedTimeSettings()
         val dueAtMillis = dueAtMillis(normalizedForm)
+        val (primaryLead, extraLeads) = reminderLeadSetToStorage(normalizedForm.reminderLeadMinutes)
         val updated = existing.copy(
             title = normalizedForm.title.trim(),
             detail = normalizedForm.detail?.trim()?.takeIf { it.isNotEmpty() },
@@ -70,7 +73,8 @@ class TaskRepository(context: Context) {
             useCalendar = normalizedForm.useCalendar && dueAtMillis != null,
             useAlarm = normalizedForm.useAlarm && dueAtMillis != null,
             useLocalReminder = normalizedForm.useLocalReminder && dueAtMillis != null,
-            reminderLeadMinutes = normalizedForm.reminderLeadMinutes,
+            reminderLeadMinutes = primaryLead,
+            reminderLeadExtraMinutes = extraLeads,
             repeatRule = normalizedForm.repeatRule,
             repeatInterval = normalizedForm.repeatInterval,
             repeatWeekdays = normalizedForm.repeatWeekdays,

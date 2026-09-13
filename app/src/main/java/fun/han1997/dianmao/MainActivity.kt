@@ -328,7 +328,7 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
             try {
                 repository.completeSilently(target)
                 if (target.useLocalReminder && target.dueAtMillis != null) {
-                    scheduler.cancel(target.id)
+                    scheduler.cancel(target.id, target.reminderLeadMinutes)
                     if (target.repeatRule != RepeatRule.None) {
                         scheduler.schedule(target)
                     }
@@ -777,7 +777,7 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
                             val sideEffectFailures = mutableListOf<String>()
                             if (previousTask != null) {
                                 try {
-                                    scheduler.cancel(previousTask.id)
+                                    scheduler.cancel(previousTask.id, previousTask.reminderLeadMinutes)
                                 } catch (error: Exception) {
                                     if (error is CancellationException) throw error
                                     sideEffectFailures += "旧提醒清理失败"
@@ -989,7 +989,7 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
                         // Completing a non-recurring task settles it — drop the
                         // pending local reminder; recurring tasks reschedule.
                         if (!task.completed) {
-                            scheduler.cancel(task.id)
+                            scheduler.cancel(task.id, task.reminderLeadMinutes)
                             if (updated != null && updated.useLocalReminder && updated.dueAtMillis != null) {
                                 scheduler.schedule(updated.toUiModel())
                             }
@@ -1011,11 +1011,11 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
             onDismiss = { taskForDelete = null },
             onConfirm = {
                 scope.launch {
-                    try {
-                        scheduler.cancel(task.id)
-                        // Remove immediately so the row disappears, then wait
-                        // for the undo window before making it permanent.
-                        val removed = repository.deleteTask(task.id)
+                try {
+                    scheduler.cancel(task.id, task.reminderLeadMinutes)
+                    // Remove immediately so the row disappears, then wait
+                    // for the undo window before making it permanent.
+                    val removed = repository.deleteTask(task.id)
                         val result = snackbarHostState.showSnackbar(
                             message = "事项已删除",
                             actionLabel = "撤销",

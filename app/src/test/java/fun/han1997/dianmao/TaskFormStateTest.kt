@@ -99,4 +99,23 @@ class TaskFormStateTest {
 
         assertTrue(daily.repeatWeekdays.isEmpty())
     }
+
+    @Test
+    fun reminderLeadMinutesAreOnlyKeptForEnabledLocalReminder() {
+        val disabled = TaskFormState(
+            dueDateMillis = 1_000L,
+            useLocalReminder = false,
+            reminderLeadMinutes = setOf(5, 1440)
+        ).normalizedTimeSettings()
+
+        assertTrue(disabled.reminderLeadMinutes.isEmpty())
+
+        val enabled = TaskFormState(
+            dueDateMillis = 1_000L,
+            useLocalReminder = true,
+            reminderLeadMinutes = setOf(5, 1440, -1)
+        ).normalizedTimeSettings()
+
+        assertEquals(setOf(5, 1440), enabled.reminderLeadMinutes)
+    }
 }

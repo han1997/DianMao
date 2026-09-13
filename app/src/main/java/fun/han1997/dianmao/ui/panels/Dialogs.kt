@@ -28,6 +28,7 @@ import androidx.compose.material.icons.rounded.EditNote
 import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.Repeat
 import androidx.compose.material.icons.rounded.Replay
+import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -432,5 +433,79 @@ private fun weekdayChipLabel(isoDay: Int): String {
         5 -> "五"
         6 -> "六"
         else -> "日"
+    }
+}
+
+/**
+ * Branded multi-select picker for a task's reminder lead times, replacing the
+ * old single-select dropdown. Confirms the full selection in one shot; an
+ * empty selection confirms as the on-time default.
+ */
+@Composable
+internal fun ReminderLeadPickerDialog(
+    selectedLeadMinutes: Set<Int>,
+    onDismiss: () -> Unit,
+    onConfirm: (Set<Int>) -> Unit
+) {
+    var selection by rememberSaveable {
+        mutableStateOf(selectedLeadMinutes.filter { it >= 0 }.toSet())
+    }
+
+    fun confirm() {
+        onConfirm(if (selection.isEmpty()) setOf(0) else selection)
+    }
+
+    QuietDialogContainer(
+        onDismiss = onDismiss,
+        title = "提醒提前量",
+        leadingIcon = Icons.Rounded.Schedule,
+        leadingIconTint = MaterialTheme.colorScheme.secondary,
+        actions = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+            TextButton(onClick = { confirm() }) {
+                Text("确定")
+            }
+        }
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            ReminderLeadOption.entries.forEach { option ->
+                val selected = option.minutes in selection
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 44.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .clickable(role = Role.Button) {
+                            selection = if (selected) selection - option.minutes else selection + option.minutes
+                        }
+                        .padding(horizontal = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    if (selected) {
+                        Icon(
+                            imageVector = Icons.Rounded.Check,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    } else {
+                        Spacer(Modifier.size(18.dp))
+                    }
+                    Text(
+                        text = option.label,
+                        style = MaterialTheme.typography.bodyLarge.copy(letterSpacing = 0.sp),
+                        fontWeight = if (selected) FontWeight.Medium else FontWeight.Normal,
+                        color = if (selected) {
+                            MaterialTheme.colorScheme.onSurface
+                        } else {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+                    )
+                }
+            }
+        }
     }
 }

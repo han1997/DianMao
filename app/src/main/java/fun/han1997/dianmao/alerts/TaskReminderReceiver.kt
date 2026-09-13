@@ -21,6 +21,7 @@ class TaskReminderReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         val title = intent.getStringExtra(EXTRA_TITLE).orEmpty()
         val taskId = intent.getLongExtra(EXTRA_TASK_ID, 0L)
+        val leadMinutes = intent.getIntExtra(EXTRA_LEAD_MINUTES, 0)
         val contentIntent = PendingIntent.getActivity(
             context,
             taskId.hashCode(),
@@ -41,7 +42,7 @@ class TaskReminderReceiver : BroadcastReceiver() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
         ) {
-            NotificationManagerCompat.from(context).notify(taskId.hashCode(), notification)
+            NotificationManagerCompat.from(context).notify(reminderRequestCode(taskId, leadMinutes), notification)
         }
 
         // Recurring tasks advance to their next cycle after the reminder fires.
@@ -59,5 +60,6 @@ class TaskReminderReceiver : BroadcastReceiver() {
     companion object {
         const val EXTRA_TITLE = "extra_title"
         const val EXTRA_TASK_ID = "extra_task_id"
+        const val EXTRA_LEAD_MINUTES = "extra_lead_minutes"
     }
 }
