@@ -13,6 +13,7 @@ import `fun`.han1997.dianmao.data.TaskRepository
 import `fun`.han1997.dianmao.data.TaskEntity
 import `fun`.han1997.dianmao.data.TaskUiModel
 import `fun`.han1997.dianmao.data.toUiModel
+import java.time.ZoneId
 import `fun`.han1997.dianmao.TaskRow
 import `fun`.han1997.dianmao.rememberDragDropListState
 import `fun`.han1997.dianmao.HomeSmartView
@@ -177,12 +178,20 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
     val snackbarHostState = remember { SnackbarHostState() }
     val activeTasks by repository.activeTasks.collectAsState(initial = emptyList())
     val archivedTasks by repository.archivedTasks.collectAsState(initial = emptyList())
+    val completionsWithTask by repository.completionsWithTask.collectAsState(initial = emptyList())
+    val nowMillis = remember { System.currentTimeMillis() }
+    val zoneId = remember { ZoneId.systemDefault() }
+    val reviewEvents = remember(completionsWithTask, activeTasks, archivedTasks) {
+        buildReviewCompletionEvents(completionsWithTask, activeTasks + archivedTasks)
+    }
+    val reviewStats = remember(reviewEvents) { buildReviewStats(reviewEvents, nowMillis, zoneId) }
 
     var activePriority by rememberSaveable { mutableStateOf<TaskPriority?>(null) }
     var showAddSheet by rememberSaveable { mutableStateOf(false) }
     var showBackupPanel by rememberSaveable { mutableStateOf(false) }
     var backupSyncInProgress by remember { mutableStateOf(false) }
     var showArchivedPanel by rememberSaveable { mutableStateOf(false) }
+    var showReviewPanel by rememberSaveable { mutableStateOf(false) }
     var taskForNote by remember { mutableStateOf<TaskUiModel?>(null) }
     var taskForEdit by remember { mutableStateOf<TaskUiModel?>(null) }
     var taskForHistory by remember { mutableStateOf<TaskUiModel?>(null) }
@@ -395,6 +404,7 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
     val backTarget = resolveInAppBackTarget(
         showBackupPanel = showBackupPanel,
         showArchivedPanel = showArchivedPanel,
+        showReviewPanel = showReviewPanel,
         isTaskPanelVisible = isTaskPanelVisible,
         hasActivePriority = activePriority != null,
         taskForDetail = taskForDetail != null
@@ -404,6 +414,7 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
         when (backTarget) {
             InAppBackTarget.BackupPanel -> showBackupPanel = false
             InAppBackTarget.ArchivedPanel -> showArchivedPanel = false
+            InAppBackTarget.ReviewPanel -> showReviewPanel = false
             InAppBackTarget.TaskPanel -> dismissTaskPanel()
             InAppBackTarget.TaskDetail -> taskForDetail = null
             InAppBackTarget.QuadrantDetail -> activePriority = null
@@ -421,7 +432,7 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
                 // overlay panel is open — the FAB lives above the content
                 // layer and would otherwise float over the panel.
                 if (taskForDetail == null &&
-                    !showBackupPanel && !showArchivedPanel && !isTaskPanelVisible
+                    !showBackupPanel && !showArchivedPanel && !showReviewPanel && !isTaskPanelVisible
                 ) {
                     FloatingActionButton(
                         onClick = { showAddSheet = true },
@@ -474,6 +485,9 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
                             },
                             onOpenArchived = {
                                 showArchivedPanel = true
+                            },
+                            onOpenReview = {
+                                showReviewPanel = true
                             }
                         )
                         HomeSmartViewSwitcher(
@@ -983,6 +997,12 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
                             }
                         }
                     }
+                )
+                ReviewScreen(
+                    events = reviewEvents,
+                    stats = reviewStats,
+                    onBack = { showReviewPanel = false },
+                    visible = showReviewPanel
                 )
                 ArchivedPanel(
                     visible = showArchivedPanel,

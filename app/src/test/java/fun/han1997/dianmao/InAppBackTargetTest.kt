@@ -10,6 +10,7 @@ class InAppBackTargetTest {
         val target = resolveInAppBackTarget(
             showBackupPanel = true,
             showArchivedPanel = true,
+            showReviewPanel = true,
             isTaskPanelVisible = true,
             hasActivePriority = true,
             taskForDetail = true
@@ -19,10 +20,11 @@ class InAppBackTargetTest {
     }
 
     @Test
-    fun archivedPanelTakesPriorityOverTaskPanelAndDetail() {
+    fun archivedPanelTakesPriorityOverReviewPanelAndBelow() {
         val target = resolveInAppBackTarget(
             showBackupPanel = false,
             showArchivedPanel = true,
+            showReviewPanel = true,
             isTaskPanelVisible = true,
             hasActivePriority = true,
             taskForDetail = true
@@ -32,10 +34,25 @@ class InAppBackTargetTest {
     }
 
     @Test
+    fun reviewPanelTakesPriorityOverTaskPanelAndBelow() {
+        val target = resolveInAppBackTarget(
+            showBackupPanel = false,
+            showArchivedPanel = false,
+            showReviewPanel = true,
+            isTaskPanelVisible = true,
+            hasActivePriority = true,
+            taskForDetail = true
+        )
+
+        assertEquals(InAppBackTarget.ReviewPanel, target)
+    }
+
+    @Test
     fun taskPanelTakesPriorityOverTaskDetailAndQuadrantDetail() {
         val target = resolveInAppBackTarget(
             showBackupPanel = false,
             showArchivedPanel = false,
+            showReviewPanel = false,
             isTaskPanelVisible = true,
             hasActivePriority = true,
             taskForDetail = true
@@ -49,6 +66,7 @@ class InAppBackTargetTest {
         val target = resolveInAppBackTarget(
             showBackupPanel = false,
             showArchivedPanel = false,
+            showReviewPanel = false,
             isTaskPanelVisible = false,
             hasActivePriority = true,
             taskForDetail = true
@@ -62,6 +80,7 @@ class InAppBackTargetTest {
         val target = resolveInAppBackTarget(
             showBackupPanel = false,
             showArchivedPanel = false,
+            showReviewPanel = false,
             isTaskPanelVisible = false,
             hasActivePriority = true,
             taskForDetail = false
@@ -75,6 +94,7 @@ class InAppBackTargetTest {
         val target = resolveInAppBackTarget(
             showBackupPanel = false,
             showArchivedPanel = false,
+            showReviewPanel = false,
             isTaskPanelVisible = false,
             hasActivePriority = false,
             taskForDetail = false

@@ -16,6 +16,7 @@ internal enum class InAppBackTarget {
     TaskDetail,
     BackupPanel,
     ArchivedPanel,
+    ReviewPanel,
     TaskPanel,
     QuadrantDetail
 }
@@ -241,6 +242,7 @@ internal val TimeFocusKind.rank: Int
 internal fun resolveInAppBackTarget(
     showBackupPanel: Boolean,
     showArchivedPanel: Boolean,
+    showReviewPanel: Boolean,
     isTaskPanelVisible: Boolean,
     hasActivePriority: Boolean,
     taskForDetail: Boolean
@@ -248,6 +250,7 @@ internal fun resolveInAppBackTarget(
     return when {
         showBackupPanel -> InAppBackTarget.BackupPanel
         showArchivedPanel -> InAppBackTarget.ArchivedPanel
+        showReviewPanel -> InAppBackTarget.ReviewPanel
         isTaskPanelVisible -> InAppBackTarget.TaskPanel
         taskForDetail -> InAppBackTarget.TaskDetail
         hasActivePriority -> InAppBackTarget.QuadrantDetail

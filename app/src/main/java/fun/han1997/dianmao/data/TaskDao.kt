@@ -82,6 +82,16 @@ interface TaskCompletionDao {
     @Query("SELECT * FROM task_completions ORDER BY taskId ASC, completedAtMillis DESC")
     suspend fun findAll(): List<TaskCompletionEntity>
 
+    @Query(
+        """
+        SELECT tc.taskId AS taskId, tc.completedAtMillis AS completedAtMillis, tc.note AS note,
+               t.title AS taskTitle, t.quadrant AS taskQuadrant
+        FROM task_completions tc INNER JOIN tasks t ON tc.taskId = t.id
+        ORDER BY tc.completedAtMillis DESC
+        """
+    )
+    fun observeCompletionsWithTask(): Flow<List<CompletionWithTask>>
+
     @Insert
     suspend fun insertAll(completions: List<TaskCompletionEntity>)
 }

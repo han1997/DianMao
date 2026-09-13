@@ -199,3 +199,12 @@ data class TaskCompletionEntity(
     val completedAtMillis: Long,
     val note: String?
 )
+
+/** Review-view projection: one completion joined with its task's title/quadrant. */
+data class CompletionWithTask(
+    val taskId: Long,
+    val completedAtMillis: Long,
+    val note: String?,
+    val taskTitle: String,
+    val taskQuadrant: QuadrantType
+)

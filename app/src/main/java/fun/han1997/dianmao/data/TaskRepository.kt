@@ -24,6 +24,8 @@ class TaskRepository(context: Context) {
         list.map { it.toUiModel() }
     }
 
+    val completionsWithTask: Flow<List<CompletionWithTask>> = db.taskCompletionDao().observeCompletionsWithTask()
+
     suspend fun seedIfEmpty(items: List<TaskEntity>) {
         if (dao.countTasks() == 0L) {
             dao.insertAll(items)

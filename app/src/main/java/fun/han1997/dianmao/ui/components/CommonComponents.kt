@@ -4,6 +4,7 @@ import `fun`.han1997.dianmao.data.TaskPriority
 import `fun`.han1997.dianmao.quietBorder
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -29,6 +30,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -258,11 +260,25 @@ internal fun InlineStatDot(count: Int, label: String, color: Color) {
 }
 
 @Composable
-internal fun SummaryPill(value: String, label: String, color: Color, modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier
+internal fun SummaryPill(
+    value: String,
+    label: String,
+    color: Color,
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
+) {
+    val pillModifier = if (onClick != null) {
+        modifier
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.34f), ChipShape)
-            .padding(horizontal = 7.dp, vertical = 4.dp),
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = 7.dp, vertical = 4.dp)
+    } else {
+        modifier
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.34f), ChipShape)
+            .padding(horizontal = 7.dp, vertical = 4.dp)
+    }
+    Row(
+        modifier = pillModifier,
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {

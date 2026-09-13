@@ -116,7 +116,8 @@ internal fun AppHeader(
     onSearchToggle: () -> Unit,
     onQueryChanged: (String) -> Unit,
     onOpenBackup: () -> Unit,
-    onOpenArchived: () -> Unit
+    onOpenArchived: () -> Unit,
+    onOpenReview: () -> Unit
 ) {
     val openTasks = remember(tasks) { tasks.count { !it.completed } }
     val timedTasks = remember(tasks) { tasks.count { !it.completed && (it.useAlarm || it.useCalendar) } }
@@ -170,7 +171,12 @@ internal fun AppHeader(
         ) {
             SummaryPill(value = openTasks.toString(), label = "未完成", color = MaterialTheme.colorScheme.primary)
             SummaryPill(value = timedTasks.toString(), label = "定时", color = MaterialTheme.colorScheme.secondary)
-            SummaryPill(value = completedTasks.toString(), label = "已复盘", color = TaskPriority.NotImportantNotUrgent.color)
+            SummaryPill(
+                value = completedTasks.toString(),
+                label = "已复盘",
+                color = TaskPriority.NotImportantNotUrgent.color,
+                onClick = onOpenReview
+            )
         }
         AnimatedVisibility(
             visible = searchVisible,

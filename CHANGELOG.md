@@ -1,5 +1,13 @@
 # Changelog
 
+- Added the review surface ("复盘"): tapping the home header's 已复盘 pill
+  opens a full-screen review page aggregating completion data — 7/30-day
+  completion totals, the last 7 days' distribution as quiet inline bars,
+  quadrant share over the last 30 days, and the most recent completions with
+  their notes (recurring per-cycle completions joined with non-recurring
+  tasks' last completions). The review panel joins the in-app back priority
+  chain; the room DAO gains a cross-task completions-with-task JOIN query.
+
 - Added WebDAV auto backup: a backup-panel switch (default off) makes the app
   upload the latest data to the configured WebDAV directory on launch, at most
   once per day. Failed attempts stay silent and retry on the next start; the
