@@ -14,12 +14,13 @@
 
 ```kotlin
 // State resolver (composition time)
-// NOTE: the live signature now includes taskForDetail and returns null
-// (not None) when no layer can consume back — see InAppBackTarget enum
-// in MainActivity.kt. Update this spec when the signature changes again.
+// NOTE: the live signature now includes taskForDetail and showReviewPanel and
+// returns null (not None) when no layer can consume back — see InAppBackTarget
+// enum in ui/logic/HomeModels.kt. Update this spec when the signature changes again.
 fun resolveInAppBackTarget(
     showBackupPanel: Boolean,
     showArchivedPanel: Boolean,
+    showReviewPanel: Boolean,
     isTaskPanelVisible: Boolean,
     hasActivePriority: Boolean,
     taskForDetail: Boolean
@@ -47,7 +48,7 @@ BackHandler(enabled = backTarget != null) {
 - Dismiss operations must mutate the original state variables
 - Type: `Boolean` flags or sealed class states that trigger recomposition
 
-**Priority order (current, 2026-09)**: BackupPanel > ArchivedPanel > TaskPanel > TaskDetail > QuadrantDetail > null. `TaskDetail` was added when the task detail surface became a back-consuming layer; any new back-capable layer must be inserted into the enum, the resolver `when`, the dispatch `when`, and `InAppBackTargetTest` in the same change.
+**Priority order (current, 2026-09)**: BackupPanel > ArchivedPanel > ReviewPanel > TaskPanel > TaskDetail > QuadrantDetail > null. `TaskDetail` was added when the task detail surface became a back-consuming layer; `ReviewPanel` was added with the review surface (2026-09). Any new back-capable layer must be inserted into the enum, the resolver `when`, the dispatch `when`, and `InAppBackTargetTest` in the same change.
 
 ### 4. Validation & Error Matrix
 
@@ -204,6 +205,7 @@ enum class InAppBackTarget {
     TaskDetail,
     BackupPanel,
     ArchivedPanel,
+    ReviewPanel,
     TaskPanel,
     QuadrantDetail
 }
@@ -211,6 +213,7 @@ enum class InAppBackTarget {
 fun resolveInAppBackTarget(
     showBackupPanel: Boolean,
     showArchivedPanel: Boolean,
+    showReviewPanel: Boolean,
     isTaskPanelVisible: Boolean,
     hasActivePriority: Boolean,
     taskForDetail: Boolean
@@ -218,6 +221,7 @@ fun resolveInAppBackTarget(
     return when {
         showBackupPanel -> InAppBackTarget.BackupPanel
         showArchivedPanel -> InAppBackTarget.ArchivedPanel
+        showReviewPanel -> InAppBackTarget.ReviewPanel
         isTaskPanelVisible -> InAppBackTarget.TaskPanel
         taskForDetail -> InAppBackTarget.TaskDetail
         hasActivePriority -> InAppBackTarget.QuadrantDetail
