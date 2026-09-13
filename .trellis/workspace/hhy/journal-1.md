@@ -1852,3 +1852,37 @@ Paw-print quadrant adaptive icon (foreground + monochrome), DESIGN.md updated, v
 ### Next Steps
 
 - None - task complete
+
+
+## Session 55: Repeat rules enhancement
+
+**Date**: 2026-09-13
+**Task**: Repeat rules enhancement
+**Branch**: `master`
+
+### Summary
+
+Yearly/custom-interval/weekday repeat rules with decoupled due-date gate, branded repeat picker dialog, dynamic repeat labels, RRULE INTERVAL/BYDAY/YEARLY support, Room v12 migration, backup format v6; version bumped to 1.0.3
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2f219ad` | (see git log) |
+| `01ac1db` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
