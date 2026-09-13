@@ -1,6 +1,8 @@
 package `fun`.han1997.dianmao
 
+import `fun`.han1997.dianmao.backup.AutoBackupSettings
 import `fun`.han1997.dianmao.backup.WebDavSettings
+import `fun`.han1997.dianmao.backup.autoBackupStatusText
 import `fun`.han1997.dianmao.backup.resolveBackupFileUrl
 import `fun`.han1997.dianmao.data.DateTimeFormatters
 import `fun`.han1997.dianmao.data.TaskUiModel
@@ -72,12 +74,14 @@ import androidx.compose.runtime.setValue
 internal fun BackupPanel(
     visible: Boolean,
     initialSettings: WebDavSettings,
+    autoBackupSettings: AutoBackupSettings,
     onDismiss: () -> Unit,
     onLocalExport: () -> Unit,
     onLocalImport: () -> Unit,
     onSaveWebDav: (WebDavSettings) -> Unit,
     onUploadWebDav: (WebDavSettings) -> Unit,
     onRestoreWebDav: (WebDavSettings) -> Unit,
+    onToggleAutoBackup: (Boolean) -> Unit,
     syncInProgress: Boolean = false
 ) {
     var url by rememberSaveable { mutableStateOf(initialSettings.url) }
@@ -352,6 +356,35 @@ internal fun BackupPanel(
                                 )
                                 Spacer(Modifier.width(6.dp))
                                 Text("下载恢复")
+                            }
+                        }
+
+                        FormSettingBlock(title = "自动备份", subtitle = "启动应用时自动上传到 WebDAV，最多每天一次") {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    verticalArrangement = Arrangement.spacedBy(3.dp)
+                                ) {
+                                    Text(
+                                        text = if (autoBackupSettings.enabled) "自动备份已开启" else "开启自动备份",
+                                        style = MaterialTheme.typography.bodyLarge.copy(letterSpacing = 0.sp),
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = autoBackupStatusText(autoBackupSettings, webDavReady),
+                                        style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 0.sp),
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.mutedText),
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                                QuietSwitch(
+                                    checked = autoBackupSettings.enabled,
+                                    onCheckedChange = onToggleAutoBackup
+                                )
                             }
                         }
                     }

@@ -3,8 +3,10 @@ package `fun`.han1997.dianmao
 import `fun`.han1997.dianmao.alerts.ReminderScheduler
 import `fun`.han1997.dianmao.alerts.TaskNotificationChannels
 import `fun`.han1997.dianmao.alerts.TaskReminderReceiver
+import `fun`.han1997.dianmao.backup.AutoBackupSettings
 import `fun`.han1997.dianmao.backup.BackupSettingsStore
 import `fun`.han1997.dianmao.backup.WebDavBackupClient
+import `fun`.han1997.dianmao.backup.shouldAutoBackupNow
 import `fun`.han1997.dianmao.data.RepeatRule
 import `fun`.han1997.dianmao.data.TaskPriority
 import `fun`.han1997.dianmao.data.TaskRepository
@@ -233,6 +235,31 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
         onDispose { MainActivity.currentComposeTaskId = null }
     }
     var webDavSettings by remember { mutableStateOf(backupSettingsStore.loadWebDavSettings()) }
+    var autoBackupSettings by remember { mutableStateOf(backupSettingsStore.loadAutoBackupSettings()) }
+
+    // Auto backup: on app start, upload the latest data to WebDAV when the
+    // daily interval has elapsed (or the last attempt failed). Silent — a
+    // failed attempt retries on the next start.
+    LaunchedEffect(Unit) {
+        val webDav = backupSettingsStore.loadWebDavSettings()
+        if (!shouldAutoBackupNow(
+                enabled = autoBackupSettings.enabled,
+                webDavConfigured = webDav.isConfigured,
+                lastAutoBackupAtMillis = autoBackupSettings.lastAutoBackupAtMillis,
+                lastAutoBackupSucceeded = autoBackupSettings.lastAutoBackupSucceeded
+            )
+        ) {
+            return@LaunchedEffect
+        }
+        try {
+            webDavClient.upload(webDav, repository.exportBackupJson())
+            backupSettingsStore.recordAutoBackupResult(System.currentTimeMillis(), true)
+        } catch (error: Exception) {
+            if (error is CancellationException) throw error
+            backupSettingsStore.recordAutoBackupResult(System.currentTimeMillis(), false)
+        }
+        autoBackupSettings = backupSettingsStore.loadAutoBackupSettings()
+    }
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { }
@@ -898,8 +925,13 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
                 BackupPanel(
                     visible = showBackupPanel,
                     initialSettings = webDavSettings,
+                    autoBackupSettings = autoBackupSettings,
                     syncInProgress = backupSyncInProgress,
                     onDismiss = { showBackupPanel = false },
+                    onToggleAutoBackup = { enabled ->
+                        backupSettingsStore.saveAutoBackupEnabled(enabled)
+                        autoBackupSettings = backupSettingsStore.loadAutoBackupSettings()
+                    },
                     onLocalExport = {
                         localBackupExportLauncher.launch(defaultBackupFileName())
                     },

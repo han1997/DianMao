@@ -1,5 +1,11 @@
 # Changelog
 
+- Added WebDAV auto backup: a backup-panel switch (default off) makes the app
+  upload the latest data to the configured WebDAV directory on launch, at most
+  once per day. Failed attempts stay silent and retry on the next start; the
+  panel shows the last auto-backup time and result. Manual upload/restore and
+  the WebDAV transport layer are unchanged — no new dependencies.
+
 - Extended 到点提醒 to multiple lead times: a task can now fire at several
   points at once (e.g. 准时 + 提前 5 分钟 + 提前 1 天) — the 提前量 dropdown
   became a branded multi-select dialog, each lead time schedules its own exact
