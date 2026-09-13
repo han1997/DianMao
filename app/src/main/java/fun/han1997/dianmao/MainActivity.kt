@@ -13,6 +13,7 @@ import `fun`.han1997.dianmao.data.TaskRepository
 import `fun`.han1997.dianmao.data.TaskEntity
 import `fun`.han1997.dianmao.data.TaskUiModel
 import `fun`.han1997.dianmao.data.toUiModel
+import `fun`.han1997.dianmao.widget.refreshHomeWidget
 import java.time.ZoneId
 import `fun`.han1997.dianmao.TaskRow
 import `fun`.han1997.dianmao.rememberDragDropListState
@@ -137,7 +138,10 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             DianMaoTheme {
-                DianMaoApp(initialTaskId = extractReminderTaskId(intent))
+                DianMaoApp(
+                    initialTaskId = extractReminderTaskId(intent),
+                    initialOpenAdd = extractOpenAdd(intent)
+                )
             }
         }
     }
@@ -150,6 +154,10 @@ class MainActivity : ComponentActivity() {
             intent.removeExtra(TaskReminderReceiver.EXTRA_TASK_ID)
             currentComposeTaskId?.invoke(taskId)
         }
+        if (extractOpenAdd(intent)) {
+            intent.removeExtra(EXTRA_OPEN_ADD)
+            currentComposeOpenAdd?.invoke()
+        }
     }
 
     private fun extractReminderTaskId(intent: Intent?): Long? {
@@ -158,17 +166,27 @@ class MainActivity : ComponentActivity() {
         return if (id > 0L) id else null
     }
 
+    private fun extractOpenAdd(intent: Intent?): Boolean {
+        return intent?.getBooleanExtra(EXTRA_OPEN_ADD, false) == true
+    }
+
     companion object {
         // Set from composition so onNewIntent can forward deep-link task ids
-        // into the Compose tree without a shared ViewModel.
+        // and quick-add requests into the Compose tree without a shared
+        // ViewModel.
         @Volatile
         var currentComposeTaskId: ((Long) -> Unit)? = null
+
+        @Volatile
+        var currentComposeOpenAdd: (() -> Unit)? = null
+
+        const val EXTRA_OPEN_ADD = "extra_open_add"
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-private fun DianMaoApp(initialTaskId: Long? = null) {
+private fun DianMaoApp(initialTaskId: Long? = null, initialOpenAdd: Boolean = false) {
     val context = LocalContext.current
     val repository = remember(context) { TaskRepository(context.applicationContext) }
     val scheduler = remember(context) { ReminderScheduler(context.applicationContext) }
@@ -241,7 +259,32 @@ private fun DianMaoApp(initialTaskId: Long? = null) {
         MainActivity.currentComposeTaskId = { linkId -> pendingDeepLinkTaskId = linkId }
     }
     DisposableEffect(Unit) {
-        onDispose { MainActivity.currentComposeTaskId = null }
+        onDispose {
+            MainActivity.currentComposeTaskId = null
+            MainActivity.currentComposeOpenAdd = null
+        }
+    }
+
+    // Quick-add deep link (home-screen widget): open the add sheet once the
+    // base surface is up. Cold start passes the flag through initialOpenAdd;
+    // warm start forwards it from onNewIntent via the activity callback.
+    var pendingOpenAdd by remember { mutableStateOf(initialOpenAdd) }
+    LaunchedEffect(pendingOpenAdd) {
+        if (pendingOpenAdd) {
+            showAddSheet = true
+            pendingOpenAdd = false
+        }
+    }
+    LaunchedEffect(Unit) {
+        MainActivity.currentComposeOpenAdd = { pendingOpenAdd = true }
+    }
+
+    // Refresh the home-screen widget whenever the active task data changes,
+    // so its today list always matches the current data (add/complete/delete
+    // all land here). The system's own 30-minute update period is the
+    // safety net for changes outside the app.
+    LaunchedEffect(activeTasks) {
+        refreshHomeWidget(context)
     }
     var webDavSettings by remember { mutableStateOf(backupSettingsStore.loadWebDavSettings()) }
     var autoBackupSettings by remember { mutableStateOf(backupSettingsStore.loadAutoBackupSettings()) }

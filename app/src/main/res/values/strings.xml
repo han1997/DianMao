@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">DianMao</string>
+    <string name="widget_description">今日待办速览与快速记录</string>
 </resources>

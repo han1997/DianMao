@@ -1,5 +1,12 @@
 # Changelog
 
+- Added a home-screen widget (Glance): a warm-paper "DianMao · 今天" card
+  showing up to four of today's open tasks (overdue first, via the existing
+  today smart-view logic), a 记一笔 quick-add action that opens the app with
+  the add sheet focused, and deep links from task rows into the task detail.
+  The widget refreshes whenever the active task data changes plus a 30-minute
+  system period; day/night color pairs match the app's themes.
+
 - Added the review surface ("复盘"): tapping the home header's 已复盘 pill
   opens a full-screen review page aggregating completion data — 7/30-day
   completion totals, the last 7 days' distribution as quiet inline bars,
