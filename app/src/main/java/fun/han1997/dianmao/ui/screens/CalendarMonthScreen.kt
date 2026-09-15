@@ -160,7 +160,8 @@ internal fun CalendarMonthScreen(
                                 if (!cell.inMonth) {
                                     monthStartEpochDay = cell.date.withDayOfMonth(1).toEpochDay()
                                 }
-                            }
+                            },
+                            modifier = Modifier.weight(1f)
                         )
                     }
                 }
@@ -231,7 +232,8 @@ private fun CalendarDayCell(
     isToday: Boolean,
     isSelected: Boolean,
     tasks: List<HomeSmartTaskItem>,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val dotColors = remember(tasks) { tasks.map { it.task.quadrant.color }.distinct() }
     val visibleColors = dotColors.take(3)
@@ -242,8 +244,7 @@ private fun CalendarDayCell(
         else -> MaterialTheme.colorScheme.onSurface
     }
     Box(
-        modifier = Modifier
-            .weight(1f)
+        modifier = modifier
             .height(48.dp)
             .padding(1.dp)
             .clip(DayCellShape)

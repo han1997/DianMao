@@ -128,8 +128,8 @@ class CalendarMonthModelsTest {
         val map = buildCalendarDayMap(
             tasks = listOf(
                 task(id = 1, dueAtMillis = null),
-                task(id = 2, dueAtMillis = millis(nowDate(now)), archived = true),
-                task(id = 3, dueAtMillis = millis(nowDate(now)))
+                task(id = 2, dueAtMillis = millis(nowDate(now), hour = 12), archived = true),
+                task(id = 3, dueAtMillis = millis(nowDate(now), hour = 12))
             ),
             nowMillis = now,
             zoneId = zoneId
