@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 59
-- **Last Active**: 2026-09-13
+- **Total Sessions**: 60
+- **Last Active**: 2026-09-15
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~41 | Active |
+| `journal-2.md` | ~77 | Active |
 | `journal-1.md` | ~1990 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 60 | 2026-09-15 | Feature polish v1.0.8 - batch ops + calendar + widget + notifications | `9109b4f`, `5dfad44`, `fac2099`, `578c705` | `master` |
 | 59 | 2026-09-13 | Home widget | `690f4cc`, `0648ac8` | `master` |
 | 58 | 2026-09-13 | Review stats view | `922364f`, `c838200` | `master` |
 | 57 | 2026-09-13 | Auto backup | `06bc22b`, `38266ed` | `master` |

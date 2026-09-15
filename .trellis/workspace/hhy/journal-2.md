@@ -39,3 +39,39 @@ Glance home-screen widget: today task list (max 4, today smart-view logic), quic
 ### Next Steps
 
 - None - task complete
+
+
+## Session 60: Feature polish v1.0.8 - batch ops + calendar + widget + notifications
+
+**Date**: 2026-09-15
+**Task**: Feature polish v1.0.8 - batch ops + calendar + widget + notifications
+**Branch**: `master`
+
+### Summary
+
+Completed feature polish v1.0.8: phase 1 notification quick-complete/snooze actions, phase 2 interactive widget (toggle completion + responsive 8-row layout), phase 3 calendar month view (per-day task list, 记一笔 with preset due date), phase 4 batch operations (long-press multi-select with complete/move-quadrant/delete + undo). Version bumped 1.0.7->1.0.8, CHANGELOG/README updated. All checks green (compile, unit tests, assembleDebug, lintDebug). Spec updated with TaskSelection back-target priority.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `9109b4f` | (see git log) |
+| `5dfad44` | (see git log) |
+| `fac2099` | (see git log) |
+| `578c705` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
