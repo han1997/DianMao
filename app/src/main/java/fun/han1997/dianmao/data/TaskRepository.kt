@@ -108,6 +108,10 @@ class TaskRepository(context: Context) {
         return existing
     }
 
+    suspend fun findTaskById(taskId: Long): TaskUiModel? {
+        return dao.findById(taskId)?.toUiModel()
+    }
+
     suspend fun updateCalendarEventId(taskId: Long, calendarEventId: Long?): TaskUiModel? {
         val existing = dao.findById(taskId) ?: return null
         val updated = existing.copy(

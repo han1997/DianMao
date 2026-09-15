@@ -3,6 +3,7 @@ package `fun`.han1997.dianmao
 import `fun`.han1997.dianmao.alerts.ReminderScheduler
 import `fun`.han1997.dianmao.alerts.TaskNotificationChannels
 import `fun`.han1997.dianmao.alerts.TaskReminderReceiver
+import `fun`.han1997.dianmao.alerts.completeTaskSilently
 import `fun`.han1997.dianmao.backup.AutoBackupSettings
 import `fun`.han1997.dianmao.backup.BackupSettingsStore
 import `fun`.han1997.dianmao.backup.WebDavBackupClient
@@ -405,13 +406,7 @@ private fun DianMaoApp(initialTaskId: Long? = null, initialOpenAdd: Boolean = fa
     val completeSilently: (TaskUiModel) -> Unit = { target ->
         scope.launch {
             try {
-                repository.completeSilently(target)
-                if (target.useLocalReminder && target.dueAtMillis != null) {
-                    scheduler.cancel(target.id, target.reminderLeadMinutes)
-                    if (target.repeatRule != RepeatRule.None) {
-                        scheduler.schedule(target)
-                    }
-                }
+                completeTaskSilently(context, target)
                 val result = snackbarHostState.showSnackbar(
                     message = "已完成「${target.title}」",
                     actionLabel = "写心得",

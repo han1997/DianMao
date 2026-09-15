@@ -22,6 +22,7 @@ class TaskReminderReceiver : BroadcastReceiver() {
         val title = intent.getStringExtra(EXTRA_TITLE).orEmpty()
         val taskId = intent.getLongExtra(EXTRA_TASK_ID, 0L)
         val leadMinutes = intent.getIntExtra(EXTRA_LEAD_MINUTES, 0)
+        val isRecurring = intent.getBooleanExtra(EXTRA_IS_RECURRING, false)
         val contentIntent = PendingIntent.getActivity(
             context,
             taskId.hashCode(),
@@ -31,11 +32,40 @@ class TaskReminderReceiver : BroadcastReceiver() {
             },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntentCompatFlags.immutable()
         )
+        val completeLabel = if (isRecurring) "记一次完成" else "完成"
         val notification = NotificationCompat.Builder(context, TaskNotificationChannels.REMINDERS)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("DianMao 提醒")
             .setContentText(title)
             .setContentIntent(contentIntent)
+            .addAction(
+                NotificationCompat.Action(
+                    R.drawable.ic_action_complete,
+                    completeLabel,
+                    reminderActionPendingIntent(
+                        context,
+                        taskId,
+                        title,
+                        leadMinutes,
+                        isRecurring,
+                        ReminderActionKind.Complete
+                    )
+                )
+            )
+            .addAction(
+                NotificationCompat.Action(
+                    R.drawable.ic_action_snooze,
+                    "稍后提醒",
+                    reminderActionPendingIntent(
+                        context,
+                        taskId,
+                        title,
+                        leadMinutes,
+                        isRecurring,
+                        ReminderActionKind.Snooze
+                    )
+                )
+            )
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
             .build()
@@ -61,5 +91,32 @@ class TaskReminderReceiver : BroadcastReceiver() {
         const val EXTRA_TITLE = "extra_title"
         const val EXTRA_TASK_ID = "extra_task_id"
         const val EXTRA_LEAD_MINUTES = "extra_lead_minutes"
+        const val EXTRA_IS_RECURRING = "extra_is_recurring"
     }
+}
+
+private fun reminderActionPendingIntent(
+    context: Context,
+    taskId: Long,
+    title: String,
+    leadMinutes: Int,
+    isRecurring: Boolean,
+    kind: ReminderActionKind
+): PendingIntent {
+    val intent = Intent(context, TaskActionReceiver::class.java).apply {
+        action = when (kind) {
+            ReminderActionKind.Complete -> TaskActionReceiver.ACTION_COMPLETE
+            ReminderActionKind.Snooze -> TaskActionReceiver.ACTION_SNOOZE
+        }
+        putExtra(TaskReminderReceiver.EXTRA_TITLE, title)
+        putExtra(TaskReminderReceiver.EXTRA_TASK_ID, taskId)
+        putExtra(TaskReminderReceiver.EXTRA_LEAD_MINUTES, leadMinutes)
+        putExtra(TaskReminderReceiver.EXTRA_IS_RECURRING, isRecurring)
+    }
+    return PendingIntent.getBroadcast(
+        context,
+        reminderActionRequestCode(taskId, leadMinutes, kind),
+        intent,
+        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntentCompatFlags.immutable()
+    )
 }
