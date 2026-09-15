@@ -3,21 +3,34 @@ package `fun`.han1997.dianmao.widget
 import `fun`.han1997.dianmao.HomeSmartTaskItem
 import `fun`.han1997.dianmao.HomeSmartView
 import `fun`.han1997.dianmao.MainActivity
+import `fun`.han1997.dianmao.R
 import `fun`.han1997.dianmao.alerts.TaskReminderReceiver
+import `fun`.han1997.dianmao.alerts.completeTaskSilently
 import `fun`.han1997.dianmao.buildHomeSmartTaskItems
 import `fun`.han1997.dianmao.data.TaskRepository
+import `fun`.han1997.dianmao.data.TaskUiModel
 import android.content.Context
 import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.LocalSize
+import androidx.glance.ColorFilter
+import androidx.glance.ImageProvider
+import androidx.glance.Image
+import androidx.glance.action.ActionParameters
+import androidx.glance.action.actionParametersOf
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
+import androidx.glance.appwidget.SizeMode
+import androidx.glance.appwidget.action.ActionCallback
+import androidx.glance.appwidget.action.actionRunCallback
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.provideContent
 import androidx.glance.appwidget.updateAll
@@ -30,6 +43,7 @@ import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.padding
+import androidx.glance.layout.size
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
@@ -46,23 +60,25 @@ private val AccentDay = Color(0xFFA94332)
 private val AccentNight = Color(0xFFD98A76)
 
 internal const val WIDGET_TASK_LIMIT = 4
+internal const val WIDGET_WIDE_TASK_LIMIT = 8
+private val WideBreakpoint = 280.dp
 
 class DianMaoHomeWidget : GlanceAppWidget() {
+    override val sizeMode: SizeMode = SizeMode.Responsive(
+        setOf(
+            DpSize(180.dp, 110.dp),
+            DpSize(280.dp, 110.dp)
+        )
+    )
+
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val repository = TaskRepository(context.applicationContext)
         val tasks = repository.activeTasks.first()
         val nowMillis = System.currentTimeMillis()
-        val todayItems = buildHomeSmartTaskItems(
-            tasks = tasks,
-            view = HomeSmartView.Today,
-            query = "",
-            nowMillis = nowMillis,
-            zoneId = ZoneId.systemDefault()
-        ).take(WIDGET_TASK_LIMIT)
 
         provideContent {
             GlanceTheme {
-                DianMaoWidgetContent(todayItems, context)
+                DianMaoWidgetContent(tasks, context, nowMillis)
             }
         }
     }
@@ -101,10 +117,22 @@ private fun openTaskIntent(context: Context, taskId: Long): Intent {
 }
 
 @Composable
-private fun DianMaoWidgetContent(items: List<HomeSmartTaskItem>, context: Context) {
+private fun DianMaoWidgetContent(tasks: List<TaskUiModel>, context: Context, nowMillis: Long) {
     val paper = ColorProvider(PaperDay, PaperNight)
     val ink = ColorProvider(InkDay, InkNight)
     val accent = ColorProvider(AccentDay, AccentNight)
+    val taskLimit = if (LocalSize.current.width >= WideBreakpoint) {
+        WIDGET_WIDE_TASK_LIMIT
+    } else {
+        WIDGET_TASK_LIMIT
+    }
+    val todayItems = buildHomeSmartTaskItems(
+        tasks = tasks,
+        view = HomeSmartView.Today,
+        query = "",
+        nowMillis = nowMillis,
+        zoneId = ZoneId.systemDefault()
+    ).take(taskLimit)
 
     Column(
         modifier = GlanceModifier
@@ -124,19 +152,19 @@ private fun DianMaoWidgetContent(items: List<HomeSmartTaskItem>, context: Contex
             )
             Spacer(modifier = GlanceModifier.defaultWeight())
             Text(
-                text = "${items.size}",
+                text = "${todayItems.size}",
                 style = TextStyle(color = accent, fontSize = 14.sp, fontWeight = FontWeight.Medium)
             )
         }
 
-        if (items.isEmpty()) {
+        if (todayItems.isEmpty()) {
             Text(
                 text = "今天没有待办",
                 style = TextStyle(color = ink, fontSize = 13.sp),
                 modifier = GlanceModifier.padding(top = 8.dp)
             )
         } else {
-            items.forEach { item ->
+            todayItems.forEach { item ->
                 WidgetTaskRow(item, ink, accent, context)
             }
         }
@@ -160,28 +188,64 @@ private fun DianMaoWidgetContent(items: List<HomeSmartTaskItem>, context: Contex
 private fun WidgetTaskRow(
     item: HomeSmartTaskItem,
     ink: ColorProvider,
-    muted: ColorProvider,
+    accent: ColorProvider,
     context: Context
 ) {
     Row(
         modifier = GlanceModifier
             .fillMaxWidth()
-            .padding(top = 6.dp)
-            .clickable(actionStartActivity(openTaskIntent(context, item.task.id))),
+            .padding(top = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            text = item.task.title,
-            style = TextStyle(color = ink, fontSize = 13.sp),
-            maxLines = 1
+        Image(
+            provider = ImageProvider(R.drawable.ic_widget_check_circle),
+            contentDescription = "完成「${item.task.title}」",
+            modifier = GlanceModifier
+                .size(20.dp)
+                .clickable(
+                    actionRunCallback<ToggleWidgetTaskCallback>(
+                        parameters = actionParametersOf(
+                            ToggleWidgetTaskCallback.TASK_ID_KEY to item.task.id
+                        )
+                    )
+                ),
+            colorFilter = ColorFilter.tint(accent)
         )
-        Spacer(modifier = GlanceModifier.defaultWeight())
-        item.dueLabel?.let { label ->
+        Row(
+            modifier = GlanceModifier
+                .defaultWeight()
+                .padding(start = 8.dp)
+                .clickable(actionStartActivity(openTaskIntent(context, item.task.id))),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Text(
-                text = label,
-                style = TextStyle(color = muted, fontSize = 11.sp),
+                text = item.task.title,
+                style = TextStyle(color = ink, fontSize = 13.sp),
                 maxLines = 1
             )
+            Spacer(modifier = GlanceModifier.defaultWeight())
+            item.dueLabel?.let { label ->
+                Text(
+                    text = label,
+                    style = TextStyle(color = accent, fontSize = 11.sp),
+                    maxLines = 1
+                )
+            }
         }
+    }
+}
+
+class ToggleWidgetTaskCallback : ActionCallback {
+    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
+        val taskId = parameters[TASK_ID_KEY] ?: return
+        if (taskId <= 0L) return
+        val appContext = context.applicationContext
+        val task = TaskRepository(appContext).findTaskById(taskId) ?: return
+        completeTaskSilently(appContext, task)
+        refreshHomeWidget(appContext)
+    }
+
+    companion object {
+        val TASK_ID_KEY = ActionParameters.Key<Long>("task_id")
     }
 }
