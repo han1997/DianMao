@@ -1,5 +1,33 @@
 # Changelog
 
+- Added quick actions on reminder notifications (v1.0.8): a 完成 button (记一次完成 for
+  recurring tasks) completes the task with the same silent semantics as in-app swipe
+  completion — alarms cancelled, recurring cycles advanced, home widget refreshed —
+  and a 稍后提醒 button re-fires the reminder after 10 minutes. Notification action
+  pendingIntents use dedicated request codes so they never collide with the alarm
+  pendingIntents.
+
+- Made the home widget interactive (v1.0.8): each task row gains a circular check
+  target that toggles completion in place via a Glance action callback (reusing the
+  shared silent-completion helper) and refreshes the widget immediately; rows keep
+  deep-linking into the task detail. Responsive layout shows up to 8 rows on wide
+  widgets (narrow keeps 4).
+
+- Added a calendar month view (v1.0.8): a calendar icon beside the home search opens
+  a full-screen page with ‹ › month navigation, a Monday-first 7-column grid, today
+  highlight, selection fill, and dimmed out-of-month days. Each day shows up to three
+  quadrant dots plus a +n overflow; selecting a day lists that day's tasks (completed
+  dimmed) with rows deep-linking into details, and a 记一笔 entry pre-fills the add
+  panel with the selected day as the due date. The view joins the in-app back chain.
+
+- Added batch operations (v1.0.8): long-press a task row in the home smart list or a
+  quadrant detail to enter multi-select (checkbox per row, tap toggles, swipe
+  disabled), with a bottom bar showing 已选 N 项, 全选/取消全选, and three actions:
+  批量完成 (silent completion per row + widget refresh), 批量移动象限 (quadrant picker
+  dialog; targeted DAO update of quadrant + updatedAt only), and 批量删除 (confirm
+  dialog; per-row reminder cancel + delete, one 撤销 restore for all, calendar event
+  cleanup when the undo window lapses). Single-select behavior is unchanged.
+
 - Added a home-screen widget (Glance): a warm-paper "DianMao · 今天" card
   showing up to four of today's open tasks (overdue first, via the existing
   today smart-view logic), a 记一笔 quick-add action that opens the app with
