@@ -48,7 +48,7 @@ BackHandler(enabled = backTarget != null) {
 - Dismiss operations must mutate the original state variables
 - Type: `Boolean` flags or sealed class states that trigger recomposition
 
-**Priority order (current, 2026-09)**: BackupPanel > ArchivedPanel > ReviewPanel > TaskPanel > TaskDetail > QuadrantDetail > null. `TaskDetail` was added when the task detail surface became a back-consuming layer; `ReviewPanel` was added with the review surface (2026-09). Any new back-capable layer must be inserted into the enum, the resolver `when`, the dispatch `when`, and `InAppBackTargetTest` in the same change.
+**Priority order (current, 2026-09)**: BackupPanel > ArchivedPanel > ReviewPanel > TaskPanel > TaskDetail > CalendarView > TaskSelection > QuadrantDetail > null. `TaskDetail` was added when the task detail surface became a back-consuming layer; `ReviewPanel` was added with the review surface (2026-09); `CalendarView` and `TaskSelection` were added with the v1.0.8 calendar month view and batch operations (multi-select). `TaskSelection` sits above `QuadrantDetail` so the batch action bar is dismissed before the underlying quadrant detail page. Any new back-capable layer must be inserted into the enum, the resolver `when`, the dispatch `when`, and `InAppBackTargetTest` in the same change.
 
 ### 4. Validation & Error Matrix
 
