@@ -211,6 +211,8 @@ private fun DianMaoApp(initialTaskId: Long? = null, initialOpenAdd: Boolean = fa
     var backupSyncInProgress by remember { mutableStateOf(false) }
     var showArchivedPanel by rememberSaveable { mutableStateOf(false) }
     var showReviewPanel by rememberSaveable { mutableStateOf(false) }
+    var showCalendarView by rememberSaveable { mutableStateOf(false) }
+    var calendarPresetDueAtMillis by rememberSaveable { mutableStateOf<Long?>(null) }
     var taskForNote by remember { mutableStateOf<TaskUiModel?>(null) }
     var taskForEdit by remember { mutableStateOf<TaskUiModel?>(null) }
     var taskForHistory by remember { mutableStateOf<TaskUiModel?>(null) }
@@ -445,7 +447,8 @@ private fun DianMaoApp(initialTaskId: Long? = null, initialOpenAdd: Boolean = fa
         showReviewPanel = showReviewPanel,
         isTaskPanelVisible = isTaskPanelVisible,
         hasActivePriority = activePriority != null,
-        taskForDetail = taskForDetail != null
+        taskForDetail = taskForDetail != null,
+        showCalendarView = showCalendarView
     )
 
     BackHandler(enabled = backTarget != null) {
@@ -455,6 +458,7 @@ private fun DianMaoApp(initialTaskId: Long? = null, initialOpenAdd: Boolean = fa
             InAppBackTarget.ReviewPanel -> showReviewPanel = false
             InAppBackTarget.TaskPanel -> dismissTaskPanel()
             InAppBackTarget.TaskDetail -> taskForDetail = null
+            InAppBackTarget.CalendarView -> showCalendarView = false
             InAppBackTarget.QuadrantDetail -> activePriority = null
             null -> Unit
         }
@@ -526,6 +530,9 @@ private fun DianMaoApp(initialTaskId: Long? = null, initialOpenAdd: Boolean = fa
                             },
                             onOpenReview = {
                                 showReviewPanel = true
+                            },
+                            onOpenCalendar = {
+                                showCalendarView = true
                             }
                         )
                         HomeSmartViewSwitcher(
@@ -1041,6 +1048,18 @@ private fun DianMaoApp(initialTaskId: Long? = null, initialOpenAdd: Boolean = fa
                     stats = reviewStats,
                     onBack = { showReviewPanel = false },
                     visible = showReviewPanel
+                )
+                CalendarMonthScreen(
+                    visible = showCalendarView,
+                    tasks = activeTasks,
+                    nowMillis = nowMillis,
+                    zoneId = zoneId,
+                    onBack = { showCalendarView = false },
+                    onTaskSelected = { taskForDetail = it },
+                    onQuickAdd = { date ->
+                        calendarPresetDueAtMillis = date.atStartOfDay(zoneId).toInstant().toEpochMilli()
+                        showAddSheet = true
+                    }
                 )
                 ArchivedPanel(
                     visible = showArchivedPanel,

@@ -18,7 +18,8 @@ internal enum class InAppBackTarget {
     ArchivedPanel,
     ReviewPanel,
     TaskPanel,
-    QuadrantDetail
+    QuadrantDetail,
+    CalendarView
 }
 
 internal enum class TimeFocusKind {

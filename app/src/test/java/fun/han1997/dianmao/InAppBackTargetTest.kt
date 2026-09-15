@@ -13,7 +13,8 @@ class InAppBackTargetTest {
             showReviewPanel = true,
             isTaskPanelVisible = true,
             hasActivePriority = true,
-            taskForDetail = true
+            taskForDetail = true,
+            showCalendarView = true
         )
 
         assertEquals(InAppBackTarget.BackupPanel, target)
@@ -27,7 +28,8 @@ class InAppBackTargetTest {
             showReviewPanel = true,
             isTaskPanelVisible = true,
             hasActivePriority = true,
-            taskForDetail = true
+            taskForDetail = true,
+            showCalendarView = true
         )
 
         assertEquals(InAppBackTarget.ArchivedPanel, target)
@@ -41,7 +43,8 @@ class InAppBackTargetTest {
             showReviewPanel = true,
             isTaskPanelVisible = true,
             hasActivePriority = true,
-            taskForDetail = true
+            taskForDetail = true,
+            showCalendarView = true
         )
 
         assertEquals(InAppBackTarget.ReviewPanel, target)
@@ -55,7 +58,8 @@ class InAppBackTargetTest {
             showReviewPanel = false,
             isTaskPanelVisible = true,
             hasActivePriority = true,
-            taskForDetail = true
+            taskForDetail = true,
+            showCalendarView = true
         )
 
         assertEquals(InAppBackTarget.TaskPanel, target)
@@ -69,10 +73,51 @@ class InAppBackTargetTest {
             showReviewPanel = false,
             isTaskPanelVisible = false,
             hasActivePriority = true,
-            taskForDetail = true
+            taskForDetail = true,
+            showCalendarView = true
         )
 
         assertEquals(InAppBackTarget.TaskDetail, target)
+    }
+
+    @Test
+    fun calendarViewTakesPriorityOverQuadrantDetail() {
+        val target = resolveInAppBackTarget(
+            showBackupPanel = false,
+            showArchivedPanel = false,
+            showReviewPanel = false,
+            isTaskPanelVisible = false,
+            hasActivePriority = true,
+            taskForDetail = false,
+            showCalendarView = true
+        )
+
+        assertEquals(InAppBackTarget.CalendarView, target)
+    }
+
+    @Test
+    fun taskPanelAndDetailTakePriorityOverCalendarView() {
+        val withPanel = resolveInAppBackTarget(
+            showBackupPanel = false,
+            showArchivedPanel = false,
+            showReviewPanel = false,
+            isTaskPanelVisible = true,
+            hasActivePriority = false,
+            taskForDetail = false,
+            showCalendarView = true
+        )
+        assertEquals(InAppBackTarget.TaskPanel, withPanel)
+
+        val withDetail = resolveInAppBackTarget(
+            showBackupPanel = false,
+            showArchivedPanel = false,
+            showReviewPanel = false,
+            isTaskPanelVisible = false,
+            hasActivePriority = false,
+            taskForDetail = true,
+            showCalendarView = true
+        )
+        assertEquals(InAppBackTarget.TaskDetail, withDetail)
     }
 
     @Test
@@ -83,7 +128,8 @@ class InAppBackTargetTest {
             showReviewPanel = false,
             isTaskPanelVisible = false,
             hasActivePriority = true,
-            taskForDetail = false
+            taskForDetail = false,
+            showCalendarView = false
         )
 
         assertEquals(InAppBackTarget.QuadrantDetail, target)
@@ -97,7 +143,8 @@ class InAppBackTargetTest {
             showReviewPanel = false,
             isTaskPanelVisible = false,
             hasActivePriority = false,
-            taskForDetail = false
+            taskForDetail = false,
+            showCalendarView = false
         )
 
         assertNull(target)

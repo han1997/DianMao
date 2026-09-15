@@ -108,6 +108,7 @@ internal fun AddTaskPanel(
     visible: Boolean,
     editingTask: TaskUiModel?,
     initialPriority: TaskPriority,
+    presetDueAtMillis: Long? = null,
     onDismiss: () -> Unit,
     onRequestCalendarPermission: () -> Unit,
     onSave: suspend (TaskFormState) -> TaskSaveOutcome,
@@ -143,12 +144,14 @@ internal fun AddTaskPanel(
     val panelTitle = if (isEditing) "编辑事项" else "新增事项"
     val saveButtonText = if (isEditing) "保存修改并关闭" else "保存并关闭"
 
-    LaunchedEffect(visible, editingTask?.id, initialPriority) {
+    LaunchedEffect(visible, editingTask?.id, initialPriority, presetDueAtMillis) {
         if (visible) {
             title = editingTask?.title.orEmpty()
             detail = editingTask?.detail.orEmpty()
             priority = editingTask?.quadrant ?: initialPriority
+            val presetDateMillis = if (editingTask == null) presetDueAtMillis else null
             dueDateMillis = editingTask?.dueAtMillis?.let { midnightMillis(it) }
+                ?: presetDateMillis?.let { midnightMillis(it) }
             dueTimeMinutes = editingTask?.dueAtMillis?.let { minutesOfDay(it) }
             useCalendar = editingTask?.useCalendar ?: false
             useAlarm = editingTask?.useAlarm ?: false

@@ -115,6 +115,7 @@ internal fun AppHeader(
     query: String,
     onSearchToggle: () -> Unit,
     onQueryChanged: (String) -> Unit,
+    onOpenCalendar: () -> Unit,
     onOpenBackup: () -> Unit,
     onOpenArchived: () -> Unit,
     onOpenReview: () -> Unit
@@ -152,6 +153,11 @@ internal fun AppHeader(
                 icon = if (searchVisible) Icons.Rounded.Close else Icons.Rounded.Search,
                 contentDescription = if (searchVisible) "关闭搜索" else "搜索",
                 onClick = onSearchToggle
+            )
+            HeaderActionButton(
+                icon = Icons.Rounded.CalendarMonth,
+                contentDescription = "日历",
+                onClick = onOpenCalendar
             )
             HeaderActionButton(
                 icon = Icons.Rounded.Archive,
