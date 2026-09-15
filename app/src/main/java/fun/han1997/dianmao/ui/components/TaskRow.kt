@@ -10,8 +10,10 @@ import `fun`.han1997.dianmao.IconTile
 import `fun`.han1997.dianmao.quietBorder
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,6 +46,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -73,7 +76,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
 internal fun TaskRow(
     task: TaskUiModel,
@@ -88,6 +91,10 @@ internal fun TaskRow(
     dueLabelOverride: String? = null,
     isDragged: Boolean = false,
     dragOffsetPx: Float = 0f,
+    isSelectionMode: Boolean = false,
+    isSelected: Boolean = false,
+    onLongPress: (() -> Unit)? = null,
+    onToggleSelection: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     var canComplete by remember { mutableStateOf(true) }
@@ -107,6 +114,22 @@ internal fun TaskRow(
     Card(
         modifier = modifier
             .fillMaxWidth()
+            .combinedClickable(
+                enabled = isSelectionMode || onLongPress != null,
+                onClick = {
+                    if (isSelectionMode) {
+                        onToggleSelection?.invoke()
+                    } else {
+                        onViewDetail(task)
+                    }
+                },
+                onLongClick = {
+                    if (!isSelectionMode) {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onLongPress?.invoke()
+                    }
+                }
+            )
             .graphicsLayer {
                 // Drag lift: instant 8dp shadow + 1.02 scale while held, and
                 // the row tracks the finger vertically with no tween (the
@@ -136,30 +159,56 @@ internal fun TaskRow(
                 modifier = Modifier
                     .size(48.dp)
                     .clickable(
-                        enabled = canComplete || task.completed,
+                        enabled = if (isSelectionMode) true else (canComplete || task.completed),
                         role = Role.Checkbox
                     ) {
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                        onToggleComplete(task)
+                        if (isSelectionMode) {
+                            onToggleSelection?.invoke()
+                        } else {
+                            onToggleComplete(task)
+                        }
                     }
                     .semantics {
-                        contentDescription = if (task.completed) "标记为未完成" else "标记为完成"
-                        stateDescription = if (task.completed) "已完成" else "未完成"
+                        if (isSelectionMode) {
+                            contentDescription = if (isSelected) "取消选中" else "选中"
+                            stateDescription = if (isSelected) "已选中" else "未选中"
+                        } else {
+                            contentDescription = if (task.completed) "标记为未完成" else "标记为完成"
+                            stateDescription = if (task.completed) "已完成" else "未完成"
+                        }
                     },
                 contentAlignment = Alignment.TopCenter
             ) {
-                CompletionMark(
-                    completed = task.completed,
-                    color = task.quadrant.color
-                )
+                if (isSelectionMode) {
+                    Checkbox(
+                        checked = isSelected,
+                        onCheckedChange = { onToggleSelection?.invoke() },
+                        colors = CheckboxDefaults.colors(
+                            checkedColor = task.quadrant.color,
+                            uncheckedColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted)
+                        )
+                    )
+                } else {
+                    CompletionMark(
+                        completed = task.completed,
+                        color = task.quadrant.color
+                    )
+                }
             }
             Spacer(Modifier.width(2.dp))
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .clickable(role = Role.Button) { onViewDetail(task) }
+                    .clickable(role = Role.Button) {
+                        if (isSelectionMode) {
+                            onToggleSelection?.invoke()
+                        } else {
+                            onViewDetail(task)
+                        }
+                    }
                     .semantics {
-                        contentDescription = "查看事项详情：${task.title}"
+                        contentDescription = if (isSelectionMode) "切换选中：${task.title}" else "查看事项详情：${task.title}"
                     },
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {

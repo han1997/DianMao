@@ -14,7 +14,8 @@ class InAppBackTargetTest {
             isTaskPanelVisible = true,
             hasActivePriority = true,
             taskForDetail = true,
-            showCalendarView = true
+            showCalendarView = true,
+            showSelectionMode = false
         )
 
         assertEquals(InAppBackTarget.BackupPanel, target)
@@ -29,7 +30,8 @@ class InAppBackTargetTest {
             isTaskPanelVisible = true,
             hasActivePriority = true,
             taskForDetail = true,
-            showCalendarView = true
+            showCalendarView = true,
+            showSelectionMode = false
         )
 
         assertEquals(InAppBackTarget.ArchivedPanel, target)
@@ -44,7 +46,8 @@ class InAppBackTargetTest {
             isTaskPanelVisible = true,
             hasActivePriority = true,
             taskForDetail = true,
-            showCalendarView = true
+            showCalendarView = true,
+            showSelectionMode = false
         )
 
         assertEquals(InAppBackTarget.ReviewPanel, target)
@@ -59,7 +62,8 @@ class InAppBackTargetTest {
             isTaskPanelVisible = true,
             hasActivePriority = true,
             taskForDetail = true,
-            showCalendarView = true
+            showCalendarView = true,
+            showSelectionMode = false
         )
 
         assertEquals(InAppBackTarget.TaskPanel, target)
@@ -74,7 +78,8 @@ class InAppBackTargetTest {
             isTaskPanelVisible = false,
             hasActivePriority = true,
             taskForDetail = true,
-            showCalendarView = true
+            showCalendarView = true,
+            showSelectionMode = false
         )
 
         assertEquals(InAppBackTarget.TaskDetail, target)
@@ -89,7 +94,8 @@ class InAppBackTargetTest {
             isTaskPanelVisible = false,
             hasActivePriority = true,
             taskForDetail = false,
-            showCalendarView = true
+            showCalendarView = true,
+            showSelectionMode = false
         )
 
         assertEquals(InAppBackTarget.CalendarView, target)
@@ -104,7 +110,8 @@ class InAppBackTargetTest {
             isTaskPanelVisible = true,
             hasActivePriority = false,
             taskForDetail = false,
-            showCalendarView = true
+            showCalendarView = true,
+            showSelectionMode = false
         )
         assertEquals(InAppBackTarget.TaskPanel, withPanel)
 
@@ -115,7 +122,8 @@ class InAppBackTargetTest {
             isTaskPanelVisible = false,
             hasActivePriority = false,
             taskForDetail = true,
-            showCalendarView = true
+            showCalendarView = true,
+            showSelectionMode = false
         )
         assertEquals(InAppBackTarget.TaskDetail, withDetail)
     }
@@ -129,7 +137,8 @@ class InAppBackTargetTest {
             isTaskPanelVisible = false,
             hasActivePriority = true,
             taskForDetail = false,
-            showCalendarView = false
+            showCalendarView = false,
+            showSelectionMode = false
         )
 
         assertEquals(InAppBackTarget.QuadrantDetail, target)
@@ -144,7 +153,8 @@ class InAppBackTargetTest {
             isTaskPanelVisible = false,
             hasActivePriority = false,
             taskForDetail = false,
-            showCalendarView = false
+            showCalendarView = false,
+            showSelectionMode = false
         )
 
         assertNull(target)

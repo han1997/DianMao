@@ -1,6 +1,7 @@
 package `fun`.han1997.dianmao
 
 import `fun`.han1997.dianmao.data.RepeatRule
+import `fun`.han1997.dianmao.data.TaskPriority
 import `fun`.han1997.dianmao.data.TaskUiModel
 import `fun`.han1997.dianmao.quietTextFieldColors
 import androidx.compose.foundation.background
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.EditNote
+import androidx.compose.material.icons.rounded.Inventory2
 import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.Repeat
 import androidx.compose.material.icons.rounded.Replay
@@ -507,5 +509,77 @@ internal fun ReminderLeadPickerDialog(
                 }
             }
         }
+    }
+}
+
+@Composable
+internal fun BatchMoveQuadrantDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (TaskPriority) -> Unit
+) {
+    QuietDialogContainer(
+        onDismiss = onDismiss,
+        title = "移动到象限",
+        leadingIcon = Icons.Rounded.Inventory2,
+        leadingIconTint = MaterialTheme.colorScheme.primary,
+        actions = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            TaskPriority.entries.forEach { priority ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(min = 44.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .clickable(role = Role.Button) { onConfirm(priority) }
+                        .padding(horizontal = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(18.dp)
+                            .clip(RoundedCornerShape(5.dp))
+                            .background(priority.color.copy(alpha = 0.85f))
+                    )
+                    Text(
+                        text = priority.label,
+                        style = MaterialTheme.typography.bodyLarge.copy(letterSpacing = 0.sp),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+internal fun BatchDeleteConfirmDialog(
+    count: Int,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    QuietDialogContainer(
+        onDismiss = onDismiss,
+        title = "批量删除",
+        leadingIcon = Icons.Rounded.Delete,
+        leadingIconTint = MaterialTheme.colorScheme.error,
+        actions = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+            TextButton(onClick = onConfirm) {
+                Text("删除", color = MaterialTheme.colorScheme.error)
+            }
+        }
+    ) {
+        Text(
+            text = "确定删除选中的 $count 个事项？删除后不会保留提醒和完成备注。",
+            style = MaterialTheme.typography.bodyLarge
+        )
     }
 }

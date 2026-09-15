@@ -75,13 +75,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -91,9 +94,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.DoneAll
+import androidx.compose.material.icons.rounded.Inventory2
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -213,6 +224,10 @@ private fun DianMaoApp(initialTaskId: Long? = null, initialOpenAdd: Boolean = fa
     var showReviewPanel by rememberSaveable { mutableStateOf(false) }
     var showCalendarView by rememberSaveable { mutableStateOf(false) }
     var calendarPresetDueAtMillis by rememberSaveable { mutableStateOf<Long?>(null) }
+    var showSelectionMode by rememberSaveable { mutableStateOf(false) }
+    var selectedTaskIds by remember { mutableStateOf(setOf<Long>()) }
+    var batchMoveQuadrantTarget by remember { mutableStateOf(false) }
+    var batchDeleteConfirm by remember { mutableStateOf(false) }
     var taskForNote by remember { mutableStateOf<TaskUiModel?>(null) }
     var taskForEdit by remember { mutableStateOf<TaskUiModel?>(null) }
     var taskForHistory by remember { mutableStateOf<TaskUiModel?>(null) }
@@ -436,6 +451,85 @@ private fun DianMaoApp(initialTaskId: Long? = null, initialOpenAdd: Boolean = fa
         }
     }
 
+    // Multi-select (batch operations) state helpers.
+    val enterSelection: (TaskUiModel) -> Unit = { target ->
+        showSelectionMode = true
+        selectedTaskIds = setOf(target.id)
+    }
+    val toggleSelection: (TaskUiModel) -> Unit = { target ->
+        selectedTaskIds = if (target.id in selectedTaskIds) {
+            selectedTaskIds - target.id
+        } else {
+            selectedTaskIds + target.id
+        }
+    }
+    val exitSelection = {
+        showSelectionMode = false
+        selectedTaskIds = emptySet()
+    }
+    val selectedTasks = remember(selectedTaskIds, activeTasks) {
+        activeTasks.filter { it.id in selectedTaskIds }
+    }
+
+    val batchComplete: () -> Unit = batchComplete@{
+        val targets = selectedTasks
+        if (targets.isEmpty()) return@batchComplete
+        scope.launch {
+            try {
+                targets.forEach { completeTaskSilently(context, it) }
+                refreshHomeWidget(context)
+                exitSelection()
+                snackbarHostState.showSnackbar("已完成 ${targets.size} 个事项")
+            } catch (error: Exception) {
+                if (error is CancellationException) throw error
+                snackbarHostState.showSnackbar("批量完成失败：${error.message ?: "请稍后重试"}")
+            }
+        }
+    }
+
+    val batchMoveQuadrant: (TaskPriority) -> Unit = batchMoveQuadrant@{ priority ->
+        val targets = selectedTasks
+        if (targets.isEmpty()) return@batchMoveQuadrant
+        scope.launch {
+            try {
+                repository.moveTasksToQuadrant(targets.map { it.id }, priority.type)
+                exitSelection()
+                snackbarHostState.showSnackbar("已移动 ${targets.size} 个事项到「${priority.shortTitle}」")
+            } catch (error: Exception) {
+                if (error is CancellationException) throw error
+                snackbarHostState.showSnackbar("批量移动失败：${error.message ?: "请稍后重试"}")
+            }
+        }
+    }
+
+    val batchDelete: () -> Unit = batchDelete@{
+        val targets = selectedTasks
+        if (targets.isEmpty()) return@batchDelete
+        scope.launch {
+            try {
+                targets.forEach { scheduler.cancel(it.id, it.reminderLeadMinutes) }
+                val removed = targets.mapNotNull { repository.deleteTask(it.id) }
+                exitSelection()
+                val result = snackbarHostState.showSnackbar(
+                    message = "已删除 ${removed.size} 个事项",
+                    actionLabel = "撤销",
+                    duration = SnackbarDuration.Long
+                )
+                if (result == SnackbarResult.ActionPerformed) {
+                    removed.forEach { entity ->
+                        repository.restoreTask(entity)
+                        scheduler.schedule(entity.toUiModel())
+                    }
+                } else {
+                    targets.forEach { deleteCalendarEvent(context, it.calendarEventId) }
+                }
+            } catch (error: Exception) {
+                if (error is CancellationException) throw error
+                snackbarHostState.showSnackbar("批量删除失败：${error.message ?: "请稍后重试"}")
+            }
+        }
+    }
+
     val isTaskPanelVisible = showAddSheet || taskForEdit != null
     val dismissTaskPanel = {
         showAddSheet = false
@@ -448,7 +542,8 @@ private fun DianMaoApp(initialTaskId: Long? = null, initialOpenAdd: Boolean = fa
         isTaskPanelVisible = isTaskPanelVisible,
         hasActivePriority = activePriority != null,
         taskForDetail = taskForDetail != null,
-        showCalendarView = showCalendarView
+        showCalendarView = showCalendarView,
+        showSelectionMode = showSelectionMode
     )
 
     BackHandler(enabled = backTarget != null) {
@@ -459,6 +554,10 @@ private fun DianMaoApp(initialTaskId: Long? = null, initialOpenAdd: Boolean = fa
             InAppBackTarget.TaskPanel -> dismissTaskPanel()
             InAppBackTarget.TaskDetail -> taskForDetail = null
             InAppBackTarget.CalendarView -> showCalendarView = false
+            InAppBackTarget.TaskSelection -> {
+                showSelectionMode = false
+                selectedTaskIds = emptySet()
+            }
             InAppBackTarget.QuadrantDetail -> activePriority = null
             null -> Unit
         }
@@ -578,6 +677,10 @@ private fun DianMaoApp(initialTaskId: Long? = null, initialOpenAdd: Boolean = fa
                                 onArchiveTask = archiveTask,
                                 onViewDetail = { taskForDetail = it },
                                 onAddTask = { showAddSheet = true },
+                                isSelectionMode = showSelectionMode,
+                                selectedTaskIds = selectedTaskIds,
+                                onToggleSelection = { toggleSelection(it) },
+                                onLongPressTask = { enterSelection(it) },
                                 emptyMessage = if (homeSearchQuery.isNotBlank() && homeVisibleTasks.isEmpty()) {
                                     "没有匹配“${homeSearchQuery.trim()}”的事项"
                                 } else {
@@ -712,6 +815,10 @@ private fun DianMaoApp(initialTaskId: Long? = null, initialOpenAdd: Boolean = fa
                                         } else {
                                             0f
                                         },
+                                        isSelectionMode = showSelectionMode,
+                                        isSelected = task.id in selectedTaskIds,
+                                        onLongPress = { enterSelection(task) },
+                                        onToggleSelection = { toggleSelection(task) },
                                         modifier = Modifier.animateItem()
                                             // TalkBack cannot perform the
                                             // long-press drag gesture; expose
@@ -1079,6 +1186,42 @@ private fun DianMaoApp(initialTaskId: Long? = null, initialOpenAdd: Boolean = fa
                 )
             }
         }
+
+        // Batch-selection bottom action bar: appears over the content when
+        // multi-select is active. Rendered above the Surface so it floats over
+        // the task list regardless of the underlying page.
+        if (showSelectionMode) {
+            BatchSelectionBar(
+                selectedCount = selectedTaskIds.size,
+                totalCount = activeTasks.size,
+                onSelectAll = { selectedTaskIds = activeTasks.map { it.id }.toSet() },
+                onClearSelection = { selectedTaskIds = emptySet() },
+                onComplete = batchComplete,
+                onMoveQuadrant = { batchMoveQuadrantTarget = true },
+                onDelete = { batchDeleteConfirm = true }
+            )
+        }
+    }
+
+    if (batchMoveQuadrantTarget) {
+        BatchMoveQuadrantDialog(
+            onDismiss = { batchMoveQuadrantTarget = false },
+            onConfirm = { priority ->
+                batchMoveQuadrantTarget = false
+                batchMoveQuadrant(priority)
+            }
+        )
+    }
+
+    if (batchDeleteConfirm) {
+        BatchDeleteConfirmDialog(
+            count = selectedTaskIds.size,
+            onDismiss = { batchDeleteConfirm = false },
+            onConfirm = {
+                batchDeleteConfirm = false
+                batchDelete()
+            }
+        )
     }
 
         // Global notice overlay: fixed top anchoring on every page. The
@@ -1242,6 +1385,89 @@ private fun TopNoticeHost(hostState: SnackbarHostState) {
                             )
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun BatchSelectionBar(
+    selectedCount: Int,
+    totalCount: Int,
+    onSelectAll: () -> Unit,
+    onClearSelection: () -> Unit,
+    onComplete: () -> Unit,
+    onMoveQuadrant: () -> Unit,
+    onDelete: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .windowInsetsPadding(WindowInsets.safeDrawing),
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 8.dp
+    ) {
+        Column {
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "已选 $selectedCount 项",
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                TextButton(onClick = {
+                    if (selectedCount == totalCount) onClearSelection() else onSelectAll()
+                }) {
+                    Text(if (selectedCount == totalCount) "取消全选" else "全选")
+                }
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                FilledTonalButton(
+                    onClick = onComplete,
+                    enabled = selectedCount > 0,
+                    modifier = Modifier.weight(1f),
+                    shape = RowShape
+                ) {
+                    Icon(Icons.Rounded.DoneAll, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("完成")
+                }
+                FilledTonalButton(
+                    onClick = onMoveQuadrant,
+                    enabled = selectedCount > 0,
+                    modifier = Modifier.weight(1f),
+                    shape = RowShape
+                ) {
+                    Icon(Icons.Rounded.Inventory2, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("移动")
+                }
+                Button(
+                    onClick = onDelete,
+                    enabled = selectedCount > 0,
+                    modifier = Modifier.weight(1f),
+                    shape = RowShape,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    )
+                ) {
+                    Icon(Icons.Rounded.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("删除")
                 }
             }
         }

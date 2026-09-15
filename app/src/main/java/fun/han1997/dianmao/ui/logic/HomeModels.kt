@@ -19,7 +19,8 @@ internal enum class InAppBackTarget {
     ReviewPanel,
     TaskPanel,
     QuadrantDetail,
-    CalendarView
+    CalendarView,
+    TaskSelection
 }
 
 internal enum class TimeFocusKind {
@@ -246,7 +247,9 @@ internal fun resolveInAppBackTarget(
     showReviewPanel: Boolean,
     isTaskPanelVisible: Boolean,
     hasActivePriority: Boolean,
-    taskForDetail: Boolean
+    taskForDetail: Boolean,
+    showCalendarView: Boolean,
+    showSelectionMode: Boolean
 ): InAppBackTarget? {
     return when {
         showBackupPanel -> InAppBackTarget.BackupPanel
@@ -254,6 +257,8 @@ internal fun resolveInAppBackTarget(
         showReviewPanel -> InAppBackTarget.ReviewPanel
         isTaskPanelVisible -> InAppBackTarget.TaskPanel
         taskForDetail -> InAppBackTarget.TaskDetail
+        showCalendarView -> InAppBackTarget.CalendarView
+        showSelectionMode -> InAppBackTarget.TaskSelection
         hasActivePriority -> InAppBackTarget.QuadrantDetail
         else -> null
     }

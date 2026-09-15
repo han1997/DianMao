@@ -37,6 +37,9 @@ interface TaskDao {
     @Query("UPDATE tasks SET displayOrder = :newOrder WHERE id = :taskId")
     suspend fun updateDisplayOrder(taskId: Long, newOrder: Int)
 
+    @Query("UPDATE tasks SET quadrant = :quadrant, updatedAtMillis = :updatedAt WHERE id IN (:ids)")
+    suspend fun updateQuadrant(ids: List<Long>, quadrant: QuadrantType, updatedAt: Long)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(task: TaskEntity): Long
 

@@ -57,6 +57,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Archive
+import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.DoneAll
@@ -700,6 +701,10 @@ internal fun HomeSmartTaskList(
     onViewDetail: (TaskUiModel) -> Unit,
     onAddTask: () -> Unit,
     emptyMessage: String?,
+    isSelectionMode: Boolean = false,
+    selectedTaskIds: Set<Long> = emptySet(),
+    onToggleSelection: (TaskUiModel) -> Unit = {},
+    onLongPressTask: (TaskUiModel) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     if (items.isEmpty()) {
@@ -774,6 +779,7 @@ internal fun HomeSmartTaskList(
                     onToggleComplete = onToggleComplete,
                     onCompleteSilently = onCompleteSilently,
                     onDeleteTask = onDeleteTask,
+                    isSelectionMode = isSelectionMode,
                     modifier = with(this@items) { Modifier.animateItem() }
                 ) {
                     TaskRow(
@@ -786,7 +792,11 @@ internal fun HomeSmartTaskList(
                         onEditNote = onEditNote,
                         onArchiveTask = onArchiveTask,
                         onViewDetail = onViewDetail,
-                        showQuadrantMeta = true
+                        showQuadrantMeta = true,
+                        isSelectionMode = isSelectionMode,
+                        isSelected = item.task.id in selectedTaskIds,
+                        onLongPress = { onLongPressTask(item.task) },
+                        onToggleSelection = { onToggleSelection(item.task) }
                     )
                 }
             }
@@ -810,6 +820,7 @@ internal fun SwipeableTaskRow(
     onToggleComplete: (TaskUiModel) -> Unit,
     onCompleteSilently: (TaskUiModel) -> Unit,
     onDeleteTask: (TaskUiModel) -> Unit,
+    isSelectionMode: Boolean = false,
     modifier: Modifier = Modifier,
     content: @Composable RowScope.() -> Unit
 ) {
@@ -865,8 +876,8 @@ internal fun SwipeableTaskRow(
         SwipeToDismissBox(
             state = dismissState,
             modifier = modifier,
-            enableDismissFromStartToEnd = canComplete || task.completed,
-            enableDismissFromEndToStart = true,
+            enableDismissFromStartToEnd = !isSelectionMode && (canComplete || task.completed),
+            enableDismissFromEndToStart = !isSelectionMode,
             backgroundContent = {
                 val direction = backgroundDirection
                 val settled = backgroundSettled

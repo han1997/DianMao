@@ -108,6 +108,16 @@ class TaskRepository(context: Context) {
         return existing
     }
 
+    /**
+     * Targeted quadrant update for batch moves: only quadrant and
+     * updatedAtMillis change, no full-entity rewrite, no migration.
+     */
+    suspend fun moveTasksToQuadrant(taskIds: List<Long>, quadrant: QuadrantType): Int {
+        if (taskIds.isEmpty()) return 0
+        dao.updateQuadrant(taskIds, quadrant, System.currentTimeMillis())
+        return taskIds.size
+    }
+
     suspend fun findTaskById(taskId: Long): TaskUiModel? {
         return dao.findById(taskId)?.toUiModel()
     }
