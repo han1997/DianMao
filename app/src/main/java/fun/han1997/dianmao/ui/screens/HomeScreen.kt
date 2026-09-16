@@ -69,7 +69,6 @@ import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
@@ -84,7 +83,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -339,8 +337,8 @@ internal fun TimeFocusRow(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 48.dp)
-            .background(color.copy(alpha = DianMaoAlpha.subtle), RowShape)
-            .border(1.dp, color.copy(alpha = DianMaoAlpha.subtle), RowShape)
+            .background(color.copy(alpha = 0.07f), RowShape)
+            .border(1.dp, color.copy(alpha = 0.12f), RowShape)
             .clickable(onClick = onClick, role = Role.Button)
             .padding(horizontal = 10.dp, vertical = 8.dp),
         verticalAlignment = Alignment.Top,
@@ -500,7 +498,7 @@ internal fun QuadrantPane(
     val visibleTasks = tasks.take(5)
     val openCount = tasks.count { !it.completed }
     val paneColor by animateColorAsState(
-        targetValue = quadrant.color.copy(alpha = DianMaoAlpha.subtle),
+        targetValue = quadrant.color.copy(alpha = DianMaoAlpha.boardPane),
         animationSpec = motionTween(durationMillis = 200),
         label = "quadrantPaneColor"
     )

@@ -1234,17 +1234,23 @@ visual intent (e.g. secondary text at 0.62 / 0.7 / 0.72 / 0.78), so tone
 drifted between screens.
 
 **Contracts**:
-- New secondary text / tint / border code uses one of four tokens from
+- New secondary text / tint / border code uses one of the tokens from
   `ui/theme/DianMaoTokens.kt`: `DianMaoAlpha.subtle` (0.08, faint tints and
-  ghost borders), `DianMaoAlpha.muted` (0.62, icons/dividers ONLY — 0.62
+  ghost borders), `DianMaoAlpha.boardPane` (0.045, home-board quadrant pane
+  tints ONLY — the Quadrant Overlay Rule's 4.5% home value, distinct from
+  `subtle` which is the 8% detail-header/empty-state tint),
+  `DianMaoAlpha.muted` (0.62, icons/dividers ONLY — 0.62
   onSurfaceVariant on the dark background is ~3.5:1, below WCAG 4.5:1),
   `DianMaoAlpha.mutedText` (0.75, secondary body text and empty-state copy),
   `DianMaoAlpha.strong` (0.78, emphasized secondary text).
-- Any `Text(color = onSurfaceVariant.copy(alpha = …))` must use `mutedText`
+- Any `Text(color = onSurfaceVariant.copy(alpha = ...))` must use `mutedText`
   or `strong`, never `muted`.
 - Tonal container fills (e.g. `surfaceVariant.copy(alpha = 0.26f)` chips and
   `IconTile` backgrounds at 0.10–0.20) are *not* tokens; they stay literal.
-- Do not introduce another value; if a design needs it, discuss first.
+- Do not introduce another value without a DESIGN.md basis; the four previous
+  tokens plus `boardPane` (added 2026-09 ui-polish, backed by DESIGN.md's
+  Quadrant Overlay Rule 4.5%) cover the current scale. If a new design needs
+  another value, discuss first.
 
 **Verification**: grep `copy(alpha = 0\.` and confirm remaining hits are
 tonal fills or `DianMaoTokens.kt` itself.

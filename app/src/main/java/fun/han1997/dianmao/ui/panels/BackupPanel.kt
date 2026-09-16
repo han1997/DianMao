@@ -213,7 +213,7 @@ internal fun BackupPanel(
                                         onClick = onLocalExport,
                                         modifier = Modifier.weight(1f),
                                         shape = RowShape,
-                                        contentPadding = PaddingValues(vertical = 13.dp)
+                                        contentPadding = PaddingValues(vertical = 11.dp)
                                     ) {
                                         InlineButtonIcon(
                                             icon = Icons.Rounded.FileUpload,
@@ -243,7 +243,7 @@ internal fun BackupPanel(
                                     onClick = onLocalImport,
                                     modifier = Modifier.weight(1f),
                                     shape = RowShape,
-                                    contentPadding = PaddingValues(vertical = 13.dp)
+                                    contentPadding = PaddingValues(vertical = 11.dp)
                                 ) {
                                     InlineButtonIcon(
                                         icon = Icons.Rounded.FileDownload,
@@ -348,7 +348,7 @@ internal fun BackupPanel(
                                 enabled = webDavReady && !syncInProgress,
                                 modifier = Modifier.fillMaxWidth(),
                                 shape = RowShape,
-                                contentPadding = PaddingValues(vertical = 13.dp)
+                                contentPadding = PaddingValues(vertical = 11.dp)
                             ) {
                                 InlineButtonIcon(
                                     icon = Icons.Rounded.CloudDownload,

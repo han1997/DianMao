@@ -288,7 +288,7 @@ internal fun TaskDetailScreen(
                             onClick = { onOpenCalendarReminder(task) },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RowShape,
-                            contentPadding = PaddingValues(vertical = 13.dp)
+                            contentPadding = PaddingValues(vertical = 11.dp)
                         ) {
                             InlineButtonIcon(
                                 icon = Icons.Rounded.CalendarMonth,

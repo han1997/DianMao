@@ -147,7 +147,7 @@ internal fun TaskRow(
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         shape = RowShape,
-        border = quietBorder(if (task.completed) 0.12f else 0.16f)
+        border = quietBorder(if (task.completed) 0.12f else 0.18f)
     ) {
         Row(
             modifier = Modifier

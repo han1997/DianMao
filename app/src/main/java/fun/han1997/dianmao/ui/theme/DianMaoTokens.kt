@@ -8,6 +8,7 @@ package `fun`.han1997.dianmao
  * across the UI for the same visual intent. New code must use one of:
  *
  * - [subtle] 0.08 — faint backgrounds, pane tints, ghost borders
+ * - [boardPane] 0.045 — home-board quadrant pane tints (Quadrant Overlay Rule)
  * - [muted]  0.62 — icons, dividers, decorative fills (NOT readable text;
  *   0.62 onSurfaceVariant on the dark background is ~3.5:1, below WCAG 4.5)
  * - [mutedText] 0.75 — secondary body text, empty-state copy, quiet labels
@@ -19,6 +20,7 @@ package `fun`.han1997.dianmao
  */
 internal object DianMaoAlpha {
     const val subtle = 0.08f
+    const val boardPane = 0.045f
     const val muted = 0.62f
     const val mutedText = 0.75f
     const val strong = 0.78f

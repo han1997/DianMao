@@ -150,7 +150,7 @@ The interface sits between TickTick's practical task density and Google Calendar
 - Restrained color: terracotta accent below 10% of any task screen surface.
 - Flat-by-default elevation; shadows only for menus, drag state, and the 6dp form-dialog cards. Bottom action bars are frameless — primary actions sit directly on the page background.
 - Confident, restrained components that feel native and unhurried.
-- Light-scheme only. The Compose theme defines a single `lightColorScheme`; dark mode currently falls back to Material 3 defaults rather than a hand-tuned dark palette. The XML app theme flips `windowLightStatusBar` and the navigation-bar color at night, but in-app surfaces stay light. A proper `darkColorScheme` is a future task; until then, design new surfaces to read correctly on the light palette.
+- Light-scheme primary, dark-scheme supported. The Compose theme defines a warm `darkColorScheme` (deep warm brown-grey surfaces; terracotta and calendar blue lightened for contrast; containers invert to deep tinted washes; quadrant tints stay low-alpha), so the quiet-warm language holds at night. The XML app theme flips `windowLightStatusBar` and the navigation-bar color, and the XML-versioned launcher layers stay aligned with the palette. Dark surfaces are tuned to read correctly on the light-influenced palette; keep both schemes in mind when adding surfaces.
 
 ## 2. Colors
 
@@ -271,7 +271,7 @@ Confident and restrained. Every interactive element feels native and unhurried. 
 ### Cards / Containers
 - **Task Row Card:** RowShape (12dp), 0dp elevation, quiet border at 0.18 alpha. Raised surface (#FFFCF9) background for active tasks, surfaceVariant at 0.38 alpha for completed tasks.
 - **Full-Screen Secondary Destination:** Backup/settings, archive, add/edit task, and recurring completion history are full-screen surfaces like `TaskDetailScreen` — edge-to-edge app-background `Surface` with a single `windowInsetsPadding(safeDrawing)` content column and a quiet anchored top bar (back `IconButton` + optional tonal leading `IconTile` + title/subtitle + trailing actions). Content width is capped at 600dp and centered on large/expanded windows so forms read as a focused column instead of stretching edge to edge. No sheet card, no drag handle, no dimming scrim over the underlying screen. Shared scaffold: `FullScreenScaffold` in `ui/components/FullScreenScaffold.kt`.
-- **Bottom Sheet (form dialogs only):** SheetShape (22dp top corners), 6dp elevation card still wraps the completion-note form and the time picker dialog. The add/edit, backup, archived, and recurring-history sheets were replaced by full-screen destinations (updated 2026-09); the drag handle and 90%/88%/75% sheet heights no longer apply.
+- **Form Dialogs (completion note, date/time, repeat, reminder-lead):** No longer bottom sheets. They render as centered `PanelShape` cards on the raised surface with a quiet hairline border and 6dp elevation inside the shared `QuietDialogContainer` / `BrandedPickerDialog` family (see Dialogs). The add/edit, backup, archived, and recurring-history surfaces remain full-screen destinations; the drag handle and 90%/88%/75% sheet heights no longer apply.
 - **Quadrant Panel (home board):** PanelShape (18dp radius), no shadow. Quadrant color at 0.045 alpha as a background tint, animated over 200ms on data change. Outer board surface carries a quiet border at 0.14 alpha. A 12dp color dot anchors the quadrant label; the open-count number sits top-right in the quadrant color.
 - **Quadrant Detail Header / Empty State:** Inline 14dp radius. Quadrant color at 0.08 alpha as a background tint. This is the only place the 8% tint shows up; the home board stays at 4.5%. The header is a single sticky row (back + 12dp quadrant dot + title + open count) with a quiet border at 0.16 alpha — never a shadow when stuck. The quadrant description and stat dots live in a non-tinted intro block above the list so the 8% tint area stays small.
 - **Task Form Section:** PanelShape (18dp), surfaceVariant at 0.26 alpha, quiet border at 0.14 alpha.
@@ -291,8 +291,9 @@ Confident and restrained. Every interactive element feels native and unhurried. 
 - **Style:** ChipShape (8dp). Compact and semantic. Summary pills, "今日" badge, meta chips, quadrant labels.
 - **State:** Selected chips use terracotta container background with on-container ink. Unselected remain neutral with quiet border.
 - **Add/Edit setting sections (full-screen form):** Settings are grouped under
-  labeled `TaskFormSection` cards. "优先级" holds the four quadrant FilterChips
-  (12dp ColorDot). "时间与提醒" holds five verb→value setting rows (到期日 /
+  labeled `TaskFormSection` cards. "优先级" holds the four quadrant options in a
+  single segmented row (`SegmentedButton`, 8dp ColorDot), the same family the
+  home smart-view switcher uses. "时间与提醒" holds five verb→value setting rows (到期日 /
   提醒时间 / 同步系统日历 / 响铃提醒 / 重复), each with a one-line subtitle that
   explains the setting, and the disabled rows state the dependency reason
   ("需先设置到期日") instead of silently dimming. Value rows show the current
