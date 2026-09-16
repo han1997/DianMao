@@ -108,3 +108,37 @@ Hardened cross-entry silent task completion with latest-entity snapshot validati
 ### Next Steps
 
 - None - task complete
+
+
+## Session 62: ui-polish: DESIGN.md 对齐审计与修复
+
+**Date**: 2026-09-16
+**Task**: ui-polish: DESIGN.md 对齐审计与修复
+**Branch**: `master`
+
+### Summary
+
+全量审计 19 个 UI 文件对齐 DESIGN.md:修复 Home 面板 tint 8%→4.5%、时间关注行 0.07/0.12、TaskRow 边框 0.18、OutlinedButton padding 11dp、删死亡 import;新增 boardPane alpha token 并同步 spec;更新 DESIGN.md(暗色已实现、优先级 SegmentedButton、表单对话框统一 QuietDialogContainer)。lint+compile 通过。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `132118e` | (see git log) |
+| `52fff89` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
