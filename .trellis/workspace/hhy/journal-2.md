@@ -75,3 +75,36 @@ Completed feature polish v1.0.8: phase 1 notification quick-complete/snooze acti
 ### Next Steps
 
 - None - task complete
+
+
+## Session 61: Stability polish
+
+**Date**: 2026-09-16
+**Task**: Stability polish
+**Branch**: `master`
+
+### Summary
+
+Hardened cross-entry silent task completion with latest-entity snapshot validation, made batch selection and calendar cleanup resilient to stale tasks, added reminder/calendar regression coverage, updated quality guidance and changelog, and verified unit tests, lint, and debug assembly.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `201dd08` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
