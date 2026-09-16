@@ -25,8 +25,9 @@ class TaskActionReceiver : BroadcastReceiver() {
                     ACTION_COMPLETE -> {
                         val task = TaskRepository(appContext).findTaskById(taskId)
                         if (task != null) {
-                            completeTaskSilently(appContext, task)
-                            refreshHomeWidget(appContext)
+                            if (completeTaskSilently(appContext, task)) {
+                                refreshHomeWidget(appContext)
+                            }
                         }
                         cancelReminderNotifications(
                             appContext,

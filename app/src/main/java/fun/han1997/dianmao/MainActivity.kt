@@ -423,7 +423,8 @@ private fun DianMaoApp(initialTaskId: Long? = null, initialOpenAdd: Boolean = fa
     val completeSilently: (TaskUiModel) -> Unit = { target ->
         scope.launch {
             try {
-                completeTaskSilently(context, target)
+                val completed = completeTaskSilently(context, target)
+                if (!completed) return@launch
                 val result = snackbarHostState.showSnackbar(
                     message = "已完成「${target.title}」",
                     actionLabel = "写心得",
@@ -471,15 +472,33 @@ private fun DianMaoApp(initialTaskId: Long? = null, initialOpenAdd: Boolean = fa
         activeTasks.filter { it.id in selectedTaskIds }
     }
 
+    LaunchedEffect(activeTasks, showSelectionMode) {
+        if (showSelectionMode) {
+            val activeIds = activeTasks.map { it.id }.toSet()
+            val remaining = reconcileSelectedTaskIds(selectedTaskIds, activeIds)
+            if (remaining != selectedTaskIds) {
+                selectedTaskIds = remaining
+            }
+            if (remaining.isEmpty()) {
+                showSelectionMode = false
+            }
+        }
+    }
+
     val batchComplete: () -> Unit = batchComplete@{
         val targets = selectedTasks
         if (targets.isEmpty()) return@batchComplete
         scope.launch {
             try {
-                targets.forEach { completeTaskSilently(context, it) }
+                val completedCount = targets.count { completeTaskSilently(context, it) }
+                if (completedCount == 0) {
+                    exitSelection()
+                    snackbarHostState.showSnackbar("所选事项已发生变化")
+                    return@launch
+                }
                 refreshHomeWidget(context)
                 exitSelection()
-                snackbarHostState.showSnackbar("已完成 ${targets.size} 个事项")
+                snackbarHostState.showSnackbar("已完成 $completedCount 个事项")
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
                 snackbarHostState.showSnackbar("批量完成失败：${error.message ?: "请稍后重试"}")
@@ -521,7 +540,7 @@ private fun DianMaoApp(initialTaskId: Long? = null, initialOpenAdd: Boolean = fa
                         scheduler.schedule(entity.toUiModel())
                     }
                 } else {
-                    targets.forEach { deleteCalendarEvent(context, it.calendarEventId) }
+                    removed.forEach { entity -> deleteCalendarEvent(context, entity.calendarEventId) }
                 }
             } catch (error: Exception) {
                 if (error is CancellationException) throw error

@@ -70,6 +70,82 @@ Platform integrations are best-effort side effects around Room state:
 - WebDAV network calls run on `Dispatchers.IO` and validate downloaded JSON
   before replacing Room data.
 
+## Scenario: Idempotent Silent Task Completion
+
+### 1. Scope / Trigger
+
+Use this contract whenever a task can be completed from more than one entry
+point, including the home swipe, a notification action, a Glance callback, or
+batch operations.
+
+### 2. Signatures
+
+* `TaskRepository.completeSilently(task: TaskUiModel): Boolean`
+* `canApplySilentCompletion(expected: TaskUiModel, current: TaskUiModel): Boolean`
+* `completeTaskSilently(context: Context, task: TaskUiModel): Boolean`
+
+### 3. Contracts
+
+* The repository must read the latest `TaskEntity` inside the same Room
+  transaction that applies completion.
+* Completion is allowed only when the latest task is open, has the same
+  `dueAtMillis`, `completionCount`, reminder settings, and repeat settings as
+  the caller snapshot.
+* A stale, completed, archived, or missing task returns `false` and must not
+  change task data or schedule a new reminder.
+* Alarm cancellation and recurring-cycle rescheduling happen only after the
+  repository returns `true`; widget refresh is also conditional on `true`.
+
+### 4. Validation & Error Matrix
+
+| Condition | Correct behavior |
+|---|---|
+| Another entry point completed the task first | Return `false`; do not advance or reschedule again |
+| Task was deleted before the action ran | Return `false`; do not cancel another task's calendar/reminder state |
+| Open task snapshot still matches current entity | Apply one completion and return `true` |
+| Platform refresh fails after local completion | Keep the Room result; platform refresh remains best effort |
+
+### 5. Good/Base/Bad Cases
+
+* Good: Read `dao.findById(task.id)` inside `db.withTransaction`, validate the
+  snapshot, then update that entity.
+* Base: A caller may ignore a `false` result when no user-facing message is
+  needed, but must not show a success message or refresh as if it completed.
+* Bad: Call `toggleCompleted(task, true)` using a stale `TaskUiModel`, then
+  unconditionally cancel alarms and schedule the next recurring cycle.
+
+### 6. Tests Required
+
+* Assert a changed `completionCount` rejects a stale completion snapshot.
+* Assert completed and archived current entities are rejected.
+* Assert an unchanged open snapshot is accepted.
+* For each platform entry point, verify the success side effects are gated by
+  the Boolean completion result when runtime tests are available.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```kotlin
+repository.completeSilently(task)
+scheduler.schedule(repository.findTaskById(task.id)!!)
+```
+
+The action can schedule a second cycle after another entry point already
+advanced the same recurring task.
+
+#### Correct
+
+```kotlin
+if (repository.completeSilently(task)) {
+    scheduler.cancel(task.id, task.reminderLeadMinutes)
+    repository.findTaskById(task.id)?.let(scheduler::schedule)
+}
+```
+
+The persisted transaction decides whether the caller still owns the current
+completion, and all dependent side effects are conditional on that result.
+
 Reference files:
 
 - `app/src/main/java/fun/han1997/dianmao/calendar/CalendarWriter.kt`

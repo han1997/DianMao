@@ -241,8 +241,9 @@ class ToggleWidgetTaskCallback : ActionCallback {
         if (taskId <= 0L) return
         val appContext = context.applicationContext
         val task = TaskRepository(appContext).findTaskById(taskId) ?: return
-        completeTaskSilently(appContext, task)
-        refreshHomeWidget(appContext)
+        if (completeTaskSilently(appContext, task)) {
+            refreshHomeWidget(appContext)
+        }
     }
 
     companion object {

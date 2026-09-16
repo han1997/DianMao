@@ -200,6 +200,11 @@ internal fun buildHomeSmartTaskItems(
 
 internal fun TaskUiModel.isOpenTask(): Boolean = !completed && !archived
 
+internal fun reconcileSelectedTaskIds(
+    selectedTaskIds: Set<Long>,
+    activeTaskIds: Set<Long>
+): Set<Long> = selectedTaskIds intersect activeTaskIds
+
 internal fun effectiveDueAtMillis(
     task: TaskUiModel,
     nowMillis: Long,

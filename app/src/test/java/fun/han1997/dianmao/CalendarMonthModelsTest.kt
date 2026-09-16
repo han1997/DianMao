@@ -123,6 +123,38 @@ class CalendarMonthModelsTest {
     }
 
     @Test
+    fun dayMapUsesTheRequestedZoneAtMidnightBoundary() {
+        val boundary = java.time.LocalDateTime.of(2026, 6, 19, 0, 0)
+            .atZone(zoneId)
+            .toInstant()
+            .toEpochMilli()
+        val map = buildCalendarDayMap(
+            tasks = listOf(task(id = 1, dueAtMillis = boundary)),
+            nowMillis = boundary - 1,
+            zoneId = zoneId
+        )
+
+        assertTrue(map.containsKey(LocalDate.of(2026, 6, 19)))
+        assertFalse(map.containsKey(LocalDate.of(2026, 6, 18)))
+    }
+
+    @Test
+    fun dayMapKeepsStableIdOrderWhenTasksShareDueTime() {
+        val dueAt = millis(LocalDate.of(2026, 6, 19), hour = 9)
+        val map = buildCalendarDayMap(
+            tasks = listOf(
+                task(id = 3, dueAtMillis = dueAt),
+                task(id = 1, dueAtMillis = dueAt),
+                task(id = 2, dueAtMillis = dueAt)
+            ),
+            nowMillis = dueAt - 1,
+            zoneId = zoneId
+        )
+
+        assertEquals(listOf(1L, 2L, 3L), map.getValue(LocalDate.of(2026, 6, 19)).map { it.task.id })
+    }
+
+    @Test
     fun dayMapExcludesUnscheduledAndArchivedTasks() {
         val now = millis(LocalDate.of(2026, 6, 19), hour = 12)
         val map = buildCalendarDayMap(

@@ -1,5 +1,13 @@
 # Changelog
 
+- Stability polish: reminder and widget completion actions now ignore stale or
+  duplicate task snapshots, so concurrent entry points cannot advance a
+  recurring task twice or recreate an obsolete reminder. Batch selection now
+  drops tasks that disappear from the active list, and batch-delete cleanup
+  only targets entities that were actually deleted. Added regression coverage
+  for completion idempotency, selection reconciliation, and calendar
+  midnight/stable-order boundaries.
+
 - Added quick actions on reminder notifications (v1.0.8): a 完成 button (记一次完成 for
   recurring tasks) completes the task with the same silent semantics as in-app swipe
   completion — alarms cancelled, recurring cycles advanced, home widget refreshed —

@@ -156,6 +156,18 @@ data class TaskUiModel(
     val archived: Boolean = false
 )
 
+internal fun canApplySilentCompletion(expected: TaskUiModel, current: TaskUiModel): Boolean {
+    return !current.completed &&
+        !current.archived &&
+        current.dueAtMillis == expected.dueAtMillis &&
+        current.completionCount == expected.completionCount &&
+        current.useLocalReminder == expected.useLocalReminder &&
+        current.reminderLeadMinutes == expected.reminderLeadMinutes &&
+        current.repeatRule == expected.repeatRule &&
+        current.repeatInterval == expected.repeatInterval &&
+        current.repeatWeekdays == expected.repeatWeekdays
+}
+
 fun TaskEntity.toUiModel(): TaskUiModel {
     return TaskUiModel(
         id = id,

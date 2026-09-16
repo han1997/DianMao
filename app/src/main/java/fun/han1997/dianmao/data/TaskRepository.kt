@@ -197,8 +197,54 @@ class TaskRepository(context: Context) {
      * top notice's 写心得 action can add a note afterwards via
      * [saveCompletionNote], which handles the already-completed path.
      */
-    suspend fun completeSilently(task: TaskUiModel) {
-        toggleCompleted(task, true)
+    suspend fun completeSilently(task: TaskUiModel): Boolean {
+        var completed = false
+        db.withTransaction {
+            val entity = dao.findById(task.id) ?: return@withTransaction
+            val current = entity.toUiModel()
+            if (!canApplySilentCompletion(task, current)) return@withTransaction
+            val now = System.currentTimeMillis()
+            dao.update(completedEntity(entity, now))
+            completed = true
+        }
+        return completed
+    }
+
+    private fun completedEntity(existing: TaskEntity, now: Long): TaskEntity {
+        return if (existing.repeatRule.isCountBased()) {
+            existing.copy(
+                completed = true,
+                completionCount = existing.completionCount + 1,
+                lastCompletedAtMillis = now,
+                updatedAtMillis = now
+            )
+        } else if (existing.repeatRule.isCycleBased() && existing.useAlarm && existing.dueAtMillis != null) {
+            val nextDue = RepeatReminderCalculator.nextDueAt(
+                existing.dueAtMillis,
+                existing.repeatRule,
+                repeatInterval = existing.repeatInterval,
+                repeatWeekdays = existing.repeatWeekdays
+            )
+            existing.copy(
+                completed = false,
+                lastCompletedAtMillis = now,
+                dueLabel = DateTimeFormatters.labelFor(midnightMillis(nextDue), minutesOfDay(nextDue)),
+                dueAtMillis = nextDue,
+                updatedAtMillis = now
+            )
+        } else if (existing.repeatRule.isCycleBased()) {
+            existing.copy(
+                completed = true,
+                lastCompletedAtMillis = now,
+                updatedAtMillis = now
+            )
+        } else {
+            existing.copy(
+                completed = true,
+                archived = true,
+                updatedAtMillis = now
+            )
+        }
     }
 
     suspend fun saveCompletionNote(taskId: Long, note: String): TaskEntity? {
