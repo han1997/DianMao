@@ -1,0 +1,3 @@
+﻿{"file": "DESIGN.md", "reason": "Design source of truth: brand colors, compass concept, launcher icon section to rewrite"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Project spec index / pre-dev checklist"}
+{"file": ".trellis/tasks/archive/2026-09/09-13-launcher-icon-redesign/prd.md", "reason": "Prior icon redesign constraints: minSdk 31, webp untouched, adaptive safe circle math"}
