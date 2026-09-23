@@ -372,6 +372,6 @@ A signature DianMao flow. When the user saves a newly-created task from the add/
 - **Don't** use gradient text, side-stripe borders >1px, glassmorphism, or hero-metric templates.
 - **Don't** add entrance choreography, scroll-driven sequences, custom easing curves, bounce, or elastic. Motion conveys state only — see The State-Change Only Rule.
 
-## Launcher icon (2026-09 redesign)
+## Launcher icon (2026-09-20 redesign)
 
-The launcher mark is the **paw-print quadrant**: four toe beans colored with the quadrant palette (terracotta/ochre/blue/sage) arranged 2×2, with a larger terracotta main pad below — the '点' in 点猫. Toes stay inside the 66dp adaptive safe circle. Monochrome uses the same silhouette. Sources: `res/drawable/ic_launcher_foreground.xml`, `ic_launcher_monochrome.xml`; the warm paper background layer is unchanged.
+The launcher mark is the **Day Compass**: a thin dial ring in terracotta container (#F5DED9) with a slender terracotta (#A84534) needle pointing 45° up-right (NE), an ink hub (#1E211F) at center, on the warm paper background (#F8F8F5). It abstracts "The Day Compass" north star — a dial pointing at what matters today. All artwork sits inside the 66dp adaptive safe circle. The monochrome layer is the same ring + needle + hub silhouette in pure black for themed icons. Sources: `res/drawable/ic_launcher_foreground.xml`, `ic_launcher_monochrome.xml`, `ic_launcher_background.xml`.

@@ -1,5 +1,10 @@
 # Changelog
 
+- Redesigned the launcher icon as the Day Compass: a thin terracotta dial ring
+  with a slender needle pointing 45° up-right and an ink hub at center, replacing
+  the four-quadrant paw-print mark. The monochrome layer mirrors the same ring +
+  needle + hub silhouette for themed icons; the warm paper background is now pure.
+
 - Stability polish: reminder and widget completion actions now ignore stale or
   duplicate task snapshots, so concurrent entry points cannot advance a
   recurring task twice or recreate an obsolete reminder. Batch selection now
