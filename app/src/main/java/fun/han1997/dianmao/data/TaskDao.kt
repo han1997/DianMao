@@ -28,6 +28,18 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE completed = 0 AND useLocalReminder = 1 AND dueAtMillis IS NOT NULL")
     suspend fun findActiveReminderTasks(): List<TaskEntity>
 
+    @Query(
+        """
+        SELECT * FROM tasks
+        WHERE completed = 1 AND lastCompletedAtMillis IS NOT NULL
+          AND repeatRule IN ('Daily', 'Weekly', 'Monthly', 'Yearly')
+        """
+    )
+    suspend fun findCompletedCycleTasks(): List<TaskEntity>
+
+    @Query("UPDATE tasks SET completed = 0, updatedAtMillis = :updatedAt WHERE id IN (:ids)")
+    suspend fun resetCompleted(ids: List<Long>, updatedAt: Long)
+
     @Query("SELECT * FROM tasks ORDER BY displayOrder ASC, createdAtMillis DESC")
     suspend fun findAllTasks(): List<TaskEntity>
 

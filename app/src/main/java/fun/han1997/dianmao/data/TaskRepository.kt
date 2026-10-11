@@ -356,37 +356,21 @@ class TaskRepository(context: Context) {
     }
 
     suspend fun resetExpiredCycleTasks(nowMillis: Long = System.currentTimeMillis()) {
-        val completedTasks = dao.findAllTasks().filter { it.completed && it.repeatRule.isCycleBased() }
-        val tasksToReset = completedTasks.filter { task ->
+        // DAO-level filter keeps the in-memory load to completed cycle tasks
+        // instead of the whole table; the SQL rule list must stay in sync
+        // with RepeatRule.isCycleBased(). The period check itself stays in
+        // Kotlin because week/month boundaries need zone-aware date math.
+        val expiredTasks = dao.findCompletedCycleTasks().filter { task ->
             val lastCompleted = task.lastCompletedAtMillis ?: return@filter false
             !isInSamePeriod(lastCompleted, nowMillis, task.repeatRule)
         }
+        if (expiredTasks.isEmpty()) return
 
-        tasksToReset.forEach { task ->
-            dao.update(
-                task.copy(
-                    completed = false,
-                    updatedAtMillis = nowMillis
-                )
-            )
-        }
-    }
-
-    private fun isInSamePeriod(time1: Long, time2: Long, repeatRule: RepeatRule): Boolean {
-        val zone = ZoneId.systemDefault()
-        val date1 = Instant.ofEpochMilli(time1).atZone(zone).toLocalDate()
-        val date2 = Instant.ofEpochMilli(time2).atZone(zone).toLocalDate()
-
-        return when (repeatRule) {
-            RepeatRule.Daily -> date1.isEqual(date2)
-            RepeatRule.Weekly -> {
-                val week1 = date1.year * 53 + date1.get(java.time.temporal.WeekFields.ISO.weekOfWeekBasedYear())
-                val week2 = date2.year * 53 + date2.get(java.time.temporal.WeekFields.ISO.weekOfWeekBasedYear())
-                week1 == week2
-            }
-            RepeatRule.Monthly -> date1.year == date2.year && date1.monthValue == date2.monthValue
-            RepeatRule.Yearly -> date1.year == date2.year
-            else -> false
+        // Targeted bulk update (no full-entity rewrite, consistent with
+        // moveTasksToQuadrant) inside one transaction so a mid-reset crash
+        // can never leave half the cycle reset.
+        db.withTransaction {
+            dao.resetCompleted(expiredTasks.map { it.id }, nowMillis)
         }
     }
 
@@ -561,25 +545,39 @@ class TaskRepository(context: Context) {
         // For cycle-based: check if last completion was in current cycle
         val lastCompleted = task.lastCompletedAtMillis ?: return true
         val now = System.currentTimeMillis()
-        return !isInSameCycle(lastCompleted, now, task.repeatRule)
+        return !isInSamePeriod(lastCompleted, now, task.repeatRule)
     }
 
-    private fun isInSameCycle(millis1: Long, millis2: Long, repeatRule: RepeatRule): Boolean {
+    /**
+     * Whether two timestamps fall into the same repeat period (same day /
+     * ISO week / month / year, in the system zone). Single implementation
+     * behind both resetExpiredCycleTasks and canCompleteInCurrentCycle — the
+     * two call sites previously carried byte-identical copies that could
+     * drift apart.
+     *
+     * Weekly keys pair ISO weekOfWeekBasedYear with weekBasedYear (not the
+     * calendar year): Dec 30 and Jan 3 can sit in the same ISO week whose
+     * week-based year is the *next* calendar year, and the calendar-year key
+     * would split that week in two.
+     */
+    private fun isInSamePeriod(millis1: Long, millis2: Long, repeatRule: RepeatRule): Boolean {
         val zone = ZoneId.systemDefault()
-        val time1 = Instant.ofEpochMilli(millis1).atZone(zone).toLocalDate()
-        val time2 = Instant.ofEpochMilli(millis2).atZone(zone).toLocalDate()
+        val date1 = Instant.ofEpochMilli(millis1).atZone(zone).toLocalDate()
+        val date2 = Instant.ofEpochMilli(millis2).atZone(zone).toLocalDate()
 
         return when (repeatRule) {
-            RepeatRule.Daily -> time1.isEqual(time2)
+            RepeatRule.Daily -> date1.isEqual(date2)
             RepeatRule.Weekly -> {
-                val week1 = time1.year * 53 + time1.get(java.time.temporal.WeekFields.ISO.weekOfWeekBasedYear())
-                val week2 = time2.year * 53 + time2.get(java.time.temporal.WeekFields.ISO.weekOfWeekBasedYear())
-                week1 == week2
+                // Same formula as RepeatReminderCalculator: weekOfWeekBasedYear
+                // pairs with weekBasedYear (not the calendar year), so the ISO
+                // week spanning New Year's Eve stays one period instead of
+                // being split across the year boundary.
+                val weekFields = java.time.temporal.WeekFields.ISO
+                date1.get(weekFields.weekBasedYear()) == date2.get(weekFields.weekBasedYear()) &&
+                    date1.get(weekFields.weekOfWeekBasedYear()) == date2.get(weekFields.weekOfWeekBasedYear())
             }
-            RepeatRule.Monthly -> {
-                time1.year == time2.year && time1.monthValue == time2.monthValue
-            }
-            RepeatRule.Yearly -> time1.year == time2.year
+            RepeatRule.Monthly -> date1.year == date2.year && date1.monthValue == date2.monthValue
+            RepeatRule.Yearly -> date1.year == date2.year
             else -> false
         }
     }
