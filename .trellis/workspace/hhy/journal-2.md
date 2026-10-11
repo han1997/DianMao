@@ -175,3 +175,38 @@ Redesigned the launcher icon from the paw-print quadrant mark to the Day Compass
 ### Next Steps
 
 - None - task complete
+
+
+## Session 64: UI/代码深度审查：修复周期判定与备份面板 bug，统一错误守卫与死导入清理
+
+**Date**: 2026-10-11
+**Task**: UI/代码深度审查：修复周期判定与备份面板 bug，统一错误守卫与死导入清理
+**Branch**: `master`
+
+### Summary
+
+Deep code review across UI + data layers. Fixed the ISO-weekly cycle bug (calendar year vs weekBasedYear split the New Year's Eve week into two periods), merged the duplicated isInSamePeriod/isInSameCycle implementations, and reworked resetExpiredCycleTasks to a DAO-level filter + single transactional bulk update. Fixed BackupPanel where the status header Surface accidentally wrapped all four FormSettingBlocks (card-in-card double tint, no spacing). Extracted runOrNotifyFailure to replace 13 identical try/catch+snackbar blocks and the completion-record callbacks shared by task detail and history panel; removed 34 dead imports across 13 files; repaired mis-indented FAB/Crossfade/TimeFocusLane/TaskDetailScreen blocks. Threaded a midnight-refreshed nowMillis (produceState) through review stats, smart views, time-focus lane and list grouping so day buckets no longer go stale across midnight. compileDebugKotlin + all 15 unit test classes pass.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `8fe93a1` | (see git log) |
+| `3d7e0af` | (see git log) |
+| `10e94c2` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
