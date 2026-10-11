@@ -1,5 +1,14 @@
 # Changelog
 
+- Prototype-first UI contract (2026-10-11): established a Frontend spec layer
+  (`.trellis/spec/frontend/`) whose [prototype-first contract](../../.trellis/spec/frontend/prototype-first.md)
+  makes a confirmed prototype mandatory before any Compose UI change, forbids
+  deleting existing features that a prototype omits, and requires full state
+  coverage, unified design tokens, per-UI change records, and light/dark +
+  screen-size visual acceptance (compiling is not UI acceptance). The prototype
+  baseline and pending items are registered in `design/mockup/BASELINE.md`.
+  The former `backend/design-prototypes.md` moved into the frontend layer.
+
 - Complete HTML design mockup (2026-10-11): added `design/mockup/`, a
   browser-openable, offline, in-memory prototype that mirrors the current
   Compose UI across nine surfaces — home (header, summary pills, smart-view
@@ -8,7 +17,7 @@
   Light and dark themes use the exact `DianMaoTheme.kt` color schemes; the
   prototype ships a Playwright smoke test plus desktop/dark/mobile screenshots.
   Design-only; not bundled into the APK. See `design/mockup/README.md` and
-  `.trellis/spec/backend/design-prototypes.md`.
+  `.trellis/spec/frontend/design-prototypes.md`.
 
 - Review stats & list polish (v1.1.2): the review day bars grow with a motion-
   contract-aware animation (snap under reduced motion), and the quadrant share

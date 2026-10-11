@@ -1,5 +1,9 @@
 # DianMao UI 概念原型 · 01
 
+> 本原型是 UI 开发的强制前置:任何 Compose UI 改动必须先有已确认的原型。
+> 强制规则见 [原型优先 UI 开发契约](../../.trellis/spec/frontend/prototype-first.md),
+> 确认范围与待确认项见 [BASELINE.md](./BASELINE.md)。
+
 用浏览器直接打开 `index.html` 即可,无需安装依赖或启动服务器。
 HTML 会读取同目录的 `style.css`、`app.js`,图标全部内联,完全离线。
 

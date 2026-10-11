@@ -24,6 +24,7 @@ Use these guides as short pre-flight checklists.
 | [Code Reuse Thinking Guide](./code-reuse-thinking-guide.md) | Identify patterns and reduce duplication | When you notice repeated patterns |
 | [Cross-Layer Thinking Guide](./cross-layer-thinking-guide.md) | Think through data flow across layers | Features spanning multiple layers |
 | [Overlay Navigation Thinking Guide](./overlay-navigation-thinking-guide.md) | Avoid wrong-page back behavior across stacked UI states | Screens with panels, sheets, dialogs, or in-page detail states |
+| [Prototype-First Contract](../frontend/prototype-first.md) | Mandatory prototype-before-UI rule, state coverage, token sourcing, visual acceptance | Before any UI/Compose change |
 
 ---
 
@@ -56,6 +57,16 @@ Read [Code Reuse Thinking Guide](./code-reuse-thinking-guide.md)
 - [ ] A bug report mentions returning to the wrong page or closing the underlying screen
 
 Read [Overlay Navigation Thinking Guide](./overlay-navigation-thinking-guide.md)
+
+### When to Start a UI / Compose Change
+
+- [ ] Any visible UI change is about to be coded
+- [ ] The page, interaction, or a required state (loading/empty/error/disabled/in-progress/confirm) is not in the confirmed prototype yet
+- [ ] You are tempted to drop an existing feature because the prototype does not show it
+- [ ] You are about to copy a hex color or a shadow into a page
+- [ ] You are about to call a UI task done because it compiles
+
+Read [Prototype-First Contract](../frontend/prototype-first.md) — 所有 UI 必须先有已确认原型。
 
 ---
 

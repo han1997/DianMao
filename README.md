@@ -52,11 +52,20 @@ DianMao 是一款自用 Android 工作任务软件，目标是用一套统一的
 ## 开发约定
 
 - 使用 Android Studio 打开并运行项目。
-- 所有源文件保持 UTF-8 编码，避免中文乱码。
+- 所有源文件保持 UTF-8 编码,避免中文乱码。
+- **UI 开发遵循原型优先契约**:所有 Compose UI 必须先有已确认原型(`design/mockup/`,基准见 `design/mockup/BASELINE.md`),规范见 `.trellis/spec/frontend/prototype-first.md`。
 - 每次修改代码后追加 `CHANGELOG.md`。
 - 有必要的功能说明同步补充到本 README。
 - 每次修改完成后由 AI 助手自动创建本地 git commit,并自动推送到已跟踪的远程分支(`git push`)。
 - 推送使用快进推送;若被拒绝(非快进、无远程、认证失败)则停止并报告,禁止强推。
+
+## 规范索引
+
+| 层 | 入口 | 内容 |
+|---|---|---|
+| 前端 | `.trellis/spec/frontend/index.md` | 原型优先契约、设计令牌、状态反馈与视觉验收 |
+| 后端 / 平台 | `.trellis/spec/backend/index.md` | Room、平台集成、Compose 模式、质量与发布 |
+| 思考清单 | `.trellis/spec/guides/index.md` | 跨层、复用、覆盖层导航等预检清单 |
 
 ## 运行
 

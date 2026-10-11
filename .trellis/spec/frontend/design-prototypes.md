@@ -5,6 +5,8 @@ visual changes can be reviewed before they reach Compose. These files are
 **design artifacts, not runtime code** — they are never bundled into the APK and
 must not be treated as a source of product behavior.
 
+> 本文件与 [原型优先 UI 开发契约](./prototype-first.md) 配套:契约规定「必须先有原型」,本文件规定「原型放在哪里、token 从哪来、如何验证」。原型确认范围与版本记录见 `design/mockup/BASELINE.md`。
+
 ## Ownership
 
 | Path | Purpose |
@@ -12,6 +14,7 @@ must not be treated as a source of product behavior.
 | `design/mockup/index.html` | Presentation shell (studio / phone stage / design notes) + inline SVG sprite |
 | `design/mockup/style.css` | Token + component styles for the prototype |
 | `design/mockup/app.js` | In-memory demo state, navigation, and interactions |
+| `design/mockup/BASELINE.md` | Confirmed prototype scope, file digests, pending items |
 | `design/mockup/smoke-test.cjs` | Optional Playwright checks + screenshot generation |
 | `DESIGN.md` | The canonical design system the prototype must mirror |
 
