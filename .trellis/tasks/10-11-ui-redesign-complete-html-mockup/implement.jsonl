@@ -1,0 +1,4 @@
+{"file": "DESIGN.md", "reason": "设计系统唯一权威来源：配色/字体/圆角/间距 tokens、命名规则、组件规格，mockup 必须逐项对照"}
+{"file": "PRODUCT.md", "reason": "产品定位与反参考（避免企业级面板、游戏化视觉），决定 mockup 的整体气质"}
+{"file": "app/src/main/java/fun/han1997/dianmao/ui/theme/DianMaoTheme.kt", "reason": "亮/暗 colorScheme 的精确色值与形状常量（PanelShape/RowShape/ChipShape），mockup CSS 变量直接取值"}
+{"file": "app/src/main/java/fun/han1997/dianmao/ui/theme/DianMaoTokens.kt", "reason": "DianMaoAlpha 四级透明度刻度（subtle/boardPane/muted/mutedText/strong），所有 tint 与次级文本透明度取值来源"}
