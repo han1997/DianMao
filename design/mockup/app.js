@@ -695,9 +695,20 @@ function sheet(title, body) {
   returnFocus = document.activeElement;
   $('#sheetTitle').textContent = title;
   $('#sheetBody').innerHTML = body;
-  if (!$('#sheet').open) $('#sheet').showModal();
+  const overlay = $('#overlay');
+  overlay.hidden = false;
+  const card = overlay.querySelector('.overlay-card');
+  if (card) card.scrollTop = 0;
+  const first = overlay.querySelector('#sheetBody input, #sheetBody button, .overlay-card > .sheet-heading button');
+  if (first) first.focus();
 }
-function closeSheet() { $('#sheet').close(); if (returnFocus && returnFocus.isConnected) returnFocus.focus(); }
+function closeSheet() {
+  const overlay = $('#overlay');
+  if (overlay.hidden) return;
+  overlay.hidden = true;
+  $('#sheetBody').innerHTML = '';
+  if (returnFocus && returnFocus.isConnected) returnFocus.focus();
+}
 function menuItem(action, label, ico, data = '', danger = false) {
   return `<button class="menu-item${danger ? ' danger' : ''}" data-action="${action}" ${data}>${icon(ico)}${label}</button>`;
 }
@@ -783,11 +794,53 @@ const actions = {
   'pick-date': () => sheet('选择到期日', pickerCal()),
   'cal-pick-date': el => { state.form.dueDate = new Date(+el.dataset.day); if (!state.form.dueTime) state.form.dueTime = '09:00'; closeSheet(); render(); },
   'pick-time': () => {
-    const opts = ['08:00', '09:00', '12:00', '14:00', '18:30', '20:00', '21:30'];
-    sheet('选择提醒时间', `<div style="display:flex;flex-direction:column;gap:6px">${opts.map(o => `<button class="menu-item" data-action="set-time" data-time="${o}">${icon('schedule', 's20')}${o}</button>`).join('')}</div>
-      <div class="dlg-actions"><button class="btn text" data-action="close">取消</button></div>`);
+    const presets = ['08:00', '09:00', '12:00', '14:00', '18:30', '20:00', '21:30'];
+    const cur = state.form.dueTime || '';
+    const [ch, cm2] = (cur || '09:00').split(':').map(Number);
+    sheet('选择提醒时间', `<div style="display:flex;flex-direction:column;gap:14px">
+      <div class="time-steppers">
+        <div class="stepper">
+          <button class="stepper-btn" data-action="time-step" data-unit="h" data-delta="1" aria-label="小时加一">${icon('chev-up', 's18')}</button>
+          <span class="stepper-val" id="timeH">${String(ch).padStart(2, '0')}</span>
+          <button class="stepper-btn" data-action="time-step" data-unit="h" data-delta="-1" aria-label="小时减一">${icon('chev-down', 's18')}</button>
+        </div>
+        <span class="time-colon">:</span>
+        <div class="stepper">
+          <button class="stepper-btn" data-action="time-step" data-unit="m" data-delta="5" aria-label="分钟加五">${icon('chev-up', 's18')}</button>
+          <span class="stepper-val" id="timeM">${String(cm2).padStart(2, '0')}</span>
+          <button class="stepper-btn" data-action="time-step" data-unit="m" data-delta="-5" aria-label="分钟减五">${icon('chev-down', 's18')}</button>
+        </div>
+      </div>
+      <div class="time-custom">
+        <div class="field" style="flex:1"><div class="flabel">自定义时刻</div>
+          <input id="timeInput" inputmode="numeric" placeholder="HH:MM" value="${esc(cur || String(ch).padStart(2,'0')+':'+String(cm2).padStart(2,'0'))}"></div>
+        <button class="btn tonal" data-action="time-apply">${btnIcon('check', 'var(--on-primary-container)')}应用</button>
+      </div>
+      <div class="time-presets">
+        ${presets.map(o => `<button class="lane-chip" data-action="set-time" data-time="${o}" style="--c:var(--secondary)">${o}</button>`).join('')}
+      </div>
+    </div>
+    <div class="dlg-actions"><button class="btn text" data-action="close">取消</button></div>`);
   },
-  'set-time': el => { state.form.dueTime = el.dataset.time; closeSheet(); render(); },
+  'time-step': el => {
+    const unit = el.dataset.unit, delta = +el.dataset.delta;
+    let h = +($('#timeH').textContent), m = +($('#timeM').textContent);
+    if (unit === 'h') h = (h + delta + 24) % 24;
+    else m = (m + delta + 60) % 60;
+    $('#timeH').textContent = String(h).padStart(2, '0');
+    $('#timeM').textContent = String(m).padStart(2, '0');
+    const inp = $('#timeInput');
+    if (inp) inp.value = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+  },
+  'time-apply': () => {
+    const raw = ($('#timeInput').value || '').trim();
+    const m = raw.match(/^(\d{1,2}):(\d{2})$/);
+    if (!m || +m[1] > 23 || +m[2] > 59) { toast('请输入 HH:MM,例如 07:45'); return; }
+    state.form.dueTime = `${String(+m[1]).padStart(2, '0')}:${m[2]}`;
+    if (!state.form.dueDate) state.form.dueDate = new Date(NOW);
+    closeSheet(); render();
+  },
+  'set-time': el => { state.form.dueTime = el.dataset.time; if (!state.form.dueDate) state.form.dueDate = new Date(NOW); closeSheet(); render(); },
   'pick-repeat': () => {
     const opts = ['不重复', '每天', '工作日', '每周', '每 2 周', '每月', '每年'];
     sheet('重复规则', `<div style="display:flex;flex-direction:column;gap:6px">${opts.map(o => `<button class="menu-item" data-action="set-repeat" data-repeat="${o}">${icon('repeat', 's20')}${o}</button>`).join('')}</div>
@@ -861,8 +914,11 @@ document.addEventListener('input', e => {
   if (e.target.id === 'searchInput') { state.query = e.target.value; const pos = e.target.selectionStart; render(); const i = $('#searchInput'); if (i) { i.focus(); i.setSelectionRange(pos, pos); } }
   else if (e.target.id === 'formTitle' || e.target.id === 'formDetail') { collectForm(); }
 });
-document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'formTitle') { e.preventDefault(); actions['form-save'](); } });
-$('#sheet').addEventListener('click', e => { if (e.target === $('#sheet')) closeSheet(); });
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.id === 'formTitle') { e.preventDefault(); actions['form-save'](); }
+  if (e.key === 'Enter' && e.target.id === 'timeInput') { e.preventDefault(); actions['time-apply'](); }
+  if (e.key === 'Escape' && !$('#overlay').hidden) { e.preventDefault(); closeSheet(); }
+});
 
 /* theme toggle */
 function setTheme(dark) {

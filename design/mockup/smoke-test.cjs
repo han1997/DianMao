@@ -113,6 +113,48 @@ const assert = require('node:assert/strict');
   await page.waitForTimeout(60);
   assert.equal(await page.locator('.arch-row').count(), archCount - 1, 'unarchive removes row');
 
+  // 10b. custom reminder time: steppers + free-form input
+  await goChapter('add');
+  await click('#content [data-action="quick-date"][data-offset="0"]');
+  await click('#content [data-action="pick-time"]');
+  assert.equal(await page.locator('#overlay:not([hidden]) .stepper').count(), 2, 'hour + minute steppers');
+  const h0 = await page.locator('#timeH').innerText();
+  await click('#overlay [data-action="time-step"][data-unit="h"][data-delta="1"]');
+  assert.notEqual(await page.locator('#timeH').innerText(), h0, 'hour stepper changes value');
+  await page.fill('#timeInput', '07:45');
+  await click('#overlay [data-action="time-apply"]');
+  await page.waitForTimeout(60);
+  assert.match(await page.locator('#content').innerText(), /07:45/, 'custom time applied to form');
+  // invalid input is rejected and keeps the dialog open
+  await click('#content [data-action="pick-time"]');
+  await page.fill('#timeInput', '99:99');
+  await click('#overlay [data-action="time-apply"]');
+  await page.waitForTimeout(60);
+  assert.equal(await page.locator('#overlay:not([hidden])').count(), 1, 'invalid time keeps dialog open');
+  await click('.overlay-card .sheet-heading [data-action="close"]');
+  assert.equal(await page.locator('#overlay[hidden]').count(), 1, 'dialog closes');
+
+  // 10c. overlay (dialog) stays inside the phone frame
+  await click('#content [data-action="pick-date"]');
+  await page.waitForTimeout(80);
+  const contained = await page.evaluate(() => {
+    const card = document.querySelector('#overlay .overlay-card');
+    const phone = document.querySelector('#phone');
+    const c = card.getBoundingClientRect(), p = phone.getBoundingClientRect();
+    return { inside: c.top >= p.top - 1 && c.bottom <= p.bottom + 1 && c.left >= p.left - 1 && c.right <= p.right + 1,
+             dialog: { top: Math.round(c.top), bottom: Math.round(c.bottom) }, phone: { top: Math.round(p.top), bottom: Math.round(p.bottom) } };
+  });
+  assert.equal(contained.inside, true, `dialog stays inside phone (${JSON.stringify(contained)})`);
+  await page.screenshot({ path: path.join(__dirname, 'preview-date-dialog.png') });
+  await click('.overlay-card .sheet-heading [data-action="close"]');
+
+  // 10d. AppHeader settings icon opens backup, not a theme toggle
+  await goChapter('home');
+  const settingsBtnIcon = await page.evaluate(() => document.querySelector('#appHeader [data-page="backup"] use').getAttribute('href'));
+  assert.equal(settingsBtnIcon, '#i-settings', 'header settings button uses the settings icon');
+  await click('#appHeader [data-page="backup"]');
+  assert.match(await headerText(), /备份与恢复/, 'header settings icon opens backup');
+
   // 11. dialogs chapter
   await goChapter('dialogs');
   assert.equal(await page.locator('.dialog-preview .dlg').count(), 3, 'three dialog examples');

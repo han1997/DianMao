@@ -1,5 +1,15 @@
 # Changelog
 
+- Prototype v1.1 (2026-10-11): the design mockup gains a custom reminder-time
+  picker (hour/minute steppers + free-form HH:MM input with validation +
+  presets), matching the arbitrary time the Material 3 `TimePicker` already
+  allows in the app (prototype gap, not new scope). Dialogs now render inside
+  the phone frame via an in-device overlay instead of a `<dialog>` centered on
+  the browser viewport, so they no longer overflow the device screen. The home
+  header's backup button now uses a proper gear icon instead of a sun-like one
+  that read as a theme toggle. Smoke test extended accordingly. See
+  `design/mockup/BASELINE.md`.
+
 - Prototype-first UI contract (2026-10-11): established a Frontend spec layer
   (`.trellis/spec/frontend/`) whose [prototype-first contract](../../.trellis/spec/frontend/prototype-first.md)
   makes a confirmed prototype mandatory before any Compose UI change, forbids

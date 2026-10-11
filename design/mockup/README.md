@@ -52,4 +52,6 @@ PLAYWRIGHT_MODULE="<playwright 模块绝对路径>" node smoke-test.cjs
 ```
 
 会检查九页渲染、导航、搜索、折叠、表单保存、日历翻月、密码显隐、归档恢复、
-明暗主题与 390dp 无横向溢出,并输出三张截图。
+自定义提醒时间(步进/输入/绝非法值)、对话框不超出手机框、顶栏设置图标语义、
+明暗主题与 390dp 无横向溢出,并输出截图(`preview-desktop/dark/mobile.png` 与
+`preview-date-dialog.png`)。
