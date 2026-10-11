@@ -1,5 +1,17 @@
 # Changelog
 
+- Prototype v1.2 — 1:1 replicable UI (2026-10-11): the design mockup now only
+  draws UI that Compose can reproduce. The self-invented time stepper is
+  replaced by the Material 3 `TimePicker` (24-hour dial + keyboard mode) and the
+  self-invented mini calendar by the M3 `DatePicker` grid, both matching
+  `DianMaoDatePickerDialog` / `DianMaoTimePickerDialog`. Missing real dialogs are
+  added (uncomplete-recurring confirm, repeat rule with custom frequency/
+  interval/weekdays, reminder-lead multi-select, move-to-quadrant, batch delete);
+  the dialog chapter grows from 3 to 8 examples. Missing real features are
+  filled in: the reminder-lead setting row, long-press multi-select with
+  select-all + batch move-quadrant / batch delete, and the calendar row's
+  long-press「移动到...」. See `design/mockup/BASELINE.md`.
+
 - Prototype v1.1 (2026-10-11): the design mockup gains a custom reminder-time
   picker (hour/minute steppers + free-form HH:MM input with validation +
   presets), matching the arbitrary time the Material 3 `TimePicker` already

@@ -39,8 +39,15 @@ function initial() {
     activeQ: 'iu',
     detailId: null,
     editingId: null,
+    selection: [], // selected task ids in multi-select mode
+    moveTaskId: null,
     calendar: { year: 2026, month: 9, selected: midnight(NOW) },
     form: null,
+    dpMonth: new Date(NOW.getFullYear(), NOW.getMonth(), 1),
+    dpSelected: midnight(NOW),
+    tp: null,
+    rp: null,
+    lead: null,
     openGroups: {}, // label -> open (closed = collapsed)
     openHistory: false,
     tasks: [
@@ -49,7 +56,7 @@ function initial() {
       t({ id: 3, title: '整理季度 OKR 复盘草稿', q: 'in', detail: '把本季度三个关键结果的进展、偏差和下一步写清楚,周五例会上同步。', dueAt: at(addDays(NOW, 5), 9, 0), dueLabel: '每周五 09:00', useCalendar: true, useAlarm: true, useLocalReminder: true, repeat: '每 2 周', completionCount: 6, completionNote: '上次复盘发现“结果指标”比“动作清单”更能推进,这次先把指标写死再拆动作。', subTasks: [{ title: '列出三个关键结果', done: true }, { title: '补齐偏差原因', done: true }, { title: '写下季度下一步', done: false }, { title: '发送给协作同事', done: false }] }),
       t({ id: 4, title: '读完《卡片笔记》第 3 章', q: 'in' }),
       t({ id: 5, title: '学完线上课程第 2 讲', q: 'in', dueAt: at(addDays(NOW, 3), 20, 0), dueLabel: '周三 20:00' }),
-      t({ id: 6, title: '预约牙医复查', q: 'nu', dueAt: at(addDays(NOW, 1), 9, 0), dueLabel: '明天 09:00', useLocalReminder: true }),
+      t({ id: 6, title: '预约牙医复查', q: 'nu', dueAt: at(addDays(NOW, 1), 9, 0), dueLabel: '明天 09:00', useLocalReminder: true, reminderLead: [30], lead: '提前 30 分钟' }),
       t({ id: 7, title: '取快递', q: 'nu', dueAt: at(NOW, 18, 30), dueLabel: '今天 18:30' }),
       t({ id: 8, title: '整理书桌抽屉', q: 'nn' }),
       t({ id: 9, title: '收藏夹清理', q: 'in', completed: true, completionNote: '顺手建了两个分组,以后好找。', completionCount: 1 }),
@@ -117,18 +124,23 @@ function taskMetaList(t, showQuadrant) {
 
 function taskRow(t, o = {}) {
   const showQ = o.showQuadrant !== false;
+  const selected = state.selection.includes(t.id);
+  const selectMode = state.selection.length > 0;
   const sub = t.subTasks.length ? `<div class="sub-prog" style="--c:${QUAD[t.q].color}">
       <div class="sp-head"><span>子事项</span><span>${t.subTasks.filter(s => s.done).length}/${t.subTasks.length}</span></div>
       <div class="sp-bar"><i style="width:${Math.round(t.subTasks.filter(s => s.done).length / t.subTasks.length * 100)}%"></i></div>
     </div>` : '';
-  return `<div class="task-row${t.completed ? ' done' : ''}">
-    <button class="checkzone" data-action="toggle" data-id="${t.id}" aria-label="切换完成">${cm(t)}</button>
-    <button class="task-main" data-action="open" data-id="${t.id}">
+  const mark = selectMode
+    ? `<span class="checkzone" role="checkbox" aria-checked="${selected}">${icon('check-circle', 's20')}</span>`
+    : `<button class="checkzone" data-action="toggle" data-id="${t.id}" aria-label="切换完成">${cm(t)}</button>`;
+  return `<div class="task-row${t.completed ? ' done' : ''}${selected ? ' selected' : ''}">
+    ${mark}
+    <button class="task-main" data-action="${selectMode ? 'select-toggle' : 'open'}" data-id="${t.id}" data-long="select-enter">
       <span class="task-title">${esc(t.title)}</span>
       ${sub}
       <span class="metas">${taskMetaList(t, showQ)}</span>
     </button>
-    <button class="icon-button sm more" data-action="menu" data-id="${t.id}" aria-label="更多操作">${icons('more', 's18')}</button>
+    ${selectMode ? '' : `<button class="icon-button sm more" data-action="menu" data-id="${t.id}" aria-label="更多操作">${icons('more', 's18')}</button>`}
   </div>`;
 }
 const icons = (n, c) => `<span class="itile" style="background:transparent">${icon(n, c)}</span>`;
@@ -417,9 +429,11 @@ function addContent() {
       <div class="set-div"></div>
       ${setting('alarm', f.useAlarm ? '日历响铃已开启' : '开启日历响铃', f.useAlarm ? '日程到点在系统日历响铃' : (f.useCalendar ? '开启后系统日历日程带响铃' : '需先同步到系统日历'), { trailing: 'switch', field: 'useAlarm', on: f.useAlarm, disabled: !(hasDate && f.useCalendar), tint: f.useAlarm ? 'var(--secondary)' : null })}
       <div class="set-div"></div>
-      ${setting('bell', f.useLocalReminder ? '到点提醒已开启' : '开启到点提醒', f.useLocalReminder ? '准时提醒我' : '在 DianMao 内发出通知,不依赖日历', { trailing: 'switch', field: 'useLocalReminder', on: f.useLocalReminder, disabled: !hasDate, tint: f.useLocalReminder ? 'var(--secondary)' : null })}
+      ${setting('bell', f.useLocalReminder ? '到点提醒已开启' : '开启到点提醒', f.useLocalReminder ? (f.reminderLead && f.reminderLead.length ? `已开启 ${f.reminderLead.length} 个提醒时点` : '准时提醒我') : '在 DianMao 内发出通知,不依赖日历', { trailing: 'switch', field: 'useLocalReminder', on: f.useLocalReminder, disabled: !hasDate, tint: f.useLocalReminder ? 'var(--secondary)' : null })}
       <div class="set-div"></div>
-      ${setting('schedule', f.repeat || '不重复', f.repeat ? '点按修改重复规则' : (hasDate ? '可设为每天、工作日、每年或自定义' : '需先设置到期日'), { action: 'pick-repeat', tint: f.repeat ? 'var(--secondary)' : null, disabled: !hasDate })}
+      ${setting('schedule', f.lead || '准时提醒', f.useLocalReminder ? '点按选择多个提醒提前量' : '需先开启到点提醒', { action: 'pick-lead', tint: f.useLocalReminder ? 'var(--secondary)' : null, disabled: !(hasDate && f.useLocalReminder) })}
+      <div class="set-div"></div>
+      ${setting('repeat', f.repeat || '不重复', f.repeat ? '点按修改重复规则' : (hasDate ? '可设为每天、工作日、每年或自定义' : '需先设置到期日'), { action: 'pick-repeat', tint: f.repeat ? 'var(--secondary)' : null, disabled: !hasDate })}
     </div>
 
     ${f.feedback ? `<div class="save-pill">${itile('check', 'var(--on-primary-container)', true)}${esc(f.feedback)}</div>` : ''}
@@ -487,7 +501,7 @@ function calendarContent() {
         <button class="text-button" data-action="cal-add">${icon('add', 's16')}记一笔</button></div>
       ${list.length ? list.map(t => `<div class="cal-task">
           <button class="checkzone" data-action="toggle" data-id="${t.id}" aria-label="切换完成">${cm(t)}</button>
-          <button class="t" data-action="open" data-id="${t.id}" style="border:0;background:none;text-align:left;font:inherit;color:inherit;cursor:pointer">${esc(t.title)}</button>
+          <button class="t" data-action="open" data-id="${t.id}" data-long="move-to-date" style="border:0;background:none;text-align:left;font:inherit;color:inherit;cursor:pointer">${esc(t.title)}</button>
           ${t.dueLabel ? `<span class="due">${esc(t.dueLabel.split(' ').pop())}</span>` : ''}
         </div>`).join('') : `<span class="hint" style="padding:4px">当天没有事项</span>`}
     </div>`;
@@ -618,19 +632,35 @@ function dialogsHeader() {
 function dialogsContent() {
   const preview = (inner, h) => `<div class="dialog-preview"><div class="backdrop"></div><div class="wrap">
     <div class="dlg"><h4>${h}</h4>${inner}</div></div></div>`;
+  const dpCell = (d, opts='') => `<span class="m3-dp-cell${opts}">${d}</span>`;
+  const datePreview = `<div class="m3-datepicker" style="pointer-events:none">
+      <div class="m3-dp-head"><span class="m3-dp-nav">${icon('chev-left','s18')}</span><span class="m3-dp-title">2026年10月</span><span class="m3-dp-nav">${icon('chev-right','s18')}</span></div>
+      <div class="m3-dp-week">${['一','二','三','四','五','六','日'].map(x=>`<span>${x}</span>`).join('')}</div>
+      <div class="m3-dp-grid">
+        <div class="m3-dp-row">${dpCell('')}${dpCell('')}${dpCell('')}${dpCell(1)}${dpCell(2)}${dpCell(3)}${dpCell(4)}</div>
+        <div class="m3-dp-row">${dpCell(5)}${dpCell(6)}${dpCell(7)}${dpCell(8)}${dpCell(9)}${dpCell(10)}${dpCell(11,' today sel')}</div>
+        <div class="m3-dp-row">${dpCell(12)}${dpCell(13)}${dpCell(14)}${dpCell(15)}${dpCell(16)}${dpCell(17)}${dpCell(18)}</div>
+        <div class="m3-dp-row">${dpCell(19)}${dpCell(20)}${dpCell(21)}${dpCell(22)}${dpCell(23)}${dpCell(24)}${dpCell(25)}</div>
+      </div>
+    </div>
+    <div class="dlg-actions"><button class="btn text">取消</button><button class="btn text">确定</button></div>`;
+  const checkRow = (label, on=false) => `<span class="m3-check-row${on?' on':''}" style="pointer-events:none"><span class="m3-check">${on?icon('check','s16'):''}</span>${label}</span>`;
   return preview(`<div style="font-size:14px;line-height:20px;color:var(--on-surface-variant)">确定删除“取快递”?删除后不会保留提醒和完成备注。</div>
       <div class="dlg-actions"><button class="btn text">取消</button><button class="btn text" style="color:var(--error)">删除</button></div>`, '删除事项')
+    + preview(`<div style="font-size:14px;line-height:20px;color:var(--on-surface-variant)">这是一个重复事项,取消完成后将重新进入待办状态。是否继续?</div>
+      <div class="dlg-actions"><button class="btn text">取消</button><button class="btn text">确认取消完成</button></div>`, '取消完成重复事项?')
     + preview(`<div style="font-size:14px;line-height:20px;color:var(--on-surface-variant)">整理季度 OKR 复盘草稿</div>
       <div class="field" style="min-height:88px"><div class="flabel">心得或复盘</div><div class="fph">这件事完成后,我学到或确认了什么?</div></div>
       <div class="dlg-actions"><button class="btn text">稍后再写</button><button class="btn text">保存备注</button></div>`, '完成并写备注')
-    + preview(`<div class="mini-cal">
-      <div class="mc-row">${['一', '二', '三', '四', '五', '六', '日'].map(x => `<span class="mc-cell head">${x}</span>`).join('')}</div>
-      <div class="mc-row">${[28, 29, 30, 1, 2, 3, 4].map(x => `<span class="mc-cell${x > 20 ? ' out' : ''}">${x}</span>`).join('')}</div>
-      <div class="mc-row">${[5, 6, 7, 8, 9, 10, 11].map(x => `<span class="mc-cell${x === 11 ? ' today sel' : ''}">${x}</span>`).join('')}</div>
-      <div class="mc-row">${[12, 13, 14, 15, 16, 17, 18].map(x => `<span class="mc-cell">${x}</span>`).join('')}</div>
-      <div class="mc-row">${[19, 20, 21, 22, 23, 24, 25].map(x => `<span class="mc-cell">${x}</span>`).join('')}</div>
-    </div>
-    <div class="dlg-actions"><button class="btn text">取消</button><button class="btn text">确定</button></div>`, '选择到期日');
+    + preview(datePreview, '选择到期日')
+    + preview(`<div class="m3-repeat-picker" style="pointer-events:none">${checkRow('不重复')}${checkRow('每天')}${checkRow('工作日')}${checkRow('每周')}${checkRow('每月')}${checkRow('每年')}${checkRow('计数')}${checkRow('自定义', true)}</div>
+      <div class="dlg-actions"><button class="btn text">取消</button><button class="btn text">确定</button></div>`, '重复规则')
+    + preview(`<div class="m3-repeat-picker" style="pointer-events:none">${checkRow('准时提醒', true)}${checkRow('提前 5 分钟', true)}${checkRow('提前 30 分钟')}${checkRow('提前 1 天')}</div>
+      <div class="dlg-actions"><button class="btn text">取消</button><button class="btn text">确定</button></div>`, '提醒提前量')
+    + preview(`<div class="m3-repeat-picker" style="pointer-events:none"><span class="m3-check-row"><span class="m3-check" style="background:var(--q-iu);border-color:var(--q-iu)"></span>重要且紧急</span><span class="m3-check-row"><span class="m3-check" style="background:var(--q-in);border-color:var(--q-in)"></span>重要不紧急</span><span class="m3-check-row"><span class="m3-check" style="background:var(--q-nu);border-color:var(--q-nu)"></span>不重要但紧急</span><span class="m3-check-row"><span class="m3-check" style="background:var(--q-nn);border-color:var(--q-nn)"></span>不重要不紧急</span></div>
+      <div class="dlg-actions"><button class="btn text">取消</button></div>`, '移动到象限')
+    + preview(`<div style="font-size:14px;line-height:20px;color:var(--on-surface-variant)">确定删除选中的 3 个事项?删除后不会保留提醒和完成备注。</div>
+      <div class="dlg-actions"><button class="btn text">取消</button><button class="btn text" style="color:var(--error)">删除</button></div>`, '批量删除');
 }
 
 /* ---------- navigation + notes ---------- */
@@ -662,17 +692,30 @@ function navigate(page) {
   if (page === 'detail' && state.detailId == null) { state.detailId = openTasks()[0] ? openTasks()[0].id : (active()[0] || {}).id; }
   state.page = page;
   if (page !== 'home') state.search = false;
+  if (page !== 'home' && page !== 'quadrant') state.selection = [];
   render();
   $('#content').scrollTop = 0;
 }
 
 function render() {
   const page = state.page;
-  const header = HEADERS[page]();
-  $('#appHeader').className = 'app-header' + (page === 'home' ? ' home' : '') + (SCAFFOLD[page] ? ' scaffold' : '');
-  $('#appHeader').innerHTML = header;
-  $('#content').innerHTML = SCAFFOLD[page] ? `<div class="page-body">${CONTENTS[page]()}</div>` : CONTENTS[page]();
-  $('#fab').classList.toggle('hidden', !(page === 'home' || page === 'quadrant'));
+  const selecting = state.selection.length > 0 && (page === 'home' || page === 'quadrant');
+  if (selecting) {
+    $('#appHeader').className = 'app-header scaffold';
+    $('#appHeader').innerHTML = `<button class="icon-button tile" data-action="select-exit" aria-label="退出多选">${itile('close', 'var(--on-surface-variant)')}</button>
+      <div class="header-title"><h2>已选 ${state.selection.length} 项</h2></div>
+      <button class="text-button" data-action="select-all">全选</button>`;
+  } else {
+    $('#appHeader').className = 'app-header' + (page === 'home' ? ' home' : '') + (SCAFFOLD[page] ? ' scaffold' : '');
+    $('#appHeader').innerHTML = HEADERS[page]();
+  }
+  const body = SCAFFOLD[page] ? `<div class="page-body">${CONTENTS[page]()}</div>` : CONTENTS[page]();
+  const bar = selecting ? `<div class="select-bar">
+      <button class="btn tonal" style="flex:1" data-action="batch-move">${btnIcon('inventory', 'var(--on-primary-container)')}移动象限</button>
+      <button class="btn" style="flex:1;color:var(--error);background:color-mix(in srgb,var(--error) 10%,transparent)" data-action="batch-delete">${btnIcon('delete', 'var(--error)')}删除所选</button>
+    </div>` : '';
+  $('#content').innerHTML = body + bar;
+  $('#fab').classList.toggle('hidden', selecting || !(page === 'home' || page === 'quadrant'));
 
   $('#chapterNav').innerHTML = PAGES.map(([p, n], i) => `<button data-page="${p}" class="${page === p ? 'active' : ''}" ${page === p ? 'aria-current="page"' : ''}><span>0${i + 1}</span>${n}</button>`).join('');
   const note = NOTES[page] || NOTES.home;
@@ -736,6 +779,23 @@ const actions = {
     render();
   },
   'toggle': el => { const t = byId(el.dataset.id); t.completed = !t.completed; if (t.completed) t.completionCount = Math.max(1, t.completionCount); toast(t.completed ? '已标记完成' : '已标为未完成'); render(); },
+  'select-enter': el => { const id = +el.dataset.id; if (!state.selection.includes(id)) state.selection.push(id); render(); },
+  'select-toggle': el => { const id = +el.dataset.id; const i = state.selection.indexOf(id); if (i >= 0) state.selection.splice(i, 1); else state.selection.push(id); render(); },
+  'select-all': () => { const ids = (state.page === 'quadrant' ? qTasks(state.activeQ) : openTasks()).filter(t => !t.completed).map(t => t.id); state.selection = state.selection.length === ids.length ? [] : ids; render(); },
+  'select-exit': () => { state.selection = []; render(); },
+  'batch-move': () => sheet('移动到象限', `<div class="m3-repeat-picker">${QUAD_ORDER.map(k => `<button class="m3-check-row" data-action="batch-move-confirm" data-q="${k}"><span class="m3-check" style="background:${QUAD[k].color};border-color:${QUAD[k].color}"></span>${QUAD[k].label}</button>`).join('')}</div>
+      <div class="dlg-actions"><button class="btn text" data-action="close">取消</button></div>`),
+  'batch-move-confirm': el => { const q = el.dataset.q; state.tasks.forEach(t => { if (state.selection.includes(t.id)) t.q = q; }); closeSheet(); state.selection = []; toast(`已移动到${QUAD[q].short}象限`); render(); },
+  'batch-delete': () => sheet('批量删除', `<p class="dlg-body" style="margin:0">确定删除选中的 ${state.selection.length} 个事项?删除后不会保留提醒和完成备注。</p>
+      <div class="dlg-actions"><button class="btn text" data-action="close">取消</button>
+      <button class="btn text" style="color:var(--error)" data-action="batch-delete-confirm">删除</button></div>`),
+  'batch-delete-confirm': () => { state.tasks = state.tasks.filter(t => !state.selection.includes(t.id)); state.selection = []; closeSheet(); toast('演示:已批量删除'); navigate('home'); },
+  'move-to-date': el => { const t = byId(el.dataset.id); state.moveTaskId = t.id; sheet('移动到...', `<div class="m3-repeat-picker">
+      ${[['今天', 0], ['明天', 1], ['后天', 2]].map(([l, off]) => { const d = addDays(NOW, off); return `<button class="m3-check-row" data-action="move-to-date-confirm" data-offset="${off}"><span class="m3-check"></span>${l} · ${d.getMonth() + 1}/${d.getDate()}</button>`; }).join('')}
+      </div>
+      <span class="hint" style="display:block;margin-top:8px">保留原提醒时刻;重复事项请在编辑中调整</span>
+      <div class="dlg-actions"><button class="btn text" data-action="close">取消</button></div>`); },
+  'move-to-date-confirm': el => { const t = byId(state.moveTaskId); const off = +el.dataset.offset; const base = t.dueAt ? new Date(t.dueAt) : new Date(NOW); const d = addDays(NOW, off); t.dueAt = new Date(d.getFullYear(), d.getMonth(), d.getDate(), base.getHours(), base.getMinutes()).getTime(); t.dueLabel = labelFor(new Date(t.dueAt), `${String(base.getHours()).padStart(2, '0')}:${String(base.getMinutes()).padStart(2, '0')}`); closeSheet(); toast('已移动到期日'); render(); },
   'subtask': el => { const t = byId(el.dataset.id); const s = t.subTasks[+el.dataset.index]; s.done = !s.done; render(); },
   'archive': el => { const t = byId(el.dataset.id); t.archived = true; toast('已归档'); navigate('home'); },
   'unarchive': el => { const t = byId(el.dataset.id); t.archived = false; toast('已恢复到待办'); render(); },
@@ -759,6 +819,7 @@ const actions = {
     const t = byId(el.dataset.id);
     let body = menuItem('edit-note', t.completed ? '编辑完成备注' : '完成并写备注', t.completed ? 'edit-note' : 'done-all', `data-id="${t.id}"`);
     body += menuItem('edit', '编辑事项', 'edit', `data-id="${t.id}"`);
+    if (!t.completed) body += menuItem('move-to-date', '移动到...', 'calendar', `data-id="${t.id}"`);
     if (t.completed) body += menuItem('archive', '归档', 'archive', `data-id="${t.id}"`);
     body += menuItem('delete', '删除事项', 'delete', `data-id="${t.id}"`, true);
     sheet('事项操作', body);
@@ -791,62 +852,64 @@ const actions = {
       toast(`已保存到${QUAD[f.q].short}象限`); navigate('home');
     }
   },
-  'pick-date': () => sheet('选择到期日', pickerCal()),
-  'cal-pick-date': el => { state.form.dueDate = new Date(+el.dataset.day); if (!state.form.dueTime) state.form.dueTime = '09:00'; closeSheet(); render(); },
+  'pick-date': () => { state.dpMonth = new Date((state.form.dueDate || new Date(NOW)).getFullYear(), (state.form.dueDate || new Date(NOW)).getMonth(), 1); state.dpSelected = state.form.dueDate ? midnight(state.form.dueDate) : midnight(NOW); sheet('选择到期日', m3DatePicker()); },
+  'dp-prev': el => { const m = +el.dataset.shift; state.dpMonth = addMonths(state.dpMonth, m); renderOverlay(); },
+  'dp-next': el => { const m = +el.dataset.shift; state.dpMonth = addMonths(state.dpMonth, m); renderOverlay(); },
+  'dp-pick': el => { state.dpSelected = +el.dataset.day; renderOverlay(); },
+  'dp-confirm': () => { state.form.dueDate = new Date(state.dpSelected); if (!state.form.dueTime) state.form.dueTime = '09:00'; closeSheet(); render(); },
   'pick-time': () => {
-    const presets = ['08:00', '09:00', '12:00', '14:00', '18:30', '20:00', '21:30'];
-    const cur = state.form.dueTime || '';
-    const [ch, cm2] = (cur || '09:00').split(':').map(Number);
-    sheet('选择提醒时间', `<div style="display:flex;flex-direction:column;gap:14px">
-      <div class="time-steppers">
-        <div class="stepper">
-          <button class="stepper-btn" data-action="time-step" data-unit="h" data-delta="1" aria-label="小时加一">${icon('chev-up', 's18')}</button>
-          <span class="stepper-val" id="timeH">${String(ch).padStart(2, '0')}</span>
-          <button class="stepper-btn" data-action="time-step" data-unit="h" data-delta="-1" aria-label="小时减一">${icon('chev-down', 's18')}</button>
-        </div>
-        <span class="time-colon">:</span>
-        <div class="stepper">
-          <button class="stepper-btn" data-action="time-step" data-unit="m" data-delta="5" aria-label="分钟加五">${icon('chev-up', 's18')}</button>
-          <span class="stepper-val" id="timeM">${String(cm2).padStart(2, '0')}</span>
-          <button class="stepper-btn" data-action="time-step" data-unit="m" data-delta="-5" aria-label="分钟减五">${icon('chev-down', 's18')}</button>
-        </div>
-      </div>
-      <div class="time-custom">
-        <div class="field" style="flex:1"><div class="flabel">自定义时刻</div>
-          <input id="timeInput" inputmode="numeric" placeholder="HH:MM" value="${esc(cur || String(ch).padStart(2,'0')+':'+String(cm2).padStart(2,'0'))}"></div>
-        <button class="btn tonal" data-action="time-apply">${btnIcon('check', 'var(--on-primary-container)')}应用</button>
-      </div>
-      <div class="time-presets">
-        ${presets.map(o => `<button class="lane-chip" data-action="set-time" data-time="${o}" style="--c:var(--secondary)">${o}</button>`).join('')}
-      </div>
-    </div>
-    <div class="dlg-actions"><button class="btn text" data-action="close">取消</button></div>`);
+    const cur = state.form.dueTime || '09:00';
+    const [h, m] = cur.split(':').map(Number);
+    state.tp = { hour: h, minute: m, mode: 'dial', amp: h < 12 ? 'AM' : 'PM' };
+    sheet('选择提醒时间', m3TimePicker());
   },
-  'time-step': el => {
-    const unit = el.dataset.unit, delta = +el.dataset.delta;
-    let h = +($('#timeH').textContent), m = +($('#timeM').textContent);
-    if (unit === 'h') h = (h + delta + 24) % 24;
-    else m = (m + delta + 60) % 60;
-    $('#timeH').textContent = String(h).padStart(2, '0');
-    $('#timeM').textContent = String(m).padStart(2, '0');
-    const inp = $('#timeInput');
-    if (inp) inp.value = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-  },
-  'time-apply': () => {
-    const raw = ($('#timeInput').value || '').trim();
+  'tp-hour': el => { state.tp.hour = (+el.dataset.hour) % 24; renderOverlay(); },
+  'tp-min': el => { state.tp.minute = (+el.dataset.min) % 60; renderOverlay(); },
+  'tp-amp': el => { const want = el.dataset.amp; if ((state.tp.hour < 12 ? 'AM' : 'PM') !== want) state.tp.hour = (state.tp.hour + 12) % 24; renderOverlay(); },
+  'tp-mode': el => { state.tp.mode = el.dataset.mode; renderOverlay(); const i = $('#tpInput'); if (i) i.focus(); },
+  'tp-apply': () => {
+    const raw = ($('#tpInput').value || '').trim();
     const m = raw.match(/^(\d{1,2}):(\d{2})$/);
     if (!m || +m[1] > 23 || +m[2] > 59) { toast('请输入 HH:MM,例如 07:45'); return; }
-    state.form.dueTime = `${String(+m[1]).padStart(2, '0')}:${m[2]}`;
+    state.tp.hour = +m[1]; state.tp.minute = +m[2]; state.tp.mode = 'dial'; renderOverlay();
+  },
+  'tp-confirm': () => {
+    state.form.dueTime = `${String(state.tp.hour).padStart(2, '0')}:${String(state.tp.minute).padStart(2, '0')}`;
     if (!state.form.dueDate) state.form.dueDate = new Date(NOW);
     closeSheet(); render();
   },
-  'set-time': el => { state.form.dueTime = el.dataset.time; if (!state.form.dueDate) state.form.dueDate = new Date(NOW); closeSheet(); render(); },
   'pick-repeat': () => {
-    const opts = ['不重复', '每天', '工作日', '每周', '每 2 周', '每月', '每年'];
-    sheet('重复规则', `<div style="display:flex;flex-direction:column;gap:6px">${opts.map(o => `<button class="menu-item" data-action="set-repeat" data-repeat="${o}">${icon('repeat', 's20')}${o}</button>`).join('')}</div>
-      <div class="dlg-actions"><button class="btn text" data-action="close">取消</button></div>`);
+    const f = state.form;
+    state.rp = { preset: f.repeatPreset || 'none', customRule: f.repeatCustomRule || 'weekly', interval: f.repeatInterval || 1, weekdays: new Set(f.repeatWeekdays && f.repeatWeekdays.length ? f.repeatWeekdays : [1]) };
+    sheet('重复规则', m3RepeatPicker());
   },
-  'set-repeat': el => { state.form.repeat = el.dataset.repeat === '不重复' ? null : el.dataset.repeat; closeSheet(); render(); },
+  'rp-preset': el => { state.rp.preset = el.dataset.preset; renderOverlay(); },
+  'rp-rule': el => { state.rp.customRule = el.dataset.rule; renderOverlay(); },
+  'rp-int': el => { const d = +el.dataset.delta; state.rp.interval = Math.max(1, Math.min(99, state.rp.interval + d)); renderOverlay(); },
+  'rp-day': el => { const d = +el.dataset.day; if (state.rp.weekdays.has(d)) state.rp.weekdays.delete(d); else state.rp.weekdays.add(d); renderOverlay(); },
+  'rp-confirm': () => {
+    const f = state.form, rp = state.rp;
+    if (rp.preset === 'custom') {
+      f.repeatPreset = 'custom'; f.repeatCustomRule = rp.customRule; f.repeatInterval = rp.interval;
+      f.repeatWeekdays = rp.customRule === 'weekly' ? [...rp.weekdays].sort() : [];
+    } else {
+      f.repeatPreset = rp.preset; f.repeatWeekdays = rp.preset === 'workdays' ? [1, 2, 3, 4, 5] : [];
+      f.repeatInterval = 1; f.repeatCustomRule = 'weekly';
+    }
+    f.repeat = repeatLabel(f.repeatPreset, f.repeatInterval, f.repeatWeekdays || []);
+    closeSheet(); render();
+  },
+  'pick-lead': () => {
+    state.lead = new Set(state.form.reminderLead && state.form.reminderLead.length ? state.form.reminderLead : [0]);
+    sheet('提醒提前量', m3LeadPicker());
+  },
+  'lead-toggle': el => { const v = +el.dataset.min; if (state.lead.has(v)) state.lead.delete(v); else state.lead.add(v); renderOverlay(); },
+  'lead-confirm': () => {
+    state.form.reminderLead = [...state.lead].sort((a, b) => a - b);
+    if (!state.form.reminderLead.length) state.form.reminderLead = [0];
+    state.form.lead = leadLabel(state.form.reminderLead);
+    closeSheet(); render();
+  },
 
   /* calendar */
   'cal-prev': () => { const c = state.calendar; const m = new Date(c.year, c.month - 1, 1); c.year = m.getFullYear(); c.month = m.getMonth(); render(); },
@@ -865,30 +928,153 @@ const actions = {
   'download': () => toast('演示:已从 WebDAV 下载恢复'),
 };
 
-function pickerCal() {
-  // Minimal branded month grid for the date dialog.
-  const monthStart = new Date(NOW.getFullYear(), NOW.getMonth(), 1);
-  const pad = (monthStart.getDay() + 6) % 7;
-  const days = new Date(NOW.getFullYear(), NOW.getMonth() + 1, 0).getDate();
+function m3DatePicker() {
+  const month = state.dpMonth || new Date(NOW.getFullYear(), NOW.getMonth(), 1);
+  const selected = state.dpSelected || midnight(NOW);
+  const monthStart = new Date(month.getFullYear(), month.getMonth(), 1);
+  const pad = (monthStart.getDay() + 6) % 7; // Monday-first weekday header
+  const days = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
   const cells = [];
   for (let i = 0; i < pad; i++) cells.push(null);
   for (let d = 1; d <= days; d++) cells.push(d);
+  while (cells.length % 7 !== 0) cells.push(null);
   const rows = [];
   for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
-  return `<div class="mini-cal">
-    <div class="mc-row">${['一', '二', '三', '四', '五', '六', '日'].map(x => `<span class="mc-cell head">${x}</span>`).join('')}</div>
-    ${rows.map(w => `<div class="mc-row">${w.map(d => d == null ? `<span class="mc-cell"></span>`
-      : `<button class="mc-cell${d === 11 ? ' today sel' : ''}" data-action="cal-pick-date" data-day="${new Date(NOW.getFullYear(), NOW.getMonth(), d).getTime()}">${d}</button>`).join('')}</div>`).join('')}
+  const todayMs = midnight(NOW);
+  return `<div class="m3-datepicker">
+    <div class="m3-dp-head">
+      <button class="m3-dp-nav" data-action="dp-prev" data-shift="-1" aria-label="上个月">${icon('chev-left', 's18')}</button>
+      <span class="m3-dp-title">${month.getFullYear()}年${month.getMonth() + 1}月</span>
+      <button class="m3-dp-nav" data-action="dp-next" data-shift="1" aria-label="下个月">${icon('chev-right', 's18')}</button>
+    </div>
+    <div class="m3-dp-week">${['一', '二', '三', '四', '五', '六', '日'].map(x => `<span>${x}</span>`).join('')}</div>
+    <div class="m3-dp-grid">${rows.map(w => `<div class="m3-dp-row">${w.map(d => {
+      if (d == null) return `<span class="m3-dp-cell empty"></span>`;
+      const ms = new Date(month.getFullYear(), month.getMonth(), d).getTime();
+      const isSel = ms === selected, isToday = ms === todayMs;
+      return `<button class="m3-dp-cell${isSel ? ' sel' : ''}${isToday && !isSel ? ' today' : ''}" data-action="dp-pick" data-day="${ms}">${d}</button>`;
+    }).join('')}</div>`).join('')}</div>
   </div>
   <div class="dlg-actions"><button class="btn text" data-action="close">取消</button>
-  <button class="btn text" data-action="cal-pick-date" data-day="${midnight(NOW)}">确定</button></div>`;
+  <button class="btn text" data-action="dp-confirm">确定</button></div>`;
+}
+
+function addMonths(date, n) { return new Date(date.getFullYear(), date.getMonth() + n, 1); }
+
+/** M3 TimePicker: 24-hour dial + keyboard mode toggle, matching DianMaoTheme. */
+function m3TimePicker() {
+  const t = state.tp || { hour: 9, minute: 0, mode: 'dial' };
+  const hh = String(t.hour).padStart(2, '0'), mm = String(t.minute).padStart(2, '0');
+  if (t.mode === 'input') {
+    return `<div class="m3-timepicker input-mode">
+      <div class="m3-tp-inputrow">
+        <div class="m3-tp-field"><input id="tpInput" class="m3-tp-input" inputmode="numeric" value="${hh}" data-field="h"><span class="m3-tp-sep">:</span><input id="tpInputM" class="m3-tp-input" inputmode="numeric" value="${mm}" data-field="m"></div>
+      </div>
+      <button class="m3-tp-mode" data-action="tp-mode" data-mode="dial" aria-label="切换到表盘">${icon('schedule', 's20')}</button>
+    </div>
+    <div class="dlg-actions"><button class="btn text" data-action="close">取消</button>
+      <button class="btn text" data-action="tp-apply">确定</button></div>`;
+  }
+  const hourMarks = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+  const minuteMarks = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+  const hourAngle = ((t.hour % 12) / 12) * 360;
+  const minuteAngle = (t.minute / 60) * 360;
+  return `<div class="m3-timepicker">
+    <div class="m3-tp-headline"><span class="m3-tp-time"><b>${hh}</b>:<b>${mm}</b></span></div>
+    <div class="m3-tp-dial" style="--ha:${hourAngle}deg;--ma:${minuteAngle}deg">
+      <div class="m3-tp-hand h"></div>
+      <div class="m3-tp-center"></div>
+      ${hourMarks.map((h, i) => {
+        const ang = (i / 12) * 2 * Math.PI - Math.PI / 2;
+        const x = 50 + 42 * Math.cos(ang), y = 50 + 42 * Math.sin(ang);
+        const val = h === 12 ? 0 : h;
+        const on = val === (t.hour % 12);
+        return `<button class="m3-tp-mark${on ? ' on' : ''}" style="left:calc(${x}% - 16px);top:calc(${y}% - 16px)" data-action="tp-hour" data-hour="${val}">${h}</button>`;
+      }).join('')}
+    </div>
+    <div class="m3-tp-min-row">
+      ${minuteMarks.map(mn => `<button class="m3-tp-min${mn === t.minute ? ' on' : ''}" data-action="tp-min" data-min="${mn}">:${String(mn).padStart(2, '0')}</button>`).join('')}
+    </div>
+    <button class="m3-tp-mode" data-action="tp-mode" data-mode="input" aria-label="切换到键盘输入">${icon('keyboard', 's20')}</button>
+  </div>
+  <div class="dlg-actions"><button class="btn text" data-action="close">取消</button>
+    <button class="btn text" data-action="tp-confirm">确定</button></div>`;
+}
+
+function m3RepeatPicker() {
+  const rp = state.rp;
+  const presets = [['none', '不重复'], ['daily', '每天'], ['workdays', '工作日'], ['weekly', '每周'], ['monthly', '每月'], ['yearly', '每年'], ['count', '计数'], ['custom', '自定义']];
+  const rows = presets.map(([k, label]) => `<button class="m3-check-row${rp.preset === k ? ' on' : ''}" data-action="rp-preset" data-preset="${k}">
+      <span class="m3-check">${rp.preset === k ? icon('check', 's16') : ''}</span>${label}</button>`).join('');
+  let custom = '';
+  if (rp.preset === 'custom') {
+    const rules = [['daily', '每 天'], ['weekly', '每 周'], ['monthly', '每 月'], ['yearly', '每 年']];
+    custom = `<div class="m3-rp-div"></div>
+      <span class="hint">频率</span>
+      <div class="m3-chiprow">${rules.map(([k, l]) => `<button class="lane-chip" data-action="rp-rule" data-rule="${k}" style="--c:var(--primary);${rp.customRule === k ? 'background:var(--primary-container);color:var(--on-primary-container)' : ''}">${l}</button>`).join('')}</div>
+      <div class="m3-int-row"><span>间隔</span><span class="grow"></span>
+        <button class="m3-int-btn" data-action="rp-int" data-delta="-1" ${rp.interval <= 1 ? 'disabled' : ''} aria-label="减少间隔">${icon('minus', 's18')}</button>
+        <span class="m3-int-val">${rp.interval}</span>
+        <button class="m3-int-btn" data-action="rp-int" data-delta="1" ${rp.interval >= 99 ? 'disabled' : ''} aria-label="增加间隔">${icon('add', 's18')}</button></div>`;
+    if (rp.customRule === 'weekly') {
+      custom += `<span class="hint">重复周几</span>
+        <div class="m3-chiprow">${['一', '二', '三', '四', '五', '六', '日'].map((d, i) => `<button class="lane-chip" data-action="rp-day" data-day="${i + 1}" style="--c:var(--primary);${rp.weekdays.has(i + 1) ? 'background:var(--primary-container);color:var(--on-primary-container)' : ''}">${d}</button>`).join('')}</div>`;
+    }
+  }
+  return `<div class="m3-repeat-picker">${rows}${custom}</div>
+    <div class="dlg-actions"><button class="btn text" data-action="close">取消</button>
+    <button class="btn text" data-action="rp-confirm">确定</button></div>`;
+}
+
+function m3LeadPicker() {
+  const options = [[0, '准时提醒'], [5, '提前 5 分钟'], [30, '提前 30 分钟'], [1440, '提前 1 天']];
+  return `<div class="m3-repeat-picker">${options.map(([v, label]) => `<button class="m3-check-row${state.lead.has(v) ? ' on' : ''}" data-action="lead-toggle" data-min="${v}">
+      <span class="m3-check">${state.lead.has(v) ? icon('check', 's16') : ''}</span>${label}</button>`).join('')}</div>
+    <div class="dlg-actions"><button class="btn text" data-action="close">取消</button>
+    <button class="btn text" data-action="lead-confirm">确定</button></div>`;
+}
+
+function leadLabel(minutes) {
+  const map = { 0: '准时提醒', 5: '提前 5 分钟', 30: '提前 30 分钟', 1440: '提前 1 天' };
+  const valid = minutes.filter(x => x >= 0).sort((a, b) => a - b);
+  if (!valid.length) return '准时提醒';
+  return valid.map(x => map[x] || '准时提醒').join('、');
+}
+
+/** Mirrors data/RepeatRuleLabel.kt for the prototype. */
+function repeatLabel(preset, interval, weekdays) {
+  const names = ['一', '二', '三', '四', '五', '六', '日'];
+  if (preset === 'none') return '不重复';
+  if (preset === 'count') return '计数';
+  if (preset === 'daily') return interval === 1 ? '每天' : `每 ${interval} 天`;
+  if (preset === 'monthly') return interval === 1 ? '每月' : `每 ${interval} 个月`;
+  if (preset === 'yearly') return interval === 1 ? '每年' : `每 ${interval} 年`;
+  // weekly family
+  const wd = (weekdays || []).filter(d => d >= 1 && d <= 7);
+  const isWork = wd.length === 5 && [1, 2, 3, 4, 5].every(d => wd.includes(d));
+  const isWeekend = wd.length === 2 && [6, 7].every(d => wd.includes(d));
+  if (isWork) return interval === 1 ? '工作日' : `每 ${interval} 周 · 工作日`;
+  if (isWeekend) return interval === 1 ? '周末' : `每 ${interval} 周 · 周末`;
+  if (!wd.length) return interval === 1 ? '每周' : `每 ${interval} 周`;
+  const list = [...wd].sort((a, b) => a - b).map((d, i) => (i === 0 && interval > 1 ? '周' : '') + names[d - 1]).join('、');
+  return interval === 1 ? '每周' + list : `每 ${interval} 周 · ` + list;
+}
+
+/** Re-renders only the open overlay body (dialogs stay in place while editing). */
+function renderOverlay() {
+  if ($('#overlay').hidden) return;
+  const title = $('#sheetTitle').textContent;
+  if (title === '选择到期日') $('#sheetBody').innerHTML = m3DatePicker();
+  else if (title === '选择提醒时间') $('#sheetBody').innerHTML = m3TimePicker();
+  else if (title === '重复规则') $('#sheetBody').innerHTML = m3RepeatPicker();
+  else if (title === '提醒提前量') $('#sheetBody').innerHTML = m3LeadPicker();
 }
 
 /* ---------- form helpers ---------- */
-function blankForm(q) { return { title: '', detail: '', q, dueDate: null, dueTime: null, useCalendar: false, useAlarm: false, useLocalReminder: false, repeat: null, subTasks: [], feedback: null }; }
+function blankForm(q) { return { title: '', detail: '', q, dueDate: null, dueTime: null, useCalendar: false, useAlarm: false, useLocalReminder: false, reminderLead: [0], lead: '准时提醒', repeat: null, repeatPreset: 'none', repeatCustomRule: 'weekly', repeatInterval: 1, repeatWeekdays: [], subTasks: [], feedback: null }; }
 function formFrom(t) {
   const d = t.dueAt != null ? new Date(t.dueAt) : null;
-  return { title: t.title, detail: t.detail || '', q: t.q, dueDate: d ? new Date(d.getFullYear(), d.getMonth(), d.getDate()) : null, dueTime: d ? `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : null, useCalendar: t.useCalendar, useAlarm: t.useAlarm, useLocalReminder: t.useLocalReminder, repeat: t.repeat, subTasks: t.subTasks.map(s => ({ ...s })), feedback: null };
+  return { title: t.title, detail: t.detail || '', q: t.q, dueDate: d ? new Date(d.getFullYear(), d.getMonth(), d.getDate()) : null, dueTime: d ? `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}` : null, useCalendar: t.useCalendar, useAlarm: t.useAlarm, useLocalReminder: t.useLocalReminder, reminderLead: t.reminderLead || [0], lead: t.lead || '准时提醒', repeat: t.repeat, repeatPreset: t.repeatPreset || 'none', repeatCustomRule: t.repeatCustomRule || 'weekly', repeatInterval: t.repeatInterval || 1, repeatWeekdays: t.repeatWeekdays || [], subTasks: t.subTasks.map(s => ({ ...s })), feedback: null };
 }
 function collectForm() {
   state.form.title = $('#formTitle') ? $('#formTitle').value : state.form.title;
@@ -910,13 +1096,26 @@ document.addEventListener('click', e => {
   const fn = actions[el.dataset.action];
   if (fn) { e.preventDefault(); fn(el); }
 });
+// Long-press a task row to enter multi-select; long-press a calendar row to move its date.
+let pressTimer = null;
+document.addEventListener('pointerdown', e => {
+  const move = e.target.closest('[data-long="move-to-date"]');
+  const sel = e.target.closest('[data-long="select-enter"]');
+  const el = move || sel;
+  if (!el) return;
+  if (sel && state.selection.length) return;
+  const action = move ? 'move-to-date' : 'select-enter';
+  pressTimer = setTimeout(() => { actions[action](el); pressTimer = null; }, 500);
+});
+['pointerup', 'pointerleave', 'pointercancel', 'scroll'].forEach(ev =>
+  document.addEventListener(ev, () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } }, true));
 document.addEventListener('input', e => {
   if (e.target.id === 'searchInput') { state.query = e.target.value; const pos = e.target.selectionStart; render(); const i = $('#searchInput'); if (i) { i.focus(); i.setSelectionRange(pos, pos); } }
   else if (e.target.id === 'formTitle' || e.target.id === 'formDetail') { collectForm(); }
 });
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && e.target.id === 'formTitle') { e.preventDefault(); actions['form-save'](); }
-  if (e.key === 'Enter' && e.target.id === 'timeInput') { e.preventDefault(); actions['time-apply'](); }
+  if (e.key === 'Enter' && e.target.id === 'tpInput') { e.preventDefault(); actions['tp-apply'](); }
   if (e.key === 'Escape' && !$('#overlay').hidden) { e.preventDefault(); closeSheet(); }
 });
 

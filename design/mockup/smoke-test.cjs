@@ -113,30 +113,31 @@ const assert = require('node:assert/strict');
   await page.waitForTimeout(60);
   assert.equal(await page.locator('.arch-row').count(), archCount - 1, 'unarchive removes row');
 
-  // 10b. custom reminder time: steppers + free-form input
+  // 10b. custom reminder time: M3 TimePicker (dial + keyboard modes)
   await goChapter('add');
   await click('#content [data-action="quick-date"][data-offset="0"]');
   await click('#content [data-action="pick-time"]');
-  assert.equal(await page.locator('#overlay:not([hidden]) .stepper').count(), 2, 'hour + minute steppers');
-  const h0 = await page.locator('#timeH').innerText();
-  await click('#overlay [data-action="time-step"][data-unit="h"][data-delta="1"]');
-  assert.notEqual(await page.locator('#timeH').innerText(), h0, 'hour stepper changes value');
-  await page.fill('#timeInput', '07:45');
-  await click('#overlay [data-action="time-apply"]');
+  assert.equal(await page.locator('#overlay:not([hidden]) .m3-tp-dial').count(), 1, 'M3 dial renders');
+  const h0 = (await page.locator('.m3-tp-time').innerText()).replace(/\s/g, '');
+  await click('#overlay [data-action="tp-hour"][data-hour="7"]');
+  assert.notEqual((await page.locator('.m3-tp-time').innerText()).replace(/\s/g, ''), h0, 'hour mark updates time');
+  await click('#overlay [data-action="tp-min"][data-min="45"]');
+  assert.match((await page.locator('.m3-tp-time').innerText()).replace(/\s/g, ''), /07:45/, 'minute mark updates time');
+  // keyboard mode
+  await click('#overlay [data-action="tp-mode"][data-mode="input"]');
+  assert.equal(await page.locator('#tpInput').count(), 1, 'keyboard input mode');
+  await page.fill('#tpInput', '07:15');
+  await click('#overlay [data-action="tp-apply"]');
   await page.waitForTimeout(60);
-  assert.match(await page.locator('#content').innerText(), /07:45/, 'custom time applied to form');
-  // invalid input is rejected and keeps the dialog open
-  await click('#content [data-action="pick-time"]');
-  await page.fill('#timeInput', '99:99');
-  await click('#overlay [data-action="time-apply"]');
+  assert.equal(await page.locator('.m3-tp-dial').count(), 1, 'returns to dial after apply');
+  await click('#overlay [data-action="tp-confirm"]');
   await page.waitForTimeout(60);
-  assert.equal(await page.locator('#overlay:not([hidden])').count(), 1, 'invalid time keeps dialog open');
-  await click('.overlay-card .sheet-heading [data-action="close"]');
-  assert.equal(await page.locator('#overlay[hidden]').count(), 1, 'dialog closes');
+  assert.match(await page.locator('#content').innerText(), /07:15/, 'custom time applied to form');
 
-  // 10c. overlay (dialog) stays inside the phone frame
+  // 10c. M3 dialogs stay inside the phone frame
   await click('#content [data-action="pick-date"]');
   await page.waitForTimeout(80);
+  assert.equal(await page.locator('#overlay .m3-datepicker').count(), 1, 'M3 date picker renders');
   const contained = await page.evaluate(() => {
     const card = document.querySelector('#overlay .overlay-card');
     const phone = document.querySelector('#phone');
@@ -148,8 +149,42 @@ const assert = require('node:assert/strict');
   await page.screenshot({ path: path.join(__dirname, 'preview-date-dialog.png') });
   await click('.overlay-card .sheet-heading [data-action="close"]');
 
-  // 10d. AppHeader settings icon opens backup, not a theme toggle
+  // 10d. repeat picker: presets + custom weekday editor
+  await click('#content [data-action="pick-repeat"]');
+  assert.equal(await page.locator('#overlay .m3-check-row').count(), 8, 'eight repeat presets');
+  await click('#overlay [data-action="rp-preset"][data-preset="custom"]');
+  assert.equal(await page.locator('#overlay .m3-int-btn').count(), 2, 'interval stepper');
+  await click('#overlay [data-action="rp-int"][data-delta="1"]');
+  assert.equal((await page.locator('#overlay .m3-int-val').innerText()).trim(), '2', 'interval increments');
+  await click('#overlay [data-action="rp-day"][data-day="3"]');
+  await click('#overlay [data-action="rp-confirm"]');
+  await page.waitForTimeout(60);
+  assert.match(await page.locator('#content').innerText(), /每 2 周 · 周/, 'custom repeat label applied');
+
+  // 10e. reminder-lead multi-select
+  await click('#content .set-row:has-text("开启到点提醒") .switch');
+  await click('#content [data-action="pick-lead"]');
+  assert.equal(await page.locator('#overlay .m3-check-row').count(), 4, 'four lead options');
+  await click('#overlay [data-action="lead-toggle"][data-min="30"]');
+  await click('#overlay [data-action="lead-confirm"]');
+  await page.waitForTimeout(60);
+  assert.match(await page.locator('#content').innerText(), /提前 30 分钟/, 'lead label applied');
+
+  // 10f. multi-select batch operations (long-press works in list/quadrant-detail surfaces)
   await goChapter('home');
+  await click('#appHeader [data-action="home-view"][data-view="today"]');
+  await page.locator('#content .task-main[data-long="select-enter"]').first().dispatchEvent('pointerdown');
+  await page.waitForTimeout(650);
+  assert.match(await headerText(), /已选 1 项/, 'long-press enters multi-select');
+  await click('#appHeader [data-action="select-all"]');
+  assert.ok(await page.locator('#content .task-row.selected').count() > 1, 'select-all selects rows');
+  await click('#content [data-action="batch-move"]');
+  await click('#overlay [data-action="batch-move-confirm"][data-q="nu"]');
+  await page.waitForTimeout(60);
+  assert.equal(await page.locator('#content .task-row.selected').count(), 0, 'batch move exits selection');
+  await click('#appHeader [data-action="home-view"][data-view="quadrants"]');
+
+  // 10g. AppHeader settings icon opens backup, not a theme toggle
   const settingsBtnIcon = await page.evaluate(() => document.querySelector('#appHeader [data-page="backup"] use').getAttribute('href'));
   assert.equal(settingsBtnIcon, '#i-settings', 'header settings button uses the settings icon');
   await click('#appHeader [data-page="backup"]');
@@ -157,7 +192,7 @@ const assert = require('node:assert/strict');
 
   // 11. dialogs chapter
   await goChapter('dialogs');
-  assert.equal(await page.locator('.dialog-preview .dlg').count(), 3, 'three dialog examples');
+  assert.equal(await page.locator('.dialog-preview .dlg').count(), 8, 'eight dialog examples');
 
   // 12. dark theme
   await click('#themeToggle');
