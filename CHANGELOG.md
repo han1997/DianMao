@@ -1,5 +1,12 @@
 # Changelog
 
+- Calendar quick actions (v1.1.1): each task row in the selected-day panel
+  gains an inline check target with the same completion semantics as the home
+  rows (including the 写心得 chain), and a long-press opens a quick move dialog
+  (今天/明天/后天) that preserves the task's time of day and re-syncs alarms,
+  the system calendar event and the home widget. Home search now also matches
+  task detail and completion notes.
+
 - Review & safety improvements (v1.1.0): the calendar gains a 今天 button to
   jump the grid and selection back to today from any month. WebDAV restore now
   snapshots the current local data to dianmao-backup-before-restore.json on

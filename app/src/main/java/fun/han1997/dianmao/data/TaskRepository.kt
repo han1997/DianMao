@@ -118,6 +118,37 @@ class TaskRepository(context: Context) {
         return taskIds.size
     }
 
+    /**
+     * Targeted due-date move for one open, non-recurring task: keeps its
+     * time-of-day (or the date-only shape when the task has no time) and
+     * only swaps the calendar day. Returns null for completed or recurring
+     * tasks — recurring cycles are anchored, not movable here; the user
+     * edits those through the form. The caller owns alarm re-scheduling and
+     * calendar-event syncing.
+     */
+    suspend fun moveTaskDueToDate(taskId: Long, targetDateMillis: Long): TaskUiModel? {
+        val existing = dao.findById(taskId) ?: return null
+        if (existing.completed || existing.repeatRule != RepeatRule.None) return null
+        val existingDue = existing.dueAtMillis ?: return null
+        val zone = ZoneId.systemDefault()
+        // Preserve the date-only vs date+time distinction: a task created
+        // without an explicit time sits at its day start and must stay
+        // date-only after the move.
+        val existingDayStart = Instant.ofEpochMilli(existingDue).atZone(zone).toLocalDate()
+            .atStartOfDay(zone).toInstant().toEpochMilli()
+        val minutes = if (existingDue != existingDayStart) minutesOfDay(existingDue) else null
+        val newDayStart = Instant.ofEpochMilli(targetDateMillis).atZone(zone).toLocalDate()
+            .atStartOfDay(zone).toInstant().toEpochMilli()
+        val newDue = newDayStart + (minutes?.times(60_000L) ?: 0L)
+        val updated = existing.copy(
+            dueLabel = DateTimeFormatters.labelFor(newDayStart, minutes),
+            dueAtMillis = newDue,
+            updatedAtMillis = System.currentTimeMillis()
+        )
+        dao.update(updated)
+        return updated.toUiModel()
+    }
+
     suspend fun findTaskById(taskId: Long): TaskUiModel? {
         return dao.findById(taskId)?.toUiModel()
     }

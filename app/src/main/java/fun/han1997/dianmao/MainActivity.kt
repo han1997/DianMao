@@ -596,6 +596,48 @@ private fun DianMaoApp(initialTaskId: Long? = null, initialOpenAdd: Boolean = fa
         }
     }
 
+    // Move an open non-recurring task to a new due date (calendar
+    // long-press). Mirrors the edit-save side-effect chain: alarms are
+    // cancelled and re-scheduled, the system calendar event is synced, and
+    // the widget refreshes — partial failures surface as suffix notices.
+    val moveTaskDueToDate: (TaskUiModel, Long) -> Unit = { target, targetDateMillis ->
+        scope.launch {
+            try {
+                scheduler.cancel(target.id, target.reminderLeadMinutes)
+                val moved = repository.moveTaskDueToDate(target.id, targetDateMillis)
+                checkNotNull(moved) { "该事项不支持移动（重复事项请在编辑中调整）" }
+                val sideEffectFailures = mutableListOf<String>()
+                if (moved.useCalendar) {
+                    try {
+                        val eventId = saveOrOpenCalendarEvent(context, moved)
+                        if (eventId != null && eventId != moved.calendarEventId) {
+                            repository.updateCalendarEventId(moved.id, eventId)
+                        }
+                    } catch (error: Exception) {
+                        if (error is CancellationException) throw error
+                        sideEffectFailures += "系统日历未同步"
+                    }
+                }
+                if (moved.useLocalReminder && moved.dueAtMillis != null) {
+                    try {
+                        scheduler.schedule(moved)
+                    } catch (error: Exception) {
+                        if (error is CancellationException) throw error
+                        sideEffectFailures += "提醒未重排"
+                    }
+                }
+                refreshHomeWidget(context)
+                val base = "已移动到「${moved.dueLabel}」"
+                snackbarHostState.showSnackbar(
+                    if (sideEffectFailures.isEmpty()) base else "$base；${sideEffectFailures.distinct().joinToString("、")}"
+                )
+            } catch (error: Exception) {
+                if (error is CancellationException) throw error
+                snackbarHostState.showSnackbar("移动失败：${error.message ?: "请稍后重试"}")
+            }
+        }
+    }
+
     val isTaskPanelVisible = showAddSheet || taskForEdit != null
     val dismissTaskPanel = {
         showAddSheet = false
@@ -1200,7 +1242,9 @@ private fun DianMaoApp(initialTaskId: Long? = null, initialOpenAdd: Boolean = fa
                     onQuickAdd = { date ->
                         calendarPresetDueAtMillis = date.atStartOfDay(zoneId).toInstant().toEpochMilli()
                         showAddSheet = true
-                    }
+                    },
+                    onToggleComplete = toggleComplete,
+                    onMoveTask = { task, dateMillis -> moveTaskDueToDate(task, dateMillis) }
                 )
                 ArchivedPanel(
                     visible = showArchivedPanel,

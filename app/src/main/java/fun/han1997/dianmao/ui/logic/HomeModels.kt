@@ -233,6 +233,8 @@ internal fun TaskUiModel.displayDueLabel(dueAtMillis: Long, zoneId: ZoneId): Str
 internal fun TaskUiModel.matchesHomeSmartQuery(query: String): Boolean {
     if (query.isBlank()) return true
     return title.contains(query, ignoreCase = true) ||
+        detail.orEmpty().contains(query, ignoreCase = true) ||
+        completionNote.orEmpty().contains(query, ignoreCase = true) ||
         subTasks.any { it.title.contains(query, ignoreCase = true) }
 }
 

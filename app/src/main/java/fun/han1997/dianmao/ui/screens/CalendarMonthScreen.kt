@@ -1,8 +1,10 @@
 package `fun`.han1997.dianmao
 
 import `fun`.han1997.dianmao.data.TaskUiModel
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -37,6 +39,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -64,7 +71,9 @@ internal fun CalendarMonthScreen(
     zoneId: ZoneId,
     onBack: () -> Unit,
     onTaskSelected: (TaskUiModel) -> Unit,
-    onQuickAdd: (LocalDate) -> Unit
+    onQuickAdd: (LocalDate) -> Unit,
+    onToggleComplete: (TaskUiModel) -> Unit = {},
+    onMoveTask: (TaskUiModel, Long) -> Unit = { _, _ -> }
 ) {
     if (!visible) return
 
@@ -84,6 +93,9 @@ internal fun CalendarMonthScreen(
     }
     val cells = remember(month) { buildMonthGrid(month) }
     val dayTasks = remember(dayMap, selectedDate) { dayMap[selectedDate].orEmpty() }
+    // Long-pressed task awaiting a move-target pick (今天/明天/后天).
+    var moveTargetTask by remember { mutableStateOf<TaskUiModel?>(null) }
+    val moveHaptics = LocalHapticFeedback.current
 
     FullScreenScaffold(
         title = "日历",
@@ -232,11 +244,108 @@ internal fun CalendarMonthScreen(
                         )
                     } else {
                         dayTasks.forEach { item ->
-                            CalendarTaskRow(item = item, onClick = { onTaskSelected(item.task) })
+                            CalendarTaskRow(
+                                item = item,
+                                onClick = { onTaskSelected(item.task) },
+                                onToggleComplete = { onToggleComplete(item.task) },
+                                onLongPress = if (!item.task.completed) {
+                                    {
+                                        moveHaptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                        moveTargetTask = item.task
+                                    }
+                                } else {
+                                    null
+                                }
+                            )
                         }
                     }
                 }
             }
+        }
+    }
+
+    moveTargetTask?.let { task ->
+        MoveTaskDateDialog(
+            task = task,
+            today = today,
+            zoneId = zoneId,
+            onDismiss = { moveTargetTask = null },
+            onMoveTo = { dateMillis ->
+                moveTargetTask = null
+                onMoveTask(task, dateMillis)
+            }
+        )
+    }
+}
+
+/**
+ * Quick move-target picker for a long-pressed open task: relative days
+ * computed from today (今天/明天/后天), preserving the task's own time of day.
+ * Recurring and completed tasks never reach this dialog — the row gates the
+ * long-press.
+ */
+@Composable
+private fun MoveTaskDateDialog(
+    task: TaskUiModel,
+    today: LocalDate,
+    zoneId: ZoneId,
+    onDismiss: () -> Unit,
+    onMoveTo: (Long) -> Unit
+) {
+    val options = listOf(
+        "今天" to today,
+        "明天" to today.plusDays(1),
+        "后天" to today.plusDays(2)
+    )
+    QuietDialogContainer(
+        onDismiss = onDismiss,
+        title = "移动到…",
+        leadingIcon = Icons.Rounded.CalendarMonth,
+        leadingIconTint = MaterialTheme.colorScheme.secondary,
+        actions = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+        }
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            options.forEach { (label, date) ->
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(DayCellShape)
+                        .clickable(role = Role.Button) {
+                            onMoveTo(date.atStartOfDay(zoneId).toInstant().toEpochMilli())
+                        },
+                    shape = DayCellShape,
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.34f)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 11.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.CalendarMonth,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "$label · ${date.monthValue}/${date.dayOfMonth}",
+                            style = MaterialTheme.typography.bodyMedium.copy(letterSpacing = 0.sp),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+            Text(
+                text = "保留原提醒时刻；重复事项请在编辑中调整",
+                style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 0.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.mutedText)
+            )
         }
     }
 }
@@ -308,8 +417,14 @@ private fun CalendarDayCell(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun CalendarTaskRow(item: HomeSmartTaskItem, onClick: () -> Unit) {
+private fun CalendarTaskRow(
+    item: HomeSmartTaskItem,
+    onClick: () -> Unit,
+    onToggleComplete: () -> Unit = {},
+    onLongPress: (() -> Unit)? = null
+) {
     val task = item.task
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -321,15 +436,34 @@ private fun CalendarTaskRow(item: HomeSmartTaskItem, onClick: () -> Unit) {
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = 48.dp)
-                .clickable(onClick = onClick)
-                .padding(horizontal = 10.dp, vertical = 8.dp),
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = onLongPress
+                )
+                .padding(start = 6.dp, end = 10.dp, top = 8.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            ColorDot(
-                color = task.quadrant.color.copy(alpha = if (task.completed) 0.4f else 1f),
-                size = 10.dp
-            )
+            // Inline check target with the same completion semantics as the
+            // home rows — the toggle routes through the shared handler, so
+            // completing here opens the same 写心得 chain.
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clickable(
+                        role = Role.Checkbox,
+                        onClick = onToggleComplete
+                    )
+                    .semantics {
+                        contentDescription = if (task.completed) "标记为未完成" else "标记为完成"
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                CompletionMark(
+                    completed = task.completed,
+                    color = task.quadrant.color
+                )
+            }
             Text(
                 text = task.title,
                 modifier = Modifier.weight(1f),
