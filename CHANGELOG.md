@@ -1,5 +1,14 @@
 # Changelog
 
+- Review & safety improvements (v1.1.0): the calendar gains a 今天 button to
+  jump the grid and selection back to today from any month. WebDAV restore now
+  snapshots the current local data to dianmao-backup-before-restore.json on
+  the same share before the destructive import — a wrong or corrupt restore
+  source can be undone by restoring that snapshot, and the restore aborts if
+  the snapshot itself fails. When reminders are armed but Android's exact-alarm
+  permission is off (default on Android 14+), the app now surfaces a guidance
+  notice instead of silently degrading to late inexact alarms.
+
 - Deep code review hardening (v1.0.9): fixed the ISO-weekly cycle bug where the
   week key paired weekOfWeekBasedYear with the calendar year — the ISO week
   spanning New Year's Eve split into two periods, letting a weekly task be

@@ -404,6 +404,15 @@ class TaskRepository(context: Context) {
     }
 
     /**
+     * True when at least one open task has a local reminder armed. Used by
+     * the exact-alarm permission notice so the guidance only shows for
+     * users who actually depend on scheduled reminders.
+     */
+    suspend fun hasActiveLocalReminderTasks(): Boolean {
+        return dao.countActiveLocalReminderTasks() > 0
+    }
+
+    /**
      * Advances a recurring task to its next cycle after its reminder fired;
      * returns the updated task so the caller can reschedule it.
      */

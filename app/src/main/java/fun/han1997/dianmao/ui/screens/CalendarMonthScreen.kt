@@ -133,6 +133,21 @@ internal fun CalendarMonthScreen(
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+                TextButton(
+                    onClick = {
+                        // Jump both the grid and the selected day back to
+                        // today — without this, returning from a distant
+                        // month costs repeated arrow taps.
+                        monthStartEpochDay = today.withDayOfMonth(1).toEpochDay()
+                        selectedEpochDay = today.toEpochDay()
+                    }
+                ) {
+                    Text(
+                        text = "今天",
+                        style = MaterialTheme.typography.labelLarge.copy(letterSpacing = 0.sp),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
 
             Row(modifier = Modifier.fillMaxWidth()) {

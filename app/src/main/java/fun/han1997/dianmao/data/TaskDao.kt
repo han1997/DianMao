@@ -28,6 +28,9 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE completed = 0 AND useLocalReminder = 1 AND dueAtMillis IS NOT NULL")
     suspend fun findActiveReminderTasks(): List<TaskEntity>
 
+    @Query("SELECT COUNT(*) FROM tasks WHERE completed = 0 AND useLocalReminder = 1 AND dueAtMillis IS NOT NULL")
+    suspend fun countActiveLocalReminderTasks(): Int
+
     @Query(
         """
         SELECT * FROM tasks

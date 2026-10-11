@@ -78,8 +78,18 @@ class ReminderScheduler(private val context: Context) {
         }
     }
 
+    /**
+     * True when exact alarms are permitted (pre-S always, otherwise the
+     * system 「闹钟和提醒」toggle). The UI surfaces a guidance notice when
+     * this is false but reminders are armed — [setAlarm] silently degrades
+     * to inexact alarms that can fire late.
+     */
+    fun canScheduleExactAlarms(): Boolean {
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()
+    }
+
     private fun setAlarm(triggerAtMillis: Long, pendingIntent: PendingIntent) {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()) {
+        if (canScheduleExactAlarms()) {
             alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)
         } else {
             alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pendingIntent)

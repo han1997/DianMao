@@ -9,7 +9,11 @@ import java.nio.charset.StandardCharsets
 import java.util.Base64
 
 class WebDavBackupClient {
-    suspend fun upload(settings: WebDavSettings, payload: String) {
+    suspend fun upload(
+        settings: WebDavSettings,
+        payload: String,
+        fileName: String = WEBDAV_BACKUP_FILE_NAME
+    ) {
         withContext(Dispatchers.IO) {
             require(settings.url.isNotBlank()) { "WebDAV URL is empty" }
             // The configured URL may name an existing FILE (e.g. a backup
@@ -25,7 +29,7 @@ class WebDavBackupClient {
                     RemoteType.MISSING, RemoteType.COLLECTION -> ensureDirectoryExists(settings)
                 }
             }
-            val fileUrl = resolveBackupFileUrl(settings.url)
+            val fileUrl = resolveBackupFileUrl(settings.url, fileName)
             val body = payload.toByteArray(StandardCharsets.UTF_8)
             val connection = openConnection(settings, "PUT", fileUrl).apply {
                 doOutput = true

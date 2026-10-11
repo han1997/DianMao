@@ -6,6 +6,7 @@ import `fun`.han1997.dianmao.alerts.TaskReminderReceiver
 import `fun`.han1997.dianmao.alerts.completeTaskSilently
 import `fun`.han1997.dianmao.backup.BackupSettingsStore
 import `fun`.han1997.dianmao.backup.WebDavBackupClient
+import `fun`.han1997.dianmao.backup.WEBDAV_PRE_RESTORE_SNAPSHOT_FILE_NAME
 import `fun`.han1997.dianmao.backup.shouldAutoBackupNow
 import `fun`.han1997.dianmao.data.RepeatRule
 import `fun`.han1997.dianmao.data.TaskPriority
@@ -50,6 +51,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import java.io.IOException
 import java.time.Instant
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -392,6 +394,19 @@ private fun DianMaoApp(initialTaskId: Long? = null, initialOpenAdd: Boolean = fa
         // reboot itself is handled by ReminderRestoreReceiver).
         repository.restoreScheduledReminders().forEach { task ->
             scheduler.schedule(task)
+        }
+        // Android 14+ ships with the exact-alarm permission off by default,
+        // and the scheduler silently downgrades to inexact alarms that can
+        // fire late. When reminders are armed but the permission is missing,
+        // surface a once-per-open guidance notice pointing at the toggle.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            !scheduler.canScheduleExactAlarms() &&
+            repository.hasActiveLocalReminderTasks()
+        ) {
+            snackbarHostState.showSnackbar(
+                message = "到点提醒可能延迟：系统未授予「闹钟和提醒」权限，请到系统设置开启",
+                duration = SnackbarDuration.Long
+            )
         }
     }
 
@@ -1132,6 +1147,27 @@ private fun DianMaoApp(initialTaskId: Long? = null, initialOpenAdd: Boolean = fa
                                 runCatching {
                                     backupSettingsStore.saveWebDavSettings(settings)
                                     webDavSettings = settings
+                                    // Safety net before the destructive
+                                    // import: snapshot the current local
+                                    // data next to the backup on the same
+                                    // WebDAV share, so a wrong or corrupt
+                                    // restore source can be undone by
+                                    // restoring this snapshot. Aborting on
+                                    // snapshot failure — restoring without
+                                    // an undo path is worse than waiting.
+                                    try {
+                                        webDavClient.upload(
+                                            settings,
+                                            repository.exportBackupJson(),
+                                            WEBDAV_PRE_RESTORE_SNAPSHOT_FILE_NAME
+                                        )
+                                    } catch (error: Exception) {
+                                        if (error is CancellationException) throw error
+                                        throw IOException(
+                                            "恢复前快照上传失败（${error.message.orEmpty().take(120)}），本地数据未被改动",
+                                            error
+                                        )
+                                    }
                                     val count = repository.importBackupJson(webDavClient.download(settings))
                                     repository.restoreScheduledReminders().forEach { task ->
                                         scheduler.schedule(task)

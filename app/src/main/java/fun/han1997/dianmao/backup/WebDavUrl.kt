@@ -6,6 +6,13 @@ package `fun`.han1997.dianmao.backup
 const val WEBDAV_BACKUP_FILE_NAME = "dianmao-backup-latest.json"
 
 /**
+ * Safety-net snapshot written next to the backup before a destructive
+ * WebDAV restore overwrites local data: if the restored backup turns out
+ * wrong or corrupt, the user can restore this snapshot back.
+ */
+const val WEBDAV_PRE_RESTORE_SNAPSHOT_FILE_NAME = "dianmao-backup-before-restore.json"
+
+/**
  * True when the configured URL points at a concrete backup file (legacy
  * shape) rather than a directory collection.
  */
