@@ -611,13 +611,15 @@ The AI drives a batched commit of this task's code changes so `/finish-work` can
    Reply 'ok' / '行' to execute. Reply with edits, or '我自己来' / 'manual' to abort.
    ```
 
-6. **On confirmation**: run `git add <files>` + `git commit -m "<msg>"` for each batch in order. Do not amend. Do not push.
+6. **On confirmation**: run `git add <files>` + `git commit -m "<msg>"` for each batch in order. Do not amend. After all batches are committed, **push to the tracked upstream** (`git push`, or `git push origin <branch>` when no upstream is set) so the work commits land on the remote before the bookkeeping commits. If the push is rejected (non-fast-forward, no remote, auth failure), stop and report — do not force-push.
 
 7. **On rejection** (user replies "不行" / "我自己来" / "manual" / any pushback on the plan): stop. Do not attempt a second plan. The user will commit by hand; you skip ahead to 3.5 once they confirm.
 
 **Rules**:
 - No `git commit --amend` anywhere — three-stage three-commit flow (work commits → archive commit → journal commit).
-- Never push to remote in this step.
+- **Push is the default end of this step.** After a confirmed batch commits, push to the tracked remote. The project owner has opted into automatic publishing; do not wait to be asked.
+- If no upstream exists for the branch, set it once with `git push -u origin <branch>` on the first push, then plain `git push` afterwards.
+- Never force-push. On a rejected push, stop and surface the error instead of retrying destructive variants.
 - If the user wants different message wording but accepts the file grouping, edit the message and re-confirm once — but if they reject the grouping, exit to manual mode.
 - The batched plan is one prompt; do not prompt per commit.
 
