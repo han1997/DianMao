@@ -45,8 +45,6 @@ import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -57,7 +55,6 @@ import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -201,8 +198,9 @@ internal fun BackupPanel(
                                 }
                             }
                         }
+                    }
 
-                        FormSettingBlock(title = "本地备份", subtitle = "导出当前数据，或从文件恢复") {
+                    FormSettingBlock(title = "本地备份", subtitle = "导出当前数据，或从文件恢复") {
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
@@ -387,7 +385,6 @@ internal fun BackupPanel(
                                 )
                             }
                         }
-                    }
                 }
             }
         }
