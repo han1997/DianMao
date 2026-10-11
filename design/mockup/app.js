@@ -71,6 +71,7 @@ function initial() {
       { id: 3, taskId: 3, at: at(addDays(NOW, -35), 9, 8), note: null },
     ],
     backup: { url: 'https://dav.example.com/dianmao/', user: 'hanhu', pass: 'correct-horse', visible: false, auto: true },
+    themeMode: 'system', // 'system' | 'light' | 'dark' — mirrors a persisted DataStore preference
     review: { last7: 12, last30: 38, daily: [[5, 2], [6, 4], [7, 1], [8, 3], [9, 2], [10, 6], [11, 4]], quad: { iu: 14, in: 9, nu: 10, nn: 5 } },
   };
 }
@@ -188,7 +189,7 @@ function homeHeader() {
       <span class="pill" style="--c:var(--secondary)"><span class="dot6"></span><b>${timedCount()}</b><span>定时</span></span>
       <button class="pill" style="--c:var(--q-nn)" data-page="review"><span class="dot6"></span><b>${doneCount()}</b><span>已复盘</span></button>
     </div>
-    ${state.search ? `<div class="field focus" style="margin-top:2px"><input id="searchInput" placeholder="筛选当前视图" value="${esc(state.query)}" autocomplete="off"></div>` : ''}
+    ${state.search ? `<div class="field focus search-field" style="margin-top:2px"><span class="search-lead">${icon('search', 's18')}</span><input id="searchInput" placeholder="筛选当前视图" value="${esc(state.query)}" autocomplete="off">${state.query ? `<button class="search-clear" data-action="search-clear" aria-label="清除">${icon('close', 's18')}</button>` : ''}</div>` : ''}
     <div class="segmented" style="margin-top:4px">${seg}</div>`;
 }
 
@@ -612,7 +613,15 @@ function backupContent() {
           <span class="hint">${b.auto ? '上次成功:今天 08:30' : '需要先配置 WebDAV'}</span></div>
         <span class="switch${b.auto ? ' on' : ''}" data-action="toggle-auto" role="switch" aria-checked="${b.auto}"><span class="thumb"></span></span>
       </div>
-    </div>`;
+    </div>
+    <div class="block">
+      <div class="sec-head">${itile('moon', 'var(--primary)', true)}<div class="tx"><span class="sec-title sm">外观</span><span class="sec-sub">选择浅色、深色,或跟随系统</span></div></div>
+      <div class="segmented">
+        ${[['system', '跟随系统'], ['light', '浅色'], ['dark', '深色']].map(([k, l]) => `<button class="seg ${state.themeMode === k ? 'on' : ''}" data-action="theme-mode" data-mode="${k}">${l}</button>`).join('')}
+      </div>
+      <span class="hint">${state.themeMode === 'system' ? `当前跟随系统:${isDarkNow() ? '深色' : '浅色'}` : `已固定为${state.themeMode === 'dark' ? '深色' : '浅色'}主题`}</span>
+    </div>
+    <span class="hint" style="padding:0 4px">数据与外观设置均保存在本机,不上传。</span>`;
 }
 
 /* ---------- page: archive ---------- */
@@ -785,9 +794,18 @@ function toast(msg) {
   const el = $('#toast'); el.textContent = msg; el.classList.add('visible');
   toastTimer = setTimeout(() => el.classList.remove('visible'), 2600);
 }
-function sheet(title, body) {
+function sheet(title, body, opts = {}) {
   returnFocus = document.activeElement;
   $('#sheetTitle').textContent = title;
+  const iconHost = $('#sheetIcon');
+  if (opts.icon) {
+    const tint = opts.tint || 'var(--primary)';
+    iconHost.innerHTML = `<span class="itile" style="--t:${tint}">${icon(opts.icon, 's18')}</span>`;
+    iconHost.style.display = '';
+  } else {
+    iconHost.innerHTML = '';
+    iconHost.style.display = 'none';
+  }
   $('#sheetBody').innerHTML = body;
   const overlay = $('#overlay');
   overlay.hidden = false;
@@ -821,6 +839,7 @@ const actions = {
   'open': el => { state.detailId = +el.dataset.id; navigate('detail'); },
   'quadrant': el => { state.activeQ = el.dataset.q; navigate('quadrant'); },
   'search': () => { state.search = !state.search; if (!state.search) state.query = ''; render(); },
+  'search-clear': () => { state.query = ''; render(); const i = $('#searchInput'); if (i) i.focus(); },
   'home-view': el => { state.homeView = el.dataset.view; render(); },
   'group': el => { const k = el.dataset.key; state.openGroups[k] = !state.openGroups[k]; render(); },
   'collapse': el => {
@@ -830,25 +849,26 @@ const actions = {
     render();
   },
   'toggle': el => { const t = byId(el.dataset.id); t.completed = !t.completed; if (t.completed) t.completionCount = Math.max(1, t.completionCount); toast(t.completed ? '已标记完成' : '已标为未完成'); render(); },
-  'select-enter': el => { const id = +el.dataset.id; if (!state.selection.includes(id)) state.selection.push(id); render(); },  'select-toggle': el => { const id = +el.dataset.id; const i = state.selection.indexOf(id); if (i >= 0) state.selection.splice(i, 1); else state.selection.push(id); render(); },
+  'select-enter': el => { const id = +el.dataset.id; if (!state.selection.includes(id)) state.selection.push(id); render(); },
+  'select-toggle': el => { const id = +el.dataset.id; const i = state.selection.indexOf(id); if (i >= 0) state.selection.splice(i, 1); else state.selection.push(id); render(); },
   'swipe-complete': el => { const t = byId(el.dataset.id); if (!t) return; t.completed = !t.completed; if (t.completed) t.completionCount = Math.max(1, t.completionCount); toast(t.completed ? '已静默完成(可在“写心得”补备注)' : '已标为未完成'); render(); },
   'swipe-delete': el => { const t = byId(el.dataset.id); if (!t) return; sheet('删除事项', `<p class="dlg-body" style="margin:0">确定删除“${esc(t.title)}”?删除后不会保留提醒和完成备注。</p>
       <div class="dlg-actions"><button class="btn text" data-action="close">取消</button>
-      <button class="btn text" style="color:var(--error)" data-action="confirm-delete" data-id="${t.id}">删除</button></div>`); },
+      <button class="btn text" style="color:var(--error)" data-action="confirm-delete" data-id="${t.id}">删除</button></div>`, { icon: 'delete', tint: 'var(--error)' }); },
   'select-all': () => { const ids = (state.page === 'quadrant' ? qTasks(state.activeQ) : openTasks()).filter(t => !t.completed).map(t => t.id); state.selection = state.selection.length === ids.length ? [] : ids; render(); },
   'select-exit': () => { state.selection = []; render(); },
   'batch-move': () => sheet('移动到象限', `<div class="m3-repeat-picker">${QUAD_ORDER.map(k => `<button class="m3-check-row" data-action="batch-move-confirm" data-q="${k}"><span class="m3-check" style="background:${QUAD[k].color};border-color:${QUAD[k].color}"></span>${QUAD[k].label}</button>`).join('')}</div>
-      <div class="dlg-actions"><button class="btn text" data-action="close">取消</button></div>`),
+      <div class="dlg-actions"><button class="btn text" data-action="close">取消</button></div>`, { icon: 'inventory', tint: 'var(--primary)' }),
   'batch-move-confirm': el => { const q = el.dataset.q; state.tasks.forEach(t => { if (state.selection.includes(t.id)) t.q = q; }); closeSheet(); state.selection = []; toast(`已移动到${QUAD[q].short}象限`); render(); },
   'batch-delete': () => sheet('批量删除', `<p class="dlg-body" style="margin:0">确定删除选中的 ${state.selection.length} 个事项?删除后不会保留提醒和完成备注。</p>
       <div class="dlg-actions"><button class="btn text" data-action="close">取消</button>
-      <button class="btn text" style="color:var(--error)" data-action="batch-delete-confirm">删除</button></div>`),
+      <button class="btn text" style="color:var(--error)" data-action="batch-delete-confirm">删除</button></div>`, { icon: 'delete', tint: 'var(--error)' }),
   'batch-delete-confirm': () => { state.tasks = state.tasks.filter(t => !state.selection.includes(t.id)); state.selection = []; closeSheet(); toast('演示:已批量删除'); navigate('home'); },
   'move-to-date': el => { const t = byId(el.dataset.id); state.moveTaskId = t.id; sheet('移动到...', `<div class="m3-repeat-picker">
       ${[['今天', 0], ['明天', 1], ['后天', 2]].map(([l, off]) => { const d = addDays(NOW, off); return `<button class="m3-check-row" data-action="move-to-date-confirm" data-offset="${off}"><span class="m3-check"></span>${l} · ${d.getMonth() + 1}/${d.getDate()}</button>`; }).join('')}
       </div>
       <span class="hint" style="display:block;margin-top:8px">保留原提醒时刻;重复事项请在编辑中调整</span>
-      <div class="dlg-actions"><button class="btn text" data-action="close">取消</button></div>`); },
+      <div class="dlg-actions"><button class="btn text" data-action="close">取消</button></div>`, { icon: 'calendar', tint: 'var(--secondary)' }); },
   'move-to-date-confirm': el => { const t = byId(state.moveTaskId); const off = +el.dataset.offset; const base = t.dueAt ? new Date(t.dueAt) : new Date(NOW); const d = addDays(NOW, off); t.dueAt = new Date(d.getFullYear(), d.getMonth(), d.getDate(), base.getHours(), base.getMinutes()).getTime(); t.dueLabel = labelFor(new Date(t.dueAt), `${String(base.getHours()).padStart(2, '0')}:${String(base.getMinutes()).padStart(2, '0')}`); closeSheet(); toast('已移动到期日'); render(); },
   'subtask': el => { const t = byId(el.dataset.id); const s = t.subTasks[+el.dataset.index]; s.done = !s.done; render(); },
   'archive': el => { const t = byId(el.dataset.id); t.archived = true; toast('已归档'); navigate('home'); },
@@ -857,7 +877,7 @@ const actions = {
     const t = byId(el.dataset.id);
     sheet('删除事项', `<p class="dlg-body" style="margin:0">确定删除“${esc(t.title)}”?删除后不会保留提醒和完成备注。</p>
       <div class="dlg-actions"><button class="btn text" data-action="close">取消</button>
-      <button class="btn text" style="color:var(--error)" data-action="confirm-delete" data-id="${t.id}">删除</button></div>`);
+      <button class="btn text" style="color:var(--error)" data-action="confirm-delete" data-id="${t.id}">删除</button></div>`, { icon: 'delete', tint: 'var(--error)' });
   },
   'confirm-delete': el => { state.tasks = state.tasks.filter(t => t.id !== +el.dataset.id); closeSheet(); toast('演示:事项已删除'); navigate('home'); },
   'edit-note': el => {
@@ -865,7 +885,7 @@ const actions = {
     sheet(t.completed ? '编辑完成备注' : '完成并写备注', `<p style="margin:0 0 12px;font-size:14px;line-height:20px;color:var(--on-surface-variant)">${esc(t.title)}</p>
       <div class="field"><div class="flabel">心得或复盘</div><textarea id="noteText" placeholder="这件事完成后,我学到或确认了什么?">${esc(t.completionNote || '')}</textarea></div>
       <div class="dlg-actions"><button class="btn text" data-action="close">稍后再写</button>
-      <button class="btn text" data-action="save-note" data-id="${t.id}">保存备注</button></div>`);
+      <button class="btn text" data-action="save-note" data-id="${t.id}">保存备注</button></div>`, { icon: 'edit-note', tint: 'var(--primary)' });
   },
   'save-note': el => { const t = byId(el.dataset.id); const v = $('#noteText').value.trim(); t.completionNote = v || null; closeSheet(); toast('备注已保存'); render(); },
   'delete-completion': el => { state.history = state.history.filter(h => h.id !== +el.dataset.id); render(); toast('演示:完成记录已删除'); },
@@ -876,7 +896,7 @@ const actions = {
     if (!t.completed) body += menuItem('move-to-date', '移动到...', 'calendar', `data-id="${t.id}"`);
     if (t.completed) body += menuItem('archive', '归档', 'archive', `data-id="${t.id}"`);
     body += menuItem('delete', '删除事项', 'delete', `data-id="${t.id}"`, true);
-    sheet('事项操作', body);
+    sheet('事项操作', body, { icon: 'inventory', tint: QUAD[t.q].color });
   },
   'close': () => closeSheet(),
 
@@ -976,6 +996,7 @@ const actions = {
   'toggle-pass': () => { state.backup.visible = !state.backup.visible; render(); },
   'save-dav': () => { state.backup.url = $('#davUrl').value; state.backup.user = $('#davUser').value; state.backup.pass = $('#davPass').value; toast('演示:WebDAV 设置已保存'); render(); },
   'toggle-auto': () => { state.backup.auto = !state.backup.auto; render(); },
+  'theme-mode': el => { state.themeMode = el.dataset.mode; applyTheme(); render(); },
   'export': () => toast('演示:已导出本地备份文件'),
   'widget-toggle': () => toast('演示:小组件勾选完成任务(真实应用中会写入 Room 并刷新小组件)'),
   'revert-local': () => toast('演示:已从本地文件恢复'),
@@ -1237,11 +1258,29 @@ document.addEventListener('keydown', e => {
 });
 
 /* theme toggle */
-function setTheme(dark) {
+/* ---------- theme: system / light / dark preference ---------- */
+const systemDark = matchMedia('(prefers-color-scheme: dark)');
+function isDarkNow() { return state.themeMode === 'dark' || (state.themeMode === 'system' && systemDark.matches); }
+function applyTheme() {
+  const dark = isDarkNow();
   document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-  $('#themeToggle').innerHTML = `${icon(dark ? 'sun' : 'moon', 's18')}${dark ? '亮色' : '暗色'}`;
+  const btn = $('#themeToggle');
+  if (btn) btn.innerHTML = `${icon(dark ? 'sun' : 'moon', 's18')}${dark ? '浅色' : '深色'}`;
+  if (!btn) return;
+  btn.setAttribute('aria-label', state.themeMode === 'system'
+    ? `跟随系统(当前${dark ? '深色' : '浅色'}),点击切换`
+    : `当前${dark ? '深色' : '浅色'}主题,点击切换`);
 }
-$('#themeToggle').addEventListener('click', () => setTheme(document.documentElement.dataset.theme !== 'dark'));
-
-setTheme(matchMedia('(prefers-color-scheme: dark)').matches);
+// The preview toolbar button cycles system → light → dark → system, mirroring the
+// in-app 外观 setting rather than acting as a separate preview-only control.
+const THEME_CYCLE = ['system', 'light', 'dark'];
+$('#themeToggle').addEventListener('click', () => {
+  state.themeMode = THEME_CYCLE[(THEME_CYCLE.indexOf(state.themeMode) + 1) % THEME_CYCLE.length];
+  applyTheme();
+  toast(state.themeMode === 'system' ? `外观:跟随系统(${isDarkNow() ? '深色' : '浅色'})` : `外观:${state.themeMode === 'dark' ? '深色' : '浅色'}`);
+  if (state.page === 'backup') render();
+});
+// Live-follow the OS while in system mode.
+systemDark.addEventListener('change', () => { if (state.themeMode === 'system') applyTheme(); });
+applyTheme();
 render();

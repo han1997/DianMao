@@ -240,10 +240,23 @@ const assert = require('node:assert/strict');
   await click('.overlay-card .sheet-heading [data-action="close"]');
   await click('#appHeader [data-action="home-view"][data-view="quadrants"]');
 
-  // 12. dark theme
-  await click('#themeToggle');
-  assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'dark');
+  // 12. appearance: system / light / dark (three-state, mirrors the in-app 外观 setting)
+  await goChapter('backup');
+  assert.equal(await page.locator('#content [data-action="theme-mode"]').count(), 3, 'three appearance modes');
+  await click('#content [data-action="theme-mode"][data-mode="dark"]');
+  assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'dark', 'dark mode applies');
+  assert.equal(await page.evaluate(() => state.themeMode), 'dark', 'dark mode persists in state');
   await page.screenshot({ path: path.join(__dirname, 'preview-dark.png'), fullPage: true });
+  await click('#content [data-action="theme-mode"][data-mode="light"]');
+  assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'light', 'light mode applies');
+  await click('#content [data-action="theme-mode"][data-mode="system"]');
+  const expected = await page.evaluate(() => matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), expected, 'system mode follows the OS preference');
+  // toolbar button cycles the same three states
+  await click('#themeToggle');
+  assert.equal(await page.evaluate(() => state.themeMode), 'light', 'toolbar cycles system → light');
+  await click('#themeToggle');
+  assert.equal(await page.evaluate(() => state.themeMode), 'dark', 'toolbar cycles light → dark');
 
   // 13. mobile full-screen breakpoint
   await page.setViewportSize({ width: 390, height: 844 });

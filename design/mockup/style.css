@@ -211,6 +211,11 @@ small{font-size:11px;line-height:1.8}
 .field input{border:0;background:transparent;width:100%;outline:0;color:var(--on-surface);font-size:16px;line-height:24px;padding:0}
 .field input::placeholder{color:color-mix(in srgb,var(--on-surface-variant) 58%,transparent)}
 .field textarea{border:0;background:transparent;width:100%;resize:none;outline:0;color:var(--on-surface);font-size:14px;line-height:20px;min-height:72px}
+.search-field{display:flex;align-items:center;gap:8px;padding:9px 10px 8px}
+.search-field input{flex:1;min-width:0}
+.search-lead,.search-clear{display:flex;color:var(--on-surface-variant)}
+.search-clear{border:0;background:none;padding:4px;cursor:pointer;border-radius:999px}
+.search-clear:hover{background:color-mix(in srgb,var(--surface-variant) 60%,transparent)}
 
 /* setting row */
 .set-row{display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 4px;cursor:pointer;width:100%;text-align:left;border:0;background:none;color:inherit}
@@ -384,6 +389,7 @@ small{font-size:11px;line-height:1.8}
 .overlay-card{position:relative;width:100%;max-width:330px;max-height:100%;overflow:auto;color:var(--on-surface);background:var(--surface);border-radius:18px;padding:20px;
   box-shadow:0 22px 60px -12px rgba(20,10,6,.42),inset 0 0 0 1px color-mix(in srgb,var(--outline) 12%,transparent)}
 .sheet-heading{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.sheet-heading .sheet-icon{display:flex}
 .sheet-heading h2{flex:1;font-size:16px;font-weight:600;line-height:22px}
 .dlg-body{display:flex;flex-direction:column;gap:14px}
 .dlg-actions{display:flex;justify-content:flex-end;gap:6px;margin-top:14px}

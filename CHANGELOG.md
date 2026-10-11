@@ -1,5 +1,17 @@
 # Changelog
 
+# Changelog
+
+- Prototype v1.4 — appearance switch + polish (2026-10-11): the settings/backup
+  page gains an 外观 section with three modes — 跟随系统 / 浅色 / 深色 — following
+  the OS live in system mode. This is a new capability: the app currently only
+  reads `isSystemInDarkTheme()`, so Compose would need a persisted `DataStore`
+  preference; logged as pending confirmation in `design/mockup/BASELINE.md`.
+  The preview toolbar button now cycles the same three states instead of acting
+  as a separate switch. Dialog headers gained tonal leading icons
+  (`QuietDialogContainer.leadingIcon`) and the search field gained leading/
+  trailing icons (`OutlinedTextField`). See `design/mockup/BASELINE.md`.
+
 - Prototype v1.3 — gestures + widget/notification (2026-10-11): task rows now swipe
   (right = complete, left = delete with a confirm) matching `SwipeToDismissBox`,
   and quadrant-detail rows lift on long-press to demonstrate the drag reorder
