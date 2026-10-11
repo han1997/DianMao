@@ -27,7 +27,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -52,7 +51,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -244,75 +242,76 @@ internal fun AppHeader(
 @Composable
 internal fun TimeFocusLane(
     tasks: List<TaskUiModel>,
-    onTaskSelected: (TaskUiModel) -> Unit
+    onTaskSelected: (TaskUiModel) -> Unit,
+    nowMillis: Long = System.currentTimeMillis()
 ) {
     // Pure projection over the task list — remember it so scrolling/recomposing
     // the lane does not re-run the repeat-cycle math for every task.
-    val focusItems = remember(tasks) { buildTimeFocusItems(tasks) }
+    val focusItems = remember(tasks, nowMillis) { buildTimeFocusItems(tasks, nowMillis) }
     AnimatedVisibility(
         visible = focusItems.isNotEmpty(),
         enter = (fadeIn(tween(150)) + slideInVertically(tween(220)) { it / 4 }).withReducedMotion(),
         exit = (fadeOut(tween(120)) + slideOutVertically(tween(180)) { it / 4 }).withReducedMotion()
     ) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surface,
-        shape = RowShape,
-        border = quietBorder(0.14f)
-    ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = MaterialTheme.colorScheme.surface,
+            shape = RowShape,
+            border = quietBorder(0.14f)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            Column(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 14.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                IconTile(
-                    icon = Icons.Rounded.Schedule,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.secondary,
-                    containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = DianMaoAlpha.subtle),
-                    iconSize = 15.dp
-                )
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(1.dp)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Text(
-                        text = "时间关注",
-                        style = MaterialTheme.typography.titleSmall.copy(
-                            fontWeight = FontWeight.SemiBold,
-                            letterSpacing = 0.sp
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface
+                    IconTile(
+                        icon = Icons.Rounded.Schedule,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.secondary,
+                        containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = DianMaoAlpha.subtle),
+                        iconSize = 15.dp
                     )
-                    Text(
-                        text = "过期、今天和最近安排",
-                        style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 0.sp),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(1.dp)
+                    ) {
+                        Text(
+                            text = "时间关注",
+                            style = MaterialTheme.typography.titleSmall.copy(
+                                fontWeight = FontWeight.SemiBold,
+                                letterSpacing = 0.sp
+                            ),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "过期、今天和最近安排",
+                            style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 0.sp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    CountLabel(
+                        count = focusItems.size,
+                        suffix = "项",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
+                        color = MaterialTheme.colorScheme.secondary.copy(alpha = DianMaoAlpha.strong)
                     )
                 }
-                CountLabel(
-                    count = focusItems.size,
-                    suffix = "项",
-                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
-                    color = MaterialTheme.colorScheme.secondary.copy(alpha = DianMaoAlpha.strong)
-                )
-            }
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                focusItems.forEach { item ->
-                    TimeFocusRow(
-                        item = item,
-                        onClick = { onTaskSelected(item.task) }
-                    )
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    focusItems.forEach { item ->
+                        TimeFocusRow(
+                            item = item,
+                            onClick = { onTaskSelected(item.task) }
+                        )
+                    }
                 }
             }
         }
-    }
     }
 }
 
@@ -699,6 +698,7 @@ internal fun HomeSmartTaskList(
     onViewDetail: (TaskUiModel) -> Unit,
     onAddTask: () -> Unit,
     emptyMessage: String?,
+    nowMillis: Long = System.currentTimeMillis(),
     isSelectionMode: Boolean = false,
     selectedTaskIds: Set<Long> = emptySet(),
     onToggleSelection: (TaskUiModel) -> Unit = {},
@@ -749,8 +749,8 @@ internal fun HomeSmartTaskList(
     }
     // Group outside the LazyColumn: computing it inside the content lambda
     // would re-run the sort/partition on every scroll layout pass.
-    val groups = remember(items, homeSmartView) {
-        groupHomeSmartItems(items, homeSmartView)
+    val groups = remember(items, homeSmartView, nowMillis) {
+        groupHomeSmartItems(items, homeSmartView, nowMillis)
     }
     LazyColumn(
         modifier = modifier.fillMaxWidth(),
