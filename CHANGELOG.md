@@ -1,5 +1,16 @@
 # Changelog
 
+- Deep code review hardening (v1.0.9): fixed the ISO-weekly cycle bug where the
+  week key paired weekOfWeekBasedYear with the calendar year — the ISO week
+  spanning New Year's Eve split into two periods, letting a weekly task be
+  completed twice in one cycle. resetExpiredCycleTasks now loads only completed
+  cycle tasks via a DAO-level filter and resets in one transactional bulk
+  update. The backup panel no longer wraps its setting blocks inside the status
+  header card (double tint + missing spacing). A shared snackbar error guard
+  replaces 13 identical try/catch blocks, 34 dead imports are gone, and the
+  home day buckets (review stats, smart views, time focus, list grouping)
+  refresh at local midnight so they no longer go stale in long sessions.
+
 - Redesigned the launcher icon as the Day Compass: a thin terracotta dial ring
   with a slender needle pointing 45° up-right and an ink hub at center, replacing
   the four-quadrant paw-print mark. The monochrome layer mirrors the same ring +

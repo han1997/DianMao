@@ -59,6 +59,17 @@ Read [Overlay Navigation Thinking Guide](./overlay-navigation-thinking-guide.md)
 
 ---
 
+## Session-End Checklist (before finishing any code-change session)
+
+- [ ] Quality checks passed (unit tests, lint, compile) — see [Quality Guidelines](../backend/quality-guidelines.md)
+- [ ] `:app:bumpVersion` ran — every shipped change gets a fresh `versionCode`
+- [ ] `:app:assembleRelease` ran — a fresh `dianmao-<versionName>.apk` exists in `app/build/outputs/apk/release/`
+- [ ] `gradle.properties` (and `CHANGELOG.md` when user-visible) committed with the work
+
+Details and rationale: [Release Packaging](../backend/release-packaging.md#convention-auto-version-bump--release-apk-every-session).
+
+---
+
 ## Pre-Modification Rule
 
 Before changing any value or shared behavior, search first.
