@@ -59,6 +59,8 @@ import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.DoneAll
+import androidx.compose.material.icons.rounded.ExpandLess
+import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Inventory2
 import androidx.compose.material.icons.rounded.Replay
@@ -88,9 +90,11 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -752,6 +756,11 @@ internal fun HomeSmartTaskList(
     val groups = remember(items, homeSmartView, nowMillis) {
         groupHomeSmartItems(items, homeSmartView, nowMillis)
     }
+    // Collapsible group headers (过期/今天/按天分组): collapsed labels reset
+    // when the item set or view changes, since the groups themselves change.
+    var collapsedGroupLabels by rememberSaveable(items, homeSmartView) {
+        mutableStateOf(emptyList<String>())
+    }
     LazyColumn(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -760,16 +769,40 @@ internal fun HomeSmartTaskList(
         groups.forEach { group ->
             if (group.label.isNotEmpty()) {
                 item(key = "group-${group.label}", contentType = "group-header") {
-                    Text(
-                        text = "${group.label} · ${group.items.size}",
-                        style = MaterialTheme.typography.labelMedium.copy(
-                            fontWeight = FontWeight.Medium,
-                            letterSpacing = 0.sp
-                        ),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong)
-                    )
+                    val collapsed = group.label in collapsedGroupLabels
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(ChipShape)
+                            .clickable(role = Role.Button) {
+                                collapsedGroupLabels = if (collapsed) {
+                                    collapsedGroupLabels.filter { it != group.label }
+                                } else {
+                                    collapsedGroupLabels + group.label
+                                }
+                            }
+                            .padding(horizontal = 4.dp, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "${group.label} · ${group.items.size}",
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                fontWeight = FontWeight.Medium,
+                                letterSpacing = 0.sp
+                            ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong)
+                        )
+                        Icon(
+                            imageVector = if (collapsed) Icons.Rounded.ExpandMore else Icons.Rounded.ExpandLess,
+                            contentDescription = if (collapsed) "展开${group.label}" else "收起${group.label}",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
                 }
             }
+            if (group.label.isEmpty() || group.label !in collapsedGroupLabels) {
             items(group.items, key = { it.task.id }, contentType = { "task-row" }) { item ->
                 SwipeableTaskRow(
                     task = item.task,
@@ -797,6 +830,7 @@ internal fun HomeSmartTaskList(
                         onToggleSelection = { onToggleSelection(item.task) }
                     )
                 }
+            }
             }
         }
     }

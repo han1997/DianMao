@@ -6,6 +6,7 @@ import `fun`.han1997.dianmao.FormSettingBlock
 import `fun`.han1997.dianmao.FullScreenScaffold
 import `fun`.han1997.dianmao.ColorDot
 import `fun`.han1997.dianmao.InlineStatDot
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,13 +26,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.roundToInt
 
 /**
  * Full-screen review surface: completion stats (7/30-day totals, the last 7
@@ -100,8 +104,10 @@ internal fun ReviewScreen(
                 subtitle = "近 30 天各象限完成次数",
                 icon = Icons.Rounded.QueryStats
             ) {
+                val total = stats.quadrantCounts.values.sum()
                 TaskPriority.entries.forEach { quadrant ->
                     val count = stats.quadrantCounts[quadrant] ?: 0
+                    val share = if (total == 0) 0f else count.toFloat() / total
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -112,11 +118,16 @@ internal fun ReviewScreen(
                             style = MaterialTheme.typography.bodyMedium.copy(letterSpacing = 0.sp),
                             color = MaterialTheme.colorScheme.onSurface
                         )
-                        Box(modifier = Modifier.weight(1f))
+                        QuadrantShareBar(
+                            fraction = share,
+                            color = quadrant.color,
+                            modifier = Modifier.weight(1f)
+                        )
                         Text(
-                            text = "$count 次",
+                            text = "$count 次 · ${(share * 100).roundToInt()}%",
                             style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 0.sp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong)
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong),
+                            modifier = Modifier.widthIn(min = 64.dp)
                         )
                     }
                 }
@@ -165,6 +176,13 @@ private fun ReviewDayBarRow(
             modifier = Modifier.widthIn(min = 44.dp)
         )
         val fraction = if (maxCount <= 0) 0f else day.count.toFloat() / maxCount
+        // Grow-in on first composition and animate on data change; snap()
+        // under reduced motion keeps the decorative motion contract.
+        val animatedFraction by animateFloatAsState(
+            targetValue = fraction,
+            animationSpec = motionTween(300),
+            label = "reviewDayBar"
+        )
         Box(
             modifier = Modifier
                 .weight(1f)
@@ -173,7 +191,7 @@ private fun ReviewDayBarRow(
             if (day.count > 0) {
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth(fraction)
+                        .fillMaxWidth(animatedFraction)
                         .height(10.dp)
                         .clip(RoundedCornerShape(5.dp))
                         .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.55f))
@@ -189,6 +207,40 @@ private fun ReviewDayBarRow(
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.widthIn(min = 20.dp)
         )
+    }
+}
+
+/**
+ * Horizontal share bar for one quadrant's share of the last 30 days'
+ * completions. Animates width with the shared motion contract (snap under
+ * reduced motion).
+ */
+@Composable
+private fun QuadrantShareBar(
+    fraction: Float,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    val animatedFraction by animateFloatAsState(
+        targetValue = fraction.coerceIn(0f, 1f),
+        animationSpec = motionTween(300),
+        label = "quadrantShareBar"
+    )
+    Box(
+        modifier = modifier
+            .height(6.dp)
+            .clip(RoundedCornerShape(3.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.60f))
+    ) {
+        if (fraction > 0f) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(animatedFraction)
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp))
+                    .background(color.copy(alpha = 0.55f))
+            )
+        }
     }
 }
 

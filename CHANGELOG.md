@@ -1,5 +1,11 @@
 # Changelog
 
+- Review stats & list polish (v1.1.2): the review day bars grow with a motion-
+  contract-aware animation (snap under reduced motion), and the quadrant share
+  rows gain share bars with percentages alongside the counts. Smart-view group
+  headers (过期/今天/day groups) are now collapsible — tapping a header toggles
+  its rows, with the count staying visible on the collapsed header.
+
 - Calendar quick actions (v1.1.1): each task row in the selected-day panel
   gains an inline check target with the same completion semantics as the home
   rows (including the 写心得 chain), and a long-press opens a quick move dialog
