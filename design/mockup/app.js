@@ -126,6 +126,7 @@ function taskRow(t, o = {}) {
   const showQ = o.showQuadrant !== false;
   const selected = state.selection.includes(t.id);
   const selectMode = state.selection.length > 0;
+  const swipable = o.swipe !== false && !selectMode;
   const sub = t.subTasks.length ? `<div class="sub-prog" style="--c:${QUAD[t.q].color}">
       <div class="sp-head"><span>子事项</span><span>${t.subTasks.filter(s => s.done).length}/${t.subTasks.length}</span></div>
       <div class="sp-bar"><i style="width:${Math.round(t.subTasks.filter(s => s.done).length / t.subTasks.length * 100)}%"></i></div>
@@ -133,14 +134,23 @@ function taskRow(t, o = {}) {
   const mark = selectMode
     ? `<span class="checkzone" role="checkbox" aria-checked="${selected}">${icon('check-circle', 's20')}</span>`
     : `<button class="checkzone" data-action="toggle" data-id="${t.id}" aria-label="切换完成">${cm(t)}</button>`;
-  return `<div class="task-row${t.completed ? ' done' : ''}${selected ? ' selected' : ''}">
+  const longPress = o.longPress || 'select';
+  const longAttr = (!selectMode && longPress === 'select') ? 'data-long="select-enter"' : '';
+  const card = `<div class="task-row${t.completed ? ' done' : ''}${selected ? ' selected' : ''}">
     ${mark}
-    <button class="task-main" data-action="${selectMode ? 'select-toggle' : 'open'}" data-id="${t.id}" data-long="select-enter">
+    <button class="task-main" data-action="${selectMode ? 'select-toggle' : 'open'}" data-id="${t.id}" ${longAttr}>
       <span class="task-title">${esc(t.title)}</span>
       ${sub}
       <span class="metas">${taskMetaList(t, showQ)}</span>
     </button>
     ${selectMode ? '' : `<button class="icon-button sm more" data-action="menu" data-id="${t.id}" aria-label="更多操作">${icons('more', 's18')}</button>`}
+  </div>`;
+  if (!swipable) return card;
+  // Swipe right → complete silently, swipe left → delete (mainstream to-do).
+  return `<div class="swipe" data-swipe data-id="${t.id}" style="--c:${QUAD[t.q].color}"${longPress === 'drag' ? ' data-drag-row="1"' : ''}>
+    <div class="swipe-bg swipe-bg-start">${icon('done-all', 's18')}<span>${t.completed ? '标为未完成' : '完成'}</span></div>
+    <div class="swipe-bg swipe-bg-end">${icon('delete', 's18')}<span>删除</span></div>
+    <div class="swipe-fore">${card}</div>
   </div>`;
 }
 const icons = (n, c) => `<span class="itile" style="background:transparent">${icon(n, c)}</span>`;
@@ -299,7 +309,7 @@ function quadrantContent() {
   }
   return `${intro}
     <div class="section-label">未完成 ${open.length}</div>
-    <div class="group-body">${open.map(t => taskRow(t, { showQuadrant: false })).join('')}</div>
+    <div class="group-body">${open.map(t => taskRow(t, { showQuadrant: false, longPress: 'drag' })).join('')}</div>
     ${done.length ? collapseBox('qd-done', 'check-circle', '已完成', done.length, done.map(t => taskRow(t, { showQuadrant: false })).join(''), !!state.openGroups['qd-done']) : ''}`;
 }
 
@@ -629,6 +639,46 @@ function dialogsHeader() {
     ${itile('edit-note', 'var(--primary)')}
     <div class="header-title"><div class="eyeline">同一 18dp 圆角卡 + 暖纸 scrim + 静默边框 + 6dp 阴影</div><h2>对话框</h2></div>`;
 }
+
+/* ---------- page: widget + notifications ---------- */
+function widgetHeader() {
+  return `<button class="icon-button tile" data-action="back" aria-label="返回">${itile('arrow-back', 'var(--on-surface-variant)')}</button>
+    ${itile('inventory', 'var(--primary)')}
+    <div class="header-title"><div class="eyeline">桌面小组件与到点提醒通知</div><h2>小组件与通知</h2></div>`;
+}
+function widgetContent() {
+  const now = new Date(NOW);
+  const today = openTasks().filter(t => t.dueAt != null && (t.dueAt < midnight(NOW) + DAY)).slice(0, 8);
+  const rows = (limit) => today.slice(0, limit).map(t => `<div class="wg-row">
+      <button class="wg-check" data-action="widget-toggle" data-id="${t.id}" aria-label="完成「${esc(t.title)}」">${icon('check-circle', 's20')}</button>
+      <span class="wg-title">${esc(t.title)}</span>
+      ${t.dueLabel ? `<span class="wg-due">${esc(t.dueLabel.split(' ').pop())}</span>` : ''}
+    </div>`).join('');
+  const widget = (limit, cls) => `<div class="wg ${cls}">
+      <div class="wg-head"><span>DianMao · 今天</span><span class="wg-count">${Math.min(limit, today.length)}</span></div>
+      ${today.length ? rows(limit) : `<div class="wg-empty">今天没有待办</div>`}
+      <div class="wg-add" data-action="add">+ 记一笔</div>
+    </div>`;
+  const notif = (recurring) => `<div class="notif">
+      <div class="notif-head">${itile('bell', 'var(--primary)', true)}<span>DianMao 提醒</span><span class="notif-time">现在</span></div>
+      <div class="notif-title">${esc(today[0] ? today[0].title : '整理季度 OKR 复盘草稿')}</div>
+      <div class="notif-actions">
+        <button class="notif-btn">${icon('done-all', 's18')}${recurring ? '记一次完成' : '完成'}</button>
+        <button class="notif-btn">${icon('schedule', 's18')}稍后提醒</button>
+      </div>
+    </div>`;
+  return `<div class="stack">
+      <div class="section-label">宽小组件 · 最多 8 条</div>
+      ${widget(8, 'wide')}
+      <div class="section-label">窄小组件 · 最多 4 条</div>
+      <div style="display:flex;justify-content:center">${widget(4, 'narrow')}</div>
+      <div class="section-label">到点提醒通知</div>
+      ${notif(false)}
+      <div class="section-label">重复事项提醒 · 完成文案变为「记一次完成」</div>
+      ${notif(true)}
+      <span class="hint">小组件与通知均为演示:勾选/按钮不会真正修改数据或发送通知。</span>
+    </div>`;
+}
 function dialogsContent() {
   const preview = (inner, h) => `<div class="dialog-preview"><div class="backdrop"></div><div class="wrap">
     <div class="dlg"><h4>${h}</h4>${inner}</div></div></div>`;
@@ -664,28 +714,29 @@ function dialogsContent() {
 }
 
 /* ---------- navigation + notes ---------- */
-const PAGES = [['home', '首页'], ['quadrant', '象限详情'], ['detail', '事项详情'], ['add', '新增事项'], ['calendar', '日历'], ['review', '复盘'], ['backup', '备份'], ['archive', '归档'], ['dialogs', '对话框']];
+const PAGES = [['home', '首页'], ['quadrant', '象限详情'], ['detail', '事项详情'], ['add', '新增事项'], ['calendar', '日历'], ['review', '复盘'], ['backup', '备份'], ['archive', '归档'], ['dialogs', '对话框'], ['widget', '小组件与通知']];
 const NOTES = {
-  home: ['01', '先捕捉,<br>再分类。', '四象限不是分类表单,而是一眼看清今天该往哪走。时间关注把过期与今天提到最上层。', ['切到「今天 / 近期 / 收集箱」看分组列表', '点一个象限进入详情', '点右上角搜索,输入关键词筛选', '点右下角 + 新增一条']],
-  quadrant: ['02', '一个象限,<br>一种节奏。', '象限色只做低透明度底纹(8%),头部与空态用同一层 tint,不抢正文。', ['点「已完成」展开收起', '点标题进事项详情', '长按拖拽排序(原型中未实现)']],
+  home: ['01', '先捕捉,<br>再分类。', '四象限不是分类表单,而是一眼看清今天该往哪走。时间关注把过期与今天提到最上层。', ['切到「今天 / 近期 / 收集箱」看分组列表', '右滑完成 / 左滑删除任务行', '长按任务进入多选,可全选与批量操作', '点一个象限进入详情']],
+  quadrant: ['02', '一个象限,<br>一种节奏。', '象限色只做低透明度底纹(8%),头部与空态用同一层 tint,不抢正文。', ['长按任务行拖拽排序(抬起态)', '点「已完成」展开收起', '点标题进事项详情']],
   detail: ['03', '细节留档,<br>完成有记忆。', '事项信息用「动词变值」的行式表达:未设置时是动作,已设置时是值。完成历史折叠在底部。', ['点「完成」切换状态', '点「完成历史」展开', '点右上角铅笔进入编辑']],
-  add: ['04', '记录要快,<br>整理要轻。', '标题默认聚焦;优先级与时间按区块排列,未满足依赖的设置在行内说明原因而不是静默变灰。', ['改标题后点保存', '切换优先级与各开关', '选到期日 / 提醒时间 / 重复', '添加子事项']],
-  calendar: ['05', '时间有它<br>自己的声音。', '日历相关的蓝色只用于时间语义;月格里的点表示当天事项的象限。', ['切换月份', '点某一天看当天列表', '点「记一笔」带日期新增']],
+  add: ['04', '记录要快,<br>整理要轻。', '标题默认聚焦;优先级与时间按区块排列,未满足依赖的设置在行内说明原因而不是静默变灰。', ['切换优先级与各开关', '选到期日(M3 日历)/ 提醒时间(M3 表盘)', '选重复规则与提醒提前量', '添加子事项']],
+  calendar: ['05', '时间有它<br/>自己的声音。', '日历相关的蓝色只用于时间语义;月格里的点表示当天事项的象限。', ['切换月份', '点某一天看当天列表', '长按任务「移动到...」']],
   review: ['06', '完成之后,<br>留下一点什么。', '统计只用现有事实:近 7/30 天次数、每日分布、象限占比与完成心得。', ['滚动查看各区', '点顶部「已复盘」pill 也能到这里']],
   backup: ['07', '数据在手里,<br>也在云上。', '表单用静默边框,唯一的主按钮属于「上传备份」;未配置时本地导出接管主按钮。', ['切换密码可见性', '开关自动备份', '点「保存设置」']],
   archive: ['08', '旧的完成,<br>不必消失。', '归档行保留象限色点、标题、meta 与一个明确的恢复按钮。', ['点「恢复」把它放回待办']],
-  dialogs: ['09', '同一家族,<br>同一套语气。', '所有紧凑对话框共享同一个容器:暖纸 scrim、18dp 圆角卡、发丝级边框与 6dp 阴影。', ['删除确认 / 完成心得 / 日期选择器']],
+  dialogs: ['09', '同一家族,<br>同一套语气。', '所有紧凑对话框共享同一个容器:暖纸 scrim、18dp 圆角卡、发丝级边框与 6dp 阴影。', ['删除 / 取消完成重复 / 完成心得', '日期 / 重复规则 / 提醒提前量', '移动到象限 / 批量删除']],
+  widget: ['10', '不打开应用,<br>也知道今天。', '桌面小组件展示今天的待办并可勾选完成;到点提醒的通知带「完成」与「稍后提醒」。', ['看宽/窄两种小组件尺寸', '勾选小组件里的任务(演示)', '看提醒通知的两个动作按钮']],
 };
 const TITLES = Object.fromEntries(PAGES);
 const HEADERS = {
   home: homeHeader, quadrant: quadrantHeader, detail: detailHeader, add: addHeader,
-  calendar: calendarHeader, review: reviewHeader, backup: backupHeader, archive: archiveHeader, dialogs: dialogsHeader,
+  calendar: calendarHeader, review: reviewHeader, backup: backupHeader, archive: archiveHeader, dialogs: dialogsHeader, widget: widgetHeader,
 };
 const CONTENTS = {
   home: homeContent, quadrant: quadrantContent, detail: detailContent, add: addContent,
-  calendar: calendarContent, review: reviewContent, backup: backupContent, archive: archiveContent, dialogs: dialogsContent,
+  calendar: calendarContent, review: reviewContent, backup: backupContent, archive: archiveContent, dialogs: dialogsContent, widget: widgetContent,
 };
-const SCAFFOLD = { quadrant: 1, detail: 1, add: 1, calendar: 1, review: 1, backup: 1, archive: 1, dialogs: 1 };
+const SCAFFOLD = { quadrant: 1, detail: 1, add: 1, calendar: 1, review: 1, backup: 1, archive: 1, dialogs: 1, widget: 1 };
 
 function navigate(page) {
   if (page === 'add' && !state.form) { state.editingId = null; state.form = blankForm('iu'); }
@@ -779,8 +830,11 @@ const actions = {
     render();
   },
   'toggle': el => { const t = byId(el.dataset.id); t.completed = !t.completed; if (t.completed) t.completionCount = Math.max(1, t.completionCount); toast(t.completed ? '已标记完成' : '已标为未完成'); render(); },
-  'select-enter': el => { const id = +el.dataset.id; if (!state.selection.includes(id)) state.selection.push(id); render(); },
-  'select-toggle': el => { const id = +el.dataset.id; const i = state.selection.indexOf(id); if (i >= 0) state.selection.splice(i, 1); else state.selection.push(id); render(); },
+  'select-enter': el => { const id = +el.dataset.id; if (!state.selection.includes(id)) state.selection.push(id); render(); },  'select-toggle': el => { const id = +el.dataset.id; const i = state.selection.indexOf(id); if (i >= 0) state.selection.splice(i, 1); else state.selection.push(id); render(); },
+  'swipe-complete': el => { const t = byId(el.dataset.id); if (!t) return; t.completed = !t.completed; if (t.completed) t.completionCount = Math.max(1, t.completionCount); toast(t.completed ? '已静默完成(可在“写心得”补备注)' : '已标为未完成'); render(); },
+  'swipe-delete': el => { const t = byId(el.dataset.id); if (!t) return; sheet('删除事项', `<p class="dlg-body" style="margin:0">确定删除“${esc(t.title)}”?删除后不会保留提醒和完成备注。</p>
+      <div class="dlg-actions"><button class="btn text" data-action="close">取消</button>
+      <button class="btn text" style="color:var(--error)" data-action="confirm-delete" data-id="${t.id}">删除</button></div>`); },
   'select-all': () => { const ids = (state.page === 'quadrant' ? qTasks(state.activeQ) : openTasks()).filter(t => !t.completed).map(t => t.id); state.selection = state.selection.length === ids.length ? [] : ids; render(); },
   'select-exit': () => { state.selection = []; render(); },
   'batch-move': () => sheet('移动到象限', `<div class="m3-repeat-picker">${QUAD_ORDER.map(k => `<button class="m3-check-row" data-action="batch-move-confirm" data-q="${k}"><span class="m3-check" style="background:${QUAD[k].color};border-color:${QUAD[k].color}"></span>${QUAD[k].label}</button>`).join('')}</div>
@@ -923,6 +977,7 @@ const actions = {
   'save-dav': () => { state.backup.url = $('#davUrl').value; state.backup.user = $('#davUser').value; state.backup.pass = $('#davPass').value; toast('演示:WebDAV 设置已保存'); render(); },
   'toggle-auto': () => { state.backup.auto = !state.backup.auto; render(); },
   'export': () => toast('演示:已导出本地备份文件'),
+  'widget-toggle': () => toast('演示:小组件勾选完成任务(真实应用中会写入 Room 并刷新小组件)'),
   'revert-local': () => toast('演示:已从本地文件恢复'),
   'upload': () => toast('演示:已上传备份到 WebDAV'),
   'download': () => toast('演示:已从 WebDAV 下载恢复'),
@@ -1109,6 +1164,68 @@ document.addEventListener('pointerdown', e => {
 });
 ['pointerup', 'pointerleave', 'pointercancel', 'scroll'].forEach(ev =>
   document.addEventListener(ev, () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } }, true));
+
+/* ---------- swipe-to-action ---------- */
+// Horizontal drag past 35% of the row width commits: right = complete, left = delete.
+let swipe = null;
+document.addEventListener('pointerdown', e => {
+  const wrap = e.target.closest('[data-swipe]');
+  if (!wrap || state.selection.length) return;
+  if (e.target.closest('[data-action="menu"], .checkzone, .task-main, .icon-button')) return;
+  const fore = wrap.querySelector('.swipe-fore');
+  swipe = { wrap, fore, startX: e.clientX, startY: e.clientY, dx: 0, decided: false, active: false };
+});
+document.addEventListener('pointermove', e => {
+  if (!swipe) return;
+  const dx = e.clientX - swipe.startX, dy = e.clientY - swipe.startY;
+  if (!swipe.decided) {
+    if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+    if (Math.abs(dy) > Math.abs(dx)) { swipe = null; return; } // vertical scroll wins
+    swipe.decided = true; swipe.active = true; swipe.wrap.classList.add('dragging');
+  }
+  swipe.dx = dx;
+  swipe.fore.style.transform = `translateX(${dx}px)`;
+});
+function endSwipe() {
+  if (!swipe) return;
+  const { wrap, fore, dx, active } = swipe; const id = +wrap.dataset.id;
+  swipe = null;
+  if (!active) return;
+  wrap.classList.remove('dragging');
+  const threshold = wrap.clientWidth * 0.35;
+  fore.style.transform = '';
+  if (dx >= threshold) { actions['swipe-complete']({ dataset: { id } }); }
+  else if (dx <= -threshold) { actions['swipe-delete']({ dataset: { id } }); }
+}
+['pointerup', 'pointercancel'].forEach(ev => document.addEventListener(ev, endSwipe));
+
+/* ---------- drag reorder (quadrant-detail list) ---------- */
+// Long-press first (mirrors detectDragGesturesAfterLongPress), then a vertical
+// move lifts the row to 8dp / 1.02. Drop persists via 50ms debounce in the real
+// app; the prototype shows the lifted state and treats drop as a no-op.
+let drag = null;
+let dragTimer = null;
+document.addEventListener('pointerdown', e => {
+  const row = e.target.closest('[data-drag-row]');
+  if (!row || state.selection.length) return;
+  if (e.target.closest('[data-action="menu"], .checkzone, .icon-button')) return;
+  dragTimer = setTimeout(() => {
+    drag = { row, startY: e.clientY, active: true };
+    row.classList.add('dragging');
+    dragTimer = null;
+  }, 500);
+});
+document.addEventListener('pointermove', e => {
+  if (drag) { drag.lastY = e.clientY; }
+});
+function endDrag() {
+  if (dragTimer) { clearTimeout(dragTimer); dragTimer = null; }
+  if (!drag) return;
+  drag.row.classList.remove('dragging');
+  drag = null;
+  toast('演示:拖拽抬起态(真实应用按 50ms 防抖持久化顺序)');
+}
+['pointerup', 'pointercancel', 'pointerleave'].forEach(ev => document.addEventListener(ev, endDrag));
 document.addEventListener('input', e => {
   if (e.target.id === 'searchInput') { state.query = e.target.value; const pos = e.target.selectionStart; render(); const i = $('#searchInput'); if (i) { i.focus(); i.setSelectionRange(pos, pos); } }
   else if (e.target.id === 'formTitle' || e.target.id === 'formDetail') { collectForm(); }

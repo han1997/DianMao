@@ -194,6 +194,52 @@ const assert = require('node:assert/strict');
   await goChapter('dialogs');
   assert.equal(await page.locator('.dialog-preview .dlg').count(), 8, 'eight dialog examples');
 
+  // 11b. widget + notification chapter
+  await goChapter('widget');
+  assert.equal(await page.locator('.wg').count(), 2, 'wide + narrow widget');
+  assert.equal(await page.locator('.wg.wide .wg-row').count() > 0, true, 'widget lists today rows');
+  assert.equal(await page.locator('.notif').count(), 2, 'plain + recurring notification');
+  assert.match(await page.locator('.notif').last().innerText(), /记一次完成/, 'recurring notification label');
+
+  // 11d. long-press drag lift in quadrant detail (do this before swipes: swipes mutate the list)
+  await goChapter('quadrant');
+  await page.waitForTimeout(80);
+  // earlier destructive tests (batch move) shuffled quadrants; reset the demo state
+  await page.evaluate(() => { state = initial(); state.page = 'quadrant'; state.activeQ = 'iu'; render(); });
+  await page.waitForTimeout(40);
+  const dragRow = page.locator('#content [data-drag-row]').first();
+  const db = await dragRow.boundingBox();
+  await page.mouse.move(db.x + db.width / 2, db.y + db.height / 2);
+  await page.mouse.down();
+  await page.waitForTimeout(650);
+  await page.mouse.move(db.x + db.width / 2, db.y + db.height / 2 - 30, { steps: 5 });
+  assert.equal(await page.locator('#content .dragging').count() > 0, true, 'long-press lifts row for drag');
+  await page.mouse.up();
+  await page.waitForTimeout(60);
+
+  // 11c. swipe gestures on home list rows (right = complete, left = delete)
+  await goChapter('home');
+  await click('#appHeader [data-action="home-view"][data-view="today"]');
+  const row = page.locator('#content .swipe').first();
+  const rb = await row.boundingBox();
+  await page.mouse.move(rb.x + 30, rb.y + rb.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(rb.x + rb.width - 40, rb.y + rb.height / 2, { steps: 8 });
+  await page.mouse.up();
+  await page.waitForTimeout(80);
+  assert.equal(await page.locator('#overlay:not([hidden])').count(), 0, 'right swipe completes without a dialog');
+  // left swipe opens the delete confirm
+  const row2 = page.locator('#content .swipe').first();
+  const rb2 = await row2.boundingBox();
+  await page.mouse.move(rb2.x + rb2.width - 30, rb2.y + rb2.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(rb2.x + 30, rb2.y + rb2.height / 2, { steps: 8 });
+  await page.mouse.up();
+  await page.waitForTimeout(80);
+  assert.equal(await page.locator('#overlay:not([hidden])').count(), 1, 'left swipe opens delete confirm');
+  await click('.overlay-card .sheet-heading [data-action="close"]');
+  await click('#appHeader [data-action="home-view"][data-view="quadrants"]');
+
   // 12. dark theme
   await click('#themeToggle');
   assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'dark');

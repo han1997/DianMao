@@ -1,5 +1,14 @@
 # Changelog
 
+- Prototype v1.3 — gestures + widget/notification (2026-10-11): task rows now swipe
+  (right = complete, left = delete with a confirm) matching `SwipeToDismissBox`,
+  and quadrant-detail rows lift on long-press to demonstrate the drag reorder
+  (`detectDragGesturesAfterLongPress`). Long-press is split by surface: home list
+  → multi-select, quadrant detail → drag. A new「小组件与通知」chapter renders the
+  Glance home widget (wide ≤8 / narrow ≤4 today rows, checkable) and the reminder
+  notification (完成 / 记一次完成 + 稍后提醒), matching `DianMaoWidget.kt` and
+  `TaskReminderReceiver.kt`. See `design/mockup/BASELINE.md`.
+
 - Prototype v1.2 — 1:1 replicable UI (2026-10-11): the design mockup now only
   draws UI that Compose can reproduce. The self-invented time stepper is
   replaced by the Material 3 `TimePicker` (24-hour dial + keyboard mode) and the
