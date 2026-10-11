@@ -1,5 +1,15 @@
 # Changelog
 
+- Complete HTML design mockup (2026-10-11): added `design/mockup/`, a
+  browser-openable, offline, in-memory prototype that mirrors the current
+  Compose UI across nine surfaces — home (header, summary pills, smart-view
+  switcher, time-focus lane, quadrant board, FAB), quadrant detail, task detail,
+  add/edit, calendar month, review, backup, archive, and the dialog family.
+  Light and dark themes use the exact `DianMaoTheme.kt` color schemes; the
+  prototype ships a Playwright smoke test plus desktop/dark/mobile screenshots.
+  Design-only; not bundled into the APK. See `design/mockup/README.md` and
+  `.trellis/spec/backend/design-prototypes.md`.
+
 - Review stats & list polish (v1.1.2): the review day bars grow with a motion-
   contract-aware animation (snap under reduced motion), and the quadrant share
   rows gain share bars with percentages alongside the counts. Smart-view group

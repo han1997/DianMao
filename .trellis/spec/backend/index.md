@@ -15,6 +15,7 @@ rules that future agents must follow when changing DianMao.
 | [Quality Guidelines](./quality-guidelines.md) | Required checks, testing strategy, data/platform/Compose review rules | Active |
 | [Logging Guidelines](./logging-guidelines.md) | Privacy-safe Android logging conventions | Active |
 | [Release Packaging](./release-packaging.md) | Version source, bumpVersion task, APK naming, upload-key signing | Active |
+| [Design Prototypes](./design-prototypes.md) | `design/` browser prototypes: ownership, token sourcing, offline rule, nested-interactive gotcha | Active |
 
 ## Quality Check
 
