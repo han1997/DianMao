@@ -47,6 +47,11 @@ import `fun`.han1997.dianmao.QuadrantDetailIntro
 import `fun`.han1997.dianmao.QuadrantDetailSectionLabel
 import `fun`.han1997.dianmao.RecurringTaskHistoryPanel
 import `fun`.han1997.dianmao.TaskDetailScreen
+import `fun`.han1997.dianmao.SettingsScreen
+import `fun`.han1997.dianmao.AppearanceScreen
+import `fun`.han1997.dianmao.appearance.AppearanceSettingsStore
+import `fun`.han1997.dianmao.appearance.ThemeMode
+import androidx.compose.foundation.isSystemInDarkTheme
 import `fun`.han1997.dianmao.DianMaoTheme
 import android.Manifest
 import android.content.Intent
@@ -149,10 +154,20 @@ class MainActivity : ComponentActivity() {
         TaskNotificationChannels.ensure(this)
 
         setContent {
-            DianMaoTheme {
+            // Prototype-first: appearance is a persisted user preference
+            // (system / light / dark), read here so the whole tree — including
+            // dialogs and the widget preview — follows the chosen mode.
+            val appearanceStore = remember { AppearanceSettingsStore(applicationContext) }
+            var themeMode by remember { mutableStateOf(appearanceStore.loadThemeMode()) }
+            DianMaoTheme(themeMode = themeMode) {
                 DianMaoApp(
                     initialTaskId = extractReminderTaskId(intent),
-                    initialOpenAdd = extractOpenAdd(intent)
+                    initialOpenAdd = extractOpenAdd(intent),
+                    themeMode = themeMode,
+                    onThemeModeChange = { mode ->
+                        themeMode = mode
+                        appearanceStore.saveThemeMode(mode)
+                    }
                 )
             }
         }
@@ -198,7 +213,12 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-private fun DianMaoApp(initialTaskId: Long? = null, initialOpenAdd: Boolean = false) {
+private fun DianMaoApp(
+    initialTaskId: Long? = null,
+    initialOpenAdd: Boolean = false,
+    themeMode: ThemeMode = ThemeMode.System,
+    onThemeModeChange: (ThemeMode) -> Unit = {}
+) {
     val context = LocalContext.current
     val repository = remember(context) { TaskRepository(context.applicationContext) }
     val scheduler = remember(context) { ReminderScheduler(context.applicationContext) }
@@ -232,6 +252,13 @@ private fun DianMaoApp(initialTaskId: Long? = null, initialOpenAdd: Boolean = fa
 
     var activePriority by rememberSaveable { mutableStateOf<TaskPriority?>(null) }
     var showAddSheet by rememberSaveable { mutableStateOf(false) }
+    var showSettingsPanel by rememberSaveable { mutableStateOf(false) }
+    var showAppearancePanel by rememberSaveable { mutableStateOf(false) }
+    var showWidgetPanel by rememberSaveable { mutableStateOf(false) }
+    // Prototype-first: backup/archive/review/widget are entered from the
+    // settings hub (state.from), so their back/close returns to settings
+    // rather than jumping straight home.
+    var returnToSettings by rememberSaveable { mutableStateOf(false) }
     var showBackupPanel by rememberSaveable { mutableStateOf(false) }
     var backupSyncInProgress by remember { mutableStateOf(false) }
     var showArchivedPanel by rememberSaveable { mutableStateOf(false) }
@@ -650,14 +677,40 @@ private fun DianMaoApp(initialTaskId: Long? = null, initialOpenAdd: Boolean = fa
         hasActivePriority = activePriority != null,
         taskForDetail = taskForDetail != null,
         showCalendarView = showCalendarView,
-        showSelectionMode = showSelectionMode
+        showSelectionMode = showSelectionMode,
+        showAppearancePanel = showAppearancePanel,
+        showSettingsPanel = showSettingsPanel,
+        showWidgetPanel = showWidgetPanel
     )
 
     BackHandler(enabled = backTarget != null) {
         when (backTarget) {
-            InAppBackTarget.BackupPanel -> showBackupPanel = false
-            InAppBackTarget.ArchivedPanel -> showArchivedPanel = false
-            InAppBackTarget.ReviewPanel -> showReviewPanel = false
+            // Prototype-first: the two-level settings hub collapses one level at
+            // a time — appearance returns to settings, settings to home.
+            InAppBackTarget.AppearancePanel -> {
+                showAppearancePanel = false
+                showSettingsPanel = true
+            }
+            InAppBackTarget.WidgetPanel -> {
+                showWidgetPanel = false
+                showSettingsPanel = true
+            }
+            InAppBackTarget.SettingsPanel -> showSettingsPanel = false
+            InAppBackTarget.BackupPanel -> {
+                showBackupPanel = false
+                showSettingsPanel = returnToSettings
+                returnToSettings = false
+            }
+            InAppBackTarget.ArchivedPanel -> {
+                showArchivedPanel = false
+                showSettingsPanel = returnToSettings
+                returnToSettings = false
+            }
+            InAppBackTarget.ReviewPanel -> {
+                showReviewPanel = false
+                showSettingsPanel = returnToSettings
+                returnToSettings = false
+            }
             InAppBackTarget.TaskPanel -> dismissTaskPanel()
             InAppBackTarget.TaskDetail -> taskForDetail = null
             InAppBackTarget.CalendarView -> showCalendarView = false
@@ -736,8 +789,8 @@ private fun DianMaoApp(initialTaskId: Long? = null, initialOpenAdd: Boolean = fa
                                 homeSearchVisible = !homeSearchVisible
                             },
                             onQueryChanged = { homeSearchQuery = it },
-                            onOpenBackup = {
-                                showBackupPanel = true
+                            onOpenSettings = {
+                                showSettingsPanel = true
                             },
                             onOpenArchived = {
                                 showArchivedPanel = true
@@ -1150,12 +1203,68 @@ private fun DianMaoApp(initialTaskId: Long? = null, initialOpenAdd: Boolean = fa
                         )
                     }
                 }
+                SettingsScreen(
+                    themeMode = themeMode,
+                    backupConnected = webDavSettings.isConfigured,
+                    backupHost = webDavSettings.url.trim().takeIf { it.isNotEmpty() }?.let { url ->
+                        runCatching { java.net.URI(url).host }.getOrNull()
+                    },
+                    archivedCount = archivedTasks.size,
+                    completedCount = activeTasks.count { it.completed },
+                    onBack = { showSettingsPanel = false },
+                    onOpenAppearance = {
+                        showSettingsPanel = false
+                        showAppearancePanel = true
+                    },
+                    onOpenWidget = {
+                        showSettingsPanel = false
+                        returnToSettings = true
+                        showWidgetPanel = true
+                    },
+                    onOpenBackup = {
+                        showSettingsPanel = false
+                        returnToSettings = true
+                        showBackupPanel = true
+                    },
+                    onOpenArchive = {
+                        showSettingsPanel = false
+                        returnToSettings = true
+                        showArchivedPanel = true
+                    },
+                    onOpenReview = {
+                        showSettingsPanel = false
+                        returnToSettings = true
+                        showReviewPanel = true
+                    }
+                )
+                WidgetNotificationsScreen(
+                    sampleTasks = activeTasks
+                        .filter { !it.completed }
+                        .sortedBy { it.dueAtMillis ?: Long.MAX_VALUE },
+                    onBack = {
+                        showWidgetPanel = false
+                        showSettingsPanel = true
+                    }
+                )
+                AppearanceScreen(
+                    themeMode = themeMode,
+                    isSystemDark = isSystemInDarkTheme(),
+                    onBack = {
+                        showAppearancePanel = false
+                        showSettingsPanel = true
+                    },
+                    onSelect = onThemeModeChange
+                )
                 BackupPanel(
                     visible = showBackupPanel,
                     initialSettings = webDavSettings,
                     autoBackupSettings = autoBackupSettings,
                     syncInProgress = backupSyncInProgress,
-                    onDismiss = { showBackupPanel = false },
+                    onDismiss = {
+                        showBackupPanel = false
+                        showSettingsPanel = returnToSettings
+                        returnToSettings = false
+                    },
                     onToggleAutoBackup = { enabled ->
                         backupSettingsStore.saveAutoBackupEnabled(enabled)
                         autoBackupSettings = backupSettingsStore.loadAutoBackupSettings()
@@ -1236,7 +1345,11 @@ private fun DianMaoApp(initialTaskId: Long? = null, initialOpenAdd: Boolean = fa
                 ReviewScreen(
                     events = reviewEvents,
                     stats = reviewStats,
-                    onBack = { showReviewPanel = false },
+                    onBack = {
+                        showReviewPanel = false
+                        showSettingsPanel = returnToSettings
+                        returnToSettings = false
+                    },
                     visible = showReviewPanel
                 )
                 CalendarMonthScreen(
@@ -1256,7 +1369,11 @@ private fun DianMaoApp(initialTaskId: Long? = null, initialOpenAdd: Boolean = fa
                 ArchivedPanel(
                     visible = showArchivedPanel,
                     tasks = archivedTasks,
-                    onDismiss = { showArchivedPanel = false },
+                    onDismiss = {
+                        showArchivedPanel = false
+                        showSettingsPanel = returnToSettings
+                        returnToSettings = false
+                    },
                     onUnarchive = { task ->
                         scope.launch {
                             val succeeded = snackbarHostState.runOrNotifyFailure("恢复失败") {

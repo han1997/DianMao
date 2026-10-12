@@ -12,6 +12,9 @@ import java.time.ZoneId
 internal enum class InAppBackTarget {
     TaskDetail,
     BackupPanel,
+    AppearancePanel,
+    WidgetPanel,
+    SettingsPanel,
     ArchivedPanel,
     ReviewPanel,
     TaskPanel,
@@ -253,9 +256,15 @@ internal fun resolveInAppBackTarget(
     hasActivePriority: Boolean,
     taskForDetail: Boolean,
     showCalendarView: Boolean,
-    showSelectionMode: Boolean
+    showSelectionMode: Boolean,
+    showAppearancePanel: Boolean = false,
+    showSettingsPanel: Boolean = false,
+    showWidgetPanel: Boolean = false
 ): InAppBackTarget? {
     return when {
+        showAppearancePanel -> InAppBackTarget.AppearancePanel
+        showWidgetPanel -> InAppBackTarget.WidgetPanel
+        showSettingsPanel -> InAppBackTarget.SettingsPanel
         showBackupPanel -> InAppBackTarget.BackupPanel
         showArchivedPanel -> InAppBackTarget.ArchivedPanel
         showReviewPanel -> InAppBackTarget.ReviewPanel

@@ -107,7 +107,7 @@ internal fun AppHeader(
     onSearchToggle: () -> Unit,
     onQueryChanged: (String) -> Unit,
     onOpenCalendar: () -> Unit,
-    onOpenBackup: () -> Unit,
+    onOpenSettings: () -> Unit,
     onOpenArchived: () -> Unit,
     onOpenReview: () -> Unit
 ) {
@@ -160,8 +160,8 @@ internal fun AppHeader(
             )
             HeaderActionButton(
                 icon = DianMaoIcons.Settings,
-                contentDescription = "备份与恢复",
-                onClick = onOpenBackup
+                contentDescription = "设置",
+                onClick = onOpenSettings
             )
             }
         }

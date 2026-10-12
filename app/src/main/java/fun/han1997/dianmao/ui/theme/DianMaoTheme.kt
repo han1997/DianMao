@@ -1,5 +1,6 @@
 package `fun`.han1997.dianmao
 
+import `fun`.han1997.dianmao.appearance.ThemeMode
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -14,8 +15,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-internal fun DianMaoTheme(content: @Composable () -> Unit) {
-    val colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()
+internal fun DianMaoTheme(
+    themeMode: ThemeMode = ThemeMode.System,
+    content: @Composable () -> Unit
+) {
+    val dark = when (themeMode) {
+        ThemeMode.System -> isSystemInDarkTheme()
+        ThemeMode.Light -> false
+        ThemeMode.Dark -> true
+    }
+    val colorScheme = if (dark) darkColorScheme() else lightColorScheme()
 
     val animationsEnabled = rememberAnimationsEnabled()
 
