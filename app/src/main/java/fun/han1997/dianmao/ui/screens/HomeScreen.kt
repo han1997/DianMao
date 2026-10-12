@@ -268,7 +268,7 @@ internal fun TimeFocusLane(
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.secondary,
                         containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = DianMaoAlpha.subtle),
-                        iconSize = 15.dp
+                        iconSize = 18.dp
                     )
                     Column(
                         modifier = Modifier.weight(1f),
