@@ -1,8 +1,19 @@
 # Changelog
 
-# Changelog
+## v1.2.1 — fix dead 设置/日历 buttons (2026-10-12)
 
-# Changelog
+- **Fix**: the pixel-parity refactor (v1.2.0, commit 473d5a0) accidentally
+  deleted the rendering block for six full-screen destinations while removing
+  the obsolete `RecurringTaskHistoryPanel`. The header 设置/日历 buttons set
+  state that nothing consumed, so tapping them did nothing. Restored the
+  rendering of `SettingsScreen`, `CalendarMonthScreen`, `AppearanceScreen`,
+  `WidgetNotificationsScreen`, `BackupPanel` and `ReviewScreen` with their
+  original navigation and WebDAV wiring.
+- **Fix**: calendar quick-add now presets the picked date into the add form
+  (`calendarPresetDueAtMillis` was recorded but never passed to
+  `AddTaskPanel.presetDueAtMillis`); the preset clears when the panel closes.
+
+Verification: `:app:compileDebugKotlin` and `:app:assembleRelease` pass.
 
 ## v1.2.0 — pixel-parity UI pass (2026-10-12)
 
