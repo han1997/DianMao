@@ -255,40 +255,36 @@ internal fun AddTaskPanel(
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 // Title field: auto-focused in add mode, 1-3 lines adaptive.
-                OutlinedTextField(
+                QuietField(
                     value = title,
                     onValueChange = { title = it },
+                    placeholder = if (isEditing) "更新事项内容" else "要记录什么?",
                     modifier = Modifier
                         .fillMaxWidth()
                         .focusRequester(titleFocusRequester),
-                    placeholder = { Text(if (isEditing) "更新事项内容" else "要记录什么?") },
-                    singleLine = false,
+                    textStyle = quietTitleFieldStyle(),
                     minLines = 1,
                     maxLines = 3,
-                    shape = RowShape,
-                    textStyle = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Medium,
-                        fontSize = 18.sp,
-                        lineHeight = 25.sp,
-                        letterSpacing = 0.sp
-                    ),
+                    singleLine = false,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone = { if (!isEditing) saveTask() else focusManager.clearFocus() }),
-                    colors = quietTextFieldColors()
+                    keyboardActions = KeyboardActions(onDone = { if (!isEditing) saveTask() else focusManager.clearFocus() })
                 )
 
                 // Optional detail field: background, links, key points.
-                OutlinedTextField(
+                QuietField(
                     value = detail,
                     onValueChange = { detail = it },
+                    placeholder = "补充说明(可选)",
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("补充说明（可选）") },
-                    singleLine = false,
-                    minLines = 1,
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
+                        letterSpacing = 0.sp
+                    ),
+                    minLines = 2,
                     maxLines = 5,
-                    shape = RowShape,
-                    textStyle = MaterialTheme.typography.bodyLarge.copy(letterSpacing = 0.sp),
-                    colors = quietTextFieldColors()
+                    singleLine = false,
+                    contentMinHeight = 72.dp
                 )
 
                 // Priority section: quadrant choice as one connected segmented row.
