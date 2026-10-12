@@ -117,7 +117,8 @@ internal fun ReviewScreen(
                         Text(
                             text = quadrant.shortTitle,
                             style = MaterialTheme.typography.bodyMedium.copy(letterSpacing = 0.sp),
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.widthIn(min = 32.dp)
                         )
                         QuadrantShareBar(
                             fraction = share,
@@ -128,7 +129,7 @@ internal fun ReviewScreen(
                             text = "$count 次 · ${(share * 100).roundToInt()}%",
                             style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 0.sp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong),
-                            modifier = Modifier.widthIn(min = 64.dp)
+                            modifier = Modifier.widthIn(min = 66.dp)
                         )
                     }
                 }
@@ -257,10 +258,12 @@ private fun ReviewEventRow(event: ReviewCompletionEvent) {
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            // Prototype .event aligns to flex-start so the dot sits on the
+            // title's first line even when a completion note is present.
+            verticalAlignment = Alignment.Top,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            ColorDot(event.quadrant.color)
+            ColorDot(event.quadrant.color, modifier = Modifier.padding(top = 3.dp))
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(2.dp)
