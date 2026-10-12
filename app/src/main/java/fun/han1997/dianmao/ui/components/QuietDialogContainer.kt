@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -64,6 +65,9 @@ internal fun QuietDialogContainer(
             Card(
                 modifier = modifier
                     .fillMaxWidth()
+                    // Prototype .overlay-card: max-width 330dp so the dialog
+                    // never stretches on wide/expanded windows.
+                    .widthIn(max = 330.dp)
                     .windowInsetsPadding(WindowInsets.safeDrawing)
                     .padding(horizontal = 24.dp)
                     .clickable(
