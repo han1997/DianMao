@@ -80,6 +80,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -535,24 +536,6 @@ private fun DianMaoApp(
         }
     }
 
-    val batchComplete: () -> Unit = batchComplete@{
-        val targets = selectedTasks
-        if (targets.isEmpty()) return@batchComplete
-        scope.launch {
-            snackbarHostState.runOrNotifyFailure("批量完成失败") {
-                val completedCount = targets.count { completeTaskSilently(context, it) }
-                if (completedCount == 0) {
-                    exitSelection()
-                    snackbarHostState.showSnackbar("所选事项已发生变化")
-                    return@runOrNotifyFailure
-                }
-                refreshHomeWidget(context)
-                exitSelection()
-                snackbarHostState.showSnackbar("已完成 $completedCount 个事项")
-            }
-        }
-    }
-
     val batchMoveQuadrant: (TaskPriority) -> Unit = batchMoveQuadrant@{ priority ->
         val targets = selectedTasks
         if (targets.isEmpty()) return@batchMoveQuadrant
@@ -778,6 +761,25 @@ private fun DianMaoApp(
                             .padding(start = 20.dp, top = 4.dp, end = 20.dp, bottom = 18.dp),
                         verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
+                        if (showSelectionMode) {
+                            // Prototype: while selecting, the whole header is
+                            // replaced by close + "已选 N 项" + 全选.
+                            SelectionHeader(
+                                selectedCount = selectedTaskIds.size,
+                                allSelected = selectedTaskIds.size == activeTasks.size && activeTasks.isNotEmpty(),
+                                onExit = {
+                                    showSelectionMode = false
+                                    selectedTaskIds = emptySet()
+                                },
+                                onToggleAll = {
+                                    selectedTaskIds = if (selectedTaskIds.size == activeTasks.size) {
+                                        emptySet()
+                                    } else {
+                                        activeTasks.map { it.id }.toSet()
+                                    }
+                                }
+                            )
+                        } else {
                         AppHeader(
                             tasks = activeTasks,
                             searchVisible = homeSearchVisible,
@@ -806,6 +808,7 @@ private fun DianMaoApp(
                             selected = homeSmartView,
                             onSelect = { homeSmartView = it }
                         )
+                        }
                         Crossfade(
                             targetState = homeSmartView,
                             animationSpec = motionTween(150),
@@ -1402,10 +1405,6 @@ private fun DianMaoApp(
         if (showSelectionMode) {
             BatchSelectionBar(
                 selectedCount = selectedTaskIds.size,
-                totalCount = activeTasks.size,
-                onSelectAll = { selectedTaskIds = activeTasks.map { it.id }.toSet() },
-                onClearSelection = { selectedTaskIds = emptySet() },
-                onComplete = batchComplete,
                 onMoveQuadrant = { batchMoveQuadrantTarget = true },
                 onDelete = { batchDeleteConfirm = true }
             )
@@ -1613,85 +1612,95 @@ private fun TopNoticeHost(hostState: SnackbarHostState) {
     }
 }
 
+/**
+ * Prototype selection header: close + "已选 N 项" + 全选, replacing the normal
+ * app header while multi-select is active (.app-header.scaffold branch in
+ * render()).
+ */
+@Composable
+private fun SelectionHeader(
+    selectedCount: Int,
+    allSelected: Boolean,
+    onExit: () -> Unit,
+    onToggleAll: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        HeaderActionButton(
+            icon = DianMaoIcons.Close,
+            contentDescription = "退出多选",
+            onClick = onExit
+        )
+        Text(
+            text = "已选 $selectedCount 项",
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        TextButton(onClick = onToggleAll) {
+            Text(if (allSelected) "取消全选" else "全选")
+        }
+    }
+}
+
+/**
+ * Prototype .select-bar: a sticky two-button row at the bottom of the content
+ * while multi-select is active — 移动象限 (tonal) and 删除所选 (error tint).
+ * There is deliberately no 完成 button or shadowed bottom sheet in the
+ * prototype.
+ */
 @Composable
 private fun BatchSelectionBar(
     selectedCount: Int,
-    totalCount: Int,
-    onSelectAll: () -> Unit,
-    onClearSelection: () -> Unit,
-    onComplete: () -> Unit,
     onMoveQuadrant: () -> Unit,
     onDelete: () -> Unit
 ) {
-    Surface(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .windowInsetsPadding(WindowInsets.safeDrawing),
-        color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 8.dp
+            .windowInsetsPadding(WindowInsets.safeDrawing)
+            .padding(horizontal = 20.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Column {
-            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                Text(
-                    text = "已选 $selectedCount 项",
-                    modifier = Modifier.weight(1f),
-                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                TextButton(onClick = {
-                    if (selectedCount == totalCount) onClearSelection() else onSelectAll()
-                }) {
-                    Text(if (selectedCount == totalCount) "取消全选" else "全选")
-                }
-            }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                FilledTonalButton(
-                    onClick = onComplete,
-                    enabled = selectedCount > 0,
-                    modifier = Modifier.weight(1f),
-                    shape = RowShape
-                ) {
-                    Icon(DianMaoIcons.DoneAll, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("完成")
-                }
-                FilledTonalButton(
-                    onClick = onMoveQuadrant,
-                    enabled = selectedCount > 0,
-                    modifier = Modifier.weight(1f),
-                    shape = RowShape
-                ) {
-                    Icon(DianMaoIcons.Inventory, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("移动")
-                }
-                Button(
-                    onClick = onDelete,
-                    enabled = selectedCount > 0,
-                    modifier = Modifier.weight(1f),
-                    shape = RowShape,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                        contentColor = MaterialTheme.colorScheme.onError
-                    )
-                ) {
-                    Icon(DianMaoIcons.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(Modifier.width(6.dp))
-                    Text("删除")
-                }
-            }
+        FilledTonalButton(
+            onClick = onMoveQuadrant,
+            enabled = selectedCount > 0,
+            modifier = Modifier.weight(1f),
+            shape = RowShape,
+            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp)
+        ) {
+            InlineButtonIcon(
+                icon = DianMaoIcons.Inventory,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                containerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.10f)
+            )
+            Spacer(Modifier.width(7.dp))
+            Text("移动象限")
+        }
+        Button(
+            onClick = onDelete,
+            enabled = selectedCount > 0,
+            modifier = Modifier.weight(1f),
+            shape = RowShape,
+            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.10f),
+                contentColor = MaterialTheme.colorScheme.error
+            ),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
+        ) {
+            InlineButtonIcon(
+                icon = DianMaoIcons.Delete,
+                tint = MaterialTheme.colorScheme.error,
+                containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.10f)
+            )
+            Spacer(Modifier.width(7.dp))
+            Text("删除所选")
         }
     }
 }
