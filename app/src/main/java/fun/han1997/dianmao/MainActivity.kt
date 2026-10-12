@@ -45,7 +45,6 @@ import `fun`.han1997.dianmao.QuadrantDetailEmptyState
 import `fun`.han1997.dianmao.QuadrantDetailHeader
 import `fun`.han1997.dianmao.QuadrantDetailIntro
 import `fun`.han1997.dianmao.QuadrantDetailSectionLabel
-import `fun`.han1997.dianmao.RecurringTaskHistoryPanel
 import `fun`.han1997.dianmao.TaskDetailScreen
 import `fun`.han1997.dianmao.SettingsScreen
 import `fun`.han1997.dianmao.AppearanceScreen
@@ -272,7 +271,6 @@ private fun DianMaoApp(
     var batchDeleteConfirm by remember { mutableStateOf(false) }
     var taskForNote by remember { mutableStateOf<TaskUiModel?>(null) }
     var taskForEdit by remember { mutableStateOf<TaskUiModel?>(null) }
-    var taskForHistory by remember { mutableStateOf<TaskUiModel?>(null) }
     var taskForDelete by remember { mutableStateOf<TaskUiModel?>(null) }
     var taskForUncompletion by remember { mutableStateOf<TaskUiModel?>(null) }
     var taskForDetail by remember { mutableStateOf<TaskUiModel?>(null) }
@@ -1095,7 +1093,6 @@ private fun DianMaoApp(
                             },
                             onDeleteCompletion = deleteCompletionWithUndo,
                             onUpdateCompletionNote = updateCompletionNoteQuietly,
-                            onOpenHistory = { taskForHistory = it }
                         )
                     }
                 }
@@ -1188,195 +1185,6 @@ private fun DianMaoApp(
                     }
                 )
 
-                val historyTaskSnapshot = remember { mutableStateOf<TaskUiModel?>(null) }
-                if (taskForHistory != null) historyTaskSnapshot.value = taskForHistory
-                AnimatedVisibility(
-                    visible = taskForHistory != null,
-                    enter = (fadeIn(tween(150)) +
-                        slideInVertically(tween(220)) { it / 4 })
-                        .withReducedMotion(),
-                    exit = (fadeOut(tween(120)) +
-                        slideOutVertically(tween(180)) { it / 4 })
-                        .withReducedMotion()
-                ) {
-                    historyTaskSnapshot.value?.let { task ->
-                        RecurringTaskHistoryPanel(
-                            task = task,
-                            repository = repository,
-                            onDismiss = { taskForHistory = null },
-                            onEdit = { t ->
-                                taskForHistory = null
-                                taskForEdit = t
-                            },
-                            onComplete = { taskForNote = it },
-                            onDeleteCompletion = deleteCompletionWithUndo,
-                            onUpdateCompletionNote = updateCompletionNoteQuietly
-                        )
-                    }
-                }
-                SettingsScreen(
-                    themeMode = themeMode,
-                    backupConnected = webDavSettings.isConfigured,
-                    backupHost = webDavSettings.url.trim().takeIf { it.isNotEmpty() }?.let { url ->
-                        runCatching { java.net.URI(url).host }.getOrNull()
-                    },
-                    archivedCount = archivedTasks.size,
-                    completedCount = activeTasks.count { it.completed },
-                    onBack = { showSettingsPanel = false },
-                    onOpenAppearance = {
-                        showSettingsPanel = false
-                        showAppearancePanel = true
-                    },
-                    onOpenWidget = {
-                        showSettingsPanel = false
-                        returnToSettings = true
-                        showWidgetPanel = true
-                    },
-                    onOpenBackup = {
-                        showSettingsPanel = false
-                        returnToSettings = true
-                        showBackupPanel = true
-                    },
-                    onOpenArchive = {
-                        showSettingsPanel = false
-                        returnToSettings = true
-                        showArchivedPanel = true
-                    },
-                    onOpenReview = {
-                        showSettingsPanel = false
-                        returnToSettings = true
-                        showReviewPanel = true
-                    }
-                )
-                WidgetNotificationsScreen(
-                    sampleTasks = activeTasks
-                        .filter { !it.completed }
-                        .sortedBy { it.dueAtMillis ?: Long.MAX_VALUE },
-                    onBack = {
-                        showWidgetPanel = false
-                        showSettingsPanel = true
-                    }
-                )
-                AppearanceScreen(
-                    themeMode = themeMode,
-                    isSystemDark = isSystemInDarkTheme(),
-                    onBack = {
-                        showAppearancePanel = false
-                        showSettingsPanel = true
-                    },
-                    onSelect = onThemeModeChange
-                )
-                BackupPanel(
-                    visible = showBackupPanel,
-                    initialSettings = webDavSettings,
-                    autoBackupSettings = autoBackupSettings,
-                    syncInProgress = backupSyncInProgress,
-                    onDismiss = {
-                        showBackupPanel = false
-                        showSettingsPanel = returnToSettings
-                        returnToSettings = false
-                    },
-                    onToggleAutoBackup = { enabled ->
-                        backupSettingsStore.saveAutoBackupEnabled(enabled)
-                        autoBackupSettings = backupSettingsStore.loadAutoBackupSettings()
-                    },
-                    onLocalExport = {
-                        localBackupExportLauncher.launch(defaultBackupFileName())
-                    },
-                    onLocalImport = {
-                        localBackupImportLauncher.launch(arrayOf("application/json", "text/*", "*/*"))
-                    },
-                    onSaveWebDav = { settings ->
-                        webDavSettings = settings
-                        backupSettingsStore.saveWebDavSettings(settings)
-                        scope.launch { snackbarHostState.showSnackbar("WebDAV 设置已保存") }
-                    },
-                    onUploadWebDav = { settings ->
-                        scope.launch {
-                            backupSyncInProgress = true
-                            try {
-                                runCatching {
-                                    backupSettingsStore.saveWebDavSettings(settings)
-                                    webDavSettings = settings
-                                    webDavClient.upload(settings, repository.exportBackupJson())
-                                }.onSuccess {
-                                    snackbarHostState.showSnackbar("WebDAV 备份已上传")
-                                }.onFailure { error ->
-                                    snackbarHostState.showSnackbar("上传失败：${error.message.orEmpty()}")
-                                }
-                            } finally {
-                                backupSyncInProgress = false
-                            }
-                        }
-                    },
-                    onRestoreWebDav = { settings ->
-                        scope.launch {
-                            backupSyncInProgress = true
-                            try {
-                                runCatching {
-                                    backupSettingsStore.saveWebDavSettings(settings)
-                                    webDavSettings = settings
-                                    // Safety net before the destructive
-                                    // import: snapshot the current local
-                                    // data next to the backup on the same
-                                    // WebDAV share, so a wrong or corrupt
-                                    // restore source can be undone by
-                                    // restoring this snapshot. Aborting on
-                                    // snapshot failure — restoring without
-                                    // an undo path is worse than waiting.
-                                    try {
-                                        webDavClient.upload(
-                                            settings,
-                                            repository.exportBackupJson(),
-                                            WEBDAV_PRE_RESTORE_SNAPSHOT_FILE_NAME
-                                        )
-                                    } catch (error: Exception) {
-                                        if (error is CancellationException) throw error
-                                        throw IOException(
-                                            "恢复前快照上传失败（${error.message.orEmpty().take(120)}），本地数据未被改动",
-                                            error
-                                        )
-                                    }
-                                    val count = repository.importBackupJson(webDavClient.download(settings))
-                                    repository.restoreScheduledReminders().forEach { task ->
-                                        scheduler.schedule(task)
-                                    }
-                                    count
-                                }.onSuccess { count ->
-                                    snackbarHostState.showSnackbar("已从 WebDAV 恢复 $count 个事项")
-                                }.onFailure { error ->
-                                    snackbarHostState.showSnackbar("恢复失败：${error.message.orEmpty()}")
-                                }
-                            } finally {
-                                backupSyncInProgress = false
-                            }
-                        }
-                    }
-                )
-                ReviewScreen(
-                    events = reviewEvents,
-                    stats = reviewStats,
-                    onBack = {
-                        showReviewPanel = false
-                        showSettingsPanel = returnToSettings
-                        returnToSettings = false
-                    },
-                    visible = showReviewPanel
-                )
-                CalendarMonthScreen(
-                    visible = showCalendarView,
-                    tasks = activeTasks,
-                    nowMillis = nowMillis,
-                    zoneId = zoneId,
-                    onBack = { showCalendarView = false },
-                    onTaskSelected = { taskForDetail = it },
-                    onQuickAdd = { date ->
-                        calendarPresetDueAtMillis = date.atStartOfDay(zoneId).toInstant().toEpochMilli()
-                        showAddSheet = true
-                    },
-                    onToggleComplete = toggleComplete,
-                    onMoveTask = { task, dateMillis -> moveTaskDueToDate(task, dateMillis) }
-                )
                 ArchivedPanel(
                     visible = showArchivedPanel,
                     tasks = archivedTasks,

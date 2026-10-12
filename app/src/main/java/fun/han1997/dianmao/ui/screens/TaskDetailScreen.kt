@@ -96,8 +96,7 @@ internal fun TaskDetailScreen(
     onOpenCalendarReminder: (TaskUiModel) -> Unit,
     onToggleSubTask: (Long, Boolean) -> Unit,
     onDeleteCompletion: (Long) -> Unit,
-    onUpdateCompletionNote: (Long, String?) -> Unit,
-    onOpenHistory: (TaskUiModel) -> Unit = {}
+    onUpdateCompletionNote: (Long, String?) -> Unit
 ) {
     val completions by repository.observeCompletions(task.id).collectAsState(initial = emptyList())
     val listState = rememberLazyListState()
@@ -246,8 +245,11 @@ internal fun TaskDetailScreen(
                             DetailMetaRow(
                                 icon = DianMaoIcons.CheckCircle,
                                 iconTint = task.quadrant.color,
-                                label = "已完成 ${task.completionCount} 次",
-                                onClick = { onOpenHistory(task) }
+                                // Prototype draws this row with a chevron but its
+                                // action just re-opens the same detail page, so
+                                // the fact is shown without a separate
+                                // destination.
+                                label = "已完成 ${task.completionCount} 次"
                             )
                         }
                     }
@@ -449,7 +451,8 @@ internal fun DetailMetaRow(
             contentDescription = null,
             tint = iconTint,
             containerColor = iconTint.copy(alpha = 0.10f),
-            iconSize = 16.dp
+            // Prototype .meta-row uses the 20dp "sm" tile (12dp icon).
+            iconSize = 12.dp
         )
         Text(
             text = label,
@@ -708,176 +711,3 @@ fun CompletionItem(
     }
 }
 
-@Composable
-fun RecurringTaskHistoryPanel(
-    task: TaskUiModel,
-    repository: TaskRepository,
-    onDismiss: () -> Unit,
-    onEdit: (TaskUiModel) -> Unit,
-    onComplete: (TaskUiModel) -> Unit,
-    onDeleteCompletion: (Long) -> Unit,
-    onUpdateCompletionNote: (Long, String?) -> Unit = { _, _ -> }
-) {
-    val completions by repository.observeCompletions(task.id).collectAsState(initial = emptyList())
-    var canComplete by remember { mutableStateOf(false) }
-
-    LaunchedEffect(task) {
-        canComplete = repository.canCompleteInCurrentCycle(task)
-    }
-
-    FullScreenScaffold(
-        title = "完成历史",
-        subtitle = task.title,
-        leadingIcon = DianMaoIcons.History,
-        leadingIconTint = MaterialTheme.colorScheme.primary,
-        onBack = onDismiss,
-        actions = {
-            HeaderActionButton(
-                icon = DianMaoIcons.Edit,
-                contentDescription = "编辑",
-                onClick = { onEdit(task) },
-                tint = MaterialTheme.colorScheme.primary,
-                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.50f)
-            )
-        }
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(top = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            // Task info
-            Surface(
-                color = task.quadrant.color.copy(alpha = 0.08f),
-                shape = RowShape,
-                border = quietBorder(0.12f)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 11.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    IconTile(
-                        icon = DianMaoIcons.CheckCircle,
-                        contentDescription = null,
-                        tint = task.quadrant.color,
-                        containerColor = task.quadrant.color.copy(alpha = 0.10f),
-                        iconSize = 16.dp
-                    )
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(2.dp)
-                    ) {
-                        Text(
-                            text = task.quadrant.shortTitle,
-                            style = MaterialTheme.typography.labelMedium.copy(
-                                fontWeight = FontWeight.Medium,
-                                letterSpacing = 0.sp
-                            ),
-                            color = task.quadrant.color.copy(alpha = 0.9f),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            text = repeatRuleLabel(task.repeatRule, task.repeatInterval, task.repeatWeekdays),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text(
-                            text = "${task.completionCount}",
-                            style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "总完成",
-                            style = MaterialTheme.typography.labelMedium.copy(
-                                letterSpacing = 0.sp
-                            ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong)
-                        )
-                    }
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text(
-                            text = "${completions.size}",
-                            style = MaterialTheme.typography.titleLarge,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "历史",
-                            style = MaterialTheme.typography.labelMedium.copy(
-                                letterSpacing = 0.sp
-                            ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong)
-                        )
-                    }
-                }
-            }
-
-            // Complete button
-            Button(
-                onClick = { onComplete(task) },
-                enabled = canComplete,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RowShape,
-                contentPadding = PaddingValues(vertical = 13.dp)
-            ) {
-                InlineButtonIcon(
-                    icon = DianMaoIcons.DoneAll,
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    containerColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.12f)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(if (canComplete) "完成本次" else "本周期已完成")
-            }
-
-            // History list
-            if (completions.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        IconTile(
-                            icon = DianMaoIcons.History,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted),
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.48f),
-                            iconSize = 22.dp,
-                            modifier = Modifier.size(44.dp)
-                        )
-                        CompletionHistoryEmptyHint(
-                            isRecurring = task.repeatRule != RepeatRule.None
-                        )
-                    }
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    items(completions, key = { it.id }) { completion ->
-                        CompletionItem(
-                            completion = completion,
-                            onDelete = { onDeleteCompletion(completion.id) },
-                            onUpdateNote = onUpdateCompletionNote
-                        )
-                    }
-                }
-            }
-        }
-    }
-}

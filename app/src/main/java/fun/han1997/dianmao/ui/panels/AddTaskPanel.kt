@@ -659,7 +659,8 @@ private fun SettingRow(
             contentDescription = null,
             tint = iconTint,
             containerColor = iconTint.copy(alpha = 0.10f),
-            iconSize = 17.dp
+            // Prototype .set-row uses the 20dp "sm" tile (12dp icon).
+            iconSize = 12.dp
         )
         Column(
             modifier = Modifier.weight(1f),
@@ -698,7 +699,7 @@ private fun SettingRow(
                 } else {
                     MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
                 },
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(18.dp)
             )
         }
     }
