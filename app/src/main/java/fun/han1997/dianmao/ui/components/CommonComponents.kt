@@ -169,13 +169,23 @@ internal fun InlineButtonIcon(
     tint: Color,
     containerColor: Color = tint.copy(alpha = 0.12f)
 ) {
-    IconTile(
-        icon = icon,
-        contentDescription = null,
-        tint = tint,
-        containerColor = containerColor,
-        iconSize = 15.dp
-    )
+    // Prototype .btn .itile: a 20dp tile with an 8dp radius holding a 15dp
+    // icon (btnIcon uses s15). IconTile's default 30dp tile is too large here.
+    Surface(
+        modifier = Modifier.size(20.dp),
+        shape = ChipShape,
+        color = containerColor,
+        contentColor = tint
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = tint,
+                modifier = Modifier.size(15.dp)
+            )
+        }
+    }
 }
 
 @Composable
@@ -264,7 +274,8 @@ internal fun InlineStatDot(count: Int, label: String, color: Color) {
                 fontWeight = FontWeight.Medium,
                 letterSpacing = 0.sp
             ),
-            color = color.copy(alpha = DianMaoAlpha.strong)
+            // Prototype .statdot colours the whole label with --c (no alpha).
+            color = color
         )
     }
 }
