@@ -223,7 +223,7 @@ internal fun QuadrantDetailCompletedGroup(
                     },
                     contentDescription = if (expanded) "收起已完成" else "展开已完成",
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong),
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(18.dp)
                 )
             }
             AnimatedVisibility(
