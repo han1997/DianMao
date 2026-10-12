@@ -55,32 +55,46 @@ def main() -> None:
                 + f'{indent}    strokeLineJoin = StrokeJoin.Round\n'
                 + f'{indent})')
 
+    def attrs(tag: str) -> dict:
+        return dict(re.findall(r'([a-zA-Z-]+)="([^"]*)"', tag))
+
+    def resolve(child: dict, group: dict, key: str, default: str) -> str:
+        return child.get(key) or group.get(key) or default
+
     for name, _vb, body in syms:
         prop = camel(name)
         gm = re.search(r'<g([^>]*)>', body)
-        g_attrs = gm.group(1) if gm else ""
-        group_fill = "fill=\"currentColor\"" in g_attrs or "fill=\"currentColor\"" in body
-        sm = re.search(r'stroke-width="([\d.]+)"', body)
-        stroke = sm.group(1) if sm else "1.7"
+        group = attrs(gm.group(1)) if gm else {}
         paths = []
-        for cm in re.finditer(r'<circle cx="([\d.]+)" cy="([\d.]+)" r="([\d.]+)"', body):
-            cx, cy, r = cm.groups()
-            d = (f"M{cx},{float(cy)-float(r)} a{r},{r} 0 1,0 0,{float(r)*2} "
-                 f"a{r},{r} 0 1,0 0,-{float(r)*2}")
-            paths.append(emit_path(d, float(stroke), group_fill, "            "))
-        for rm in re.finditer(r'<rect x="([\d.]+)" y="([\d.]+)" width="([\d.]+)" height="([\d.]+)"(?: rx="([\d.]+)")?', body):
-            x, y, w, h = map(float, rm.groups()[:4])
-            rx = float(rm.group(5)) if rm.group(5) else 0.0
-            if rx > 0:
-                d = (f"M{x+rx},{y} L{x+w-rx},{y} Q{x+w},{y} {x+w},{y+rx} "
-                     f"L{x+w},{y+h-rx} Q{x+w},{y+h} {x+w-rx},{y+h} "
-                     f"L{x+rx},{y+h} Q{x},{y+h} {x},{y+h-rx} "
-                     f"L{x},{y+rx} Q{x},{y} {x+rx},{y} Z")
-            else:
-                d = f"M{x},{y} L{x+w},{y} L{x+w},{y+h} L{x},{y+h} Z"
-            paths.append(emit_path(d, float(stroke), group_fill, "            "))
-        for pm in re.finditer(r'<path[^>]*\bd="([^"]+)"', body):
-            paths.append(emit_path(pm.group(1), float(stroke), group_fill, "            "))
+        for tag in re.findall(r'<(?:path|circle|rect)\b[^>]*/?>', body):
+            child = attrs(tag)
+            fill = resolve(child, group, 'fill', 'none')
+            stroke = resolve(child, group, 'stroke', 'currentColor')
+            stroke_w = resolve(child, group, 'stroke-width', '1.7')
+            filled = fill == 'currentColor'
+            if not filled and stroke == 'none':
+                continue  # invisible element, nothing to draw
+            m = re.match(r'<(\w+)', tag)
+            kind = m.group(1)
+            d = None
+            if kind == 'path':
+                d = child.get('d')
+            elif kind == 'circle':
+                cx, cy, r = child['cx'], child['cy'], child['r']
+                d = (f"M{cx},{float(cy)-float(r)} a{r},{r} 0 1,0 0,{float(r)*2} "
+                     f"a{r},{r} 0 1,0 0,-{float(r)*2}")
+            elif kind == 'rect':
+                x, y, w, h = (float(child[k]) for k in ('x', 'y', 'width', 'height'))
+                rx = float(child.get('rx', 0) or 0)
+                if rx > 0:
+                    d = (f"M{x+rx},{y} L{x+w-rx},{y} Q{x+w},{y} {x+w},{y+rx} "
+                         f"L{x+w},{y+h-rx} Q{x+w},{y+h} {x+w-rx},{y+h} "
+                         f"L{x+rx},{y+h} Q{x},{y+h} {x},{y+h-rx} "
+                         f"L{x},{y+rx} Q{x},{y} {x+rx},{y} Z")
+                else:
+                    d = f"M{x},{y} L{x+w},{y} L{x+w},{y+h} L{x},{y+h} Z"
+            if d:
+                paths.append(emit_path(d, float(stroke_w), filled, "            "))
         out.append(f"\n    val {prop}: ImageVector by lazy {{")
         out.append(f'        ImageVector.Builder(name = "{prop}", defaultWidth = 24.dp, defaultHeight = 24.dp, viewportWidth = 24f, viewportHeight = 24f)')
         if paths:

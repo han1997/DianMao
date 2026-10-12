@@ -1,5 +1,7 @@
 package `fun`.han1997.dianmao
 
+import `fun`.han1997.dianmao.DianMaoIcons
+
 import `fun`.han1997.dianmao.data.RepeatRule
 import `fun`.han1997.dianmao.data.TaskPriority
 import `fun`.han1997.dianmao.data.TaskUiModel
@@ -22,15 +24,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material.icons.rounded.EditNote
 import androidx.compose.material.icons.rounded.Inventory2
-import androidx.compose.material.icons.rounded.Remove
-import androidx.compose.material.icons.rounded.Repeat
-import androidx.compose.material.icons.rounded.Replay
-import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -61,7 +55,7 @@ internal fun DeleteTaskDialog(
     QuietDialogContainer(
         onDismiss = onDismiss,
         title = "删除事项",
-        leadingIcon = Icons.Rounded.Delete,
+        leadingIcon = DianMaoIcons.Delete,
         leadingIconTint = MaterialTheme.colorScheme.error,
         actions = {
             TextButton(onClick = onDismiss) {
@@ -87,7 +81,7 @@ internal fun UncompleteRecurringTaskDialog(
     QuietDialogContainer(
         onDismiss = onDismiss,
         title = "取消完成重复事项？",
-        leadingIcon = Icons.Rounded.Replay,
+        leadingIcon = DianMaoIcons.Replay,
         leadingIconTint = MaterialTheme.colorScheme.primary,
         actions = {
             TextButton(onClick = onDismiss) {
@@ -116,7 +110,7 @@ internal fun CompletionNoteDialog(
     QuietDialogContainer(
         onDismiss = onDismiss,
         title = if (task.completed) "编辑完成备注" else "完成并写备注",
-        leadingIcon = Icons.Rounded.EditNote,
+        leadingIcon = DianMaoIcons.EditNote,
         leadingIconTint = MaterialTheme.colorScheme.primary,
         actions = {
             TextButton(onClick = onDismiss) {
@@ -235,7 +229,7 @@ internal fun RepeatRulePickerDialog(
     QuietDialogContainer(
         onDismiss = onDismiss,
         title = "重复规则",
-        leadingIcon = Icons.Rounded.Repeat,
+        leadingIcon = DianMaoIcons.Repeat,
         leadingIconTint = MaterialTheme.colorScheme.secondary,
         actions = {
             TextButton(onClick = onDismiss) {
@@ -266,7 +260,7 @@ internal fun RepeatRulePickerDialog(
                 ) {
                     if (selected) {
                         Icon(
-                            imageVector = Icons.Rounded.Check,
+                            imageVector = DianMaoIcons.Check,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(18.dp)
@@ -353,7 +347,7 @@ internal fun RepeatRulePickerDialog(
                         enabled = customInterval > 1
                     ) {
                         Icon(
-                            imageVector = Icons.Rounded.Remove,
+                            imageVector = DianMaoIcons.Minus,
                             contentDescription = "减少间隔",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(18.dp)
@@ -369,7 +363,7 @@ internal fun RepeatRulePickerDialog(
                         enabled = customInterval < MAX_REPEAT_INTERVAL
                     ) {
                         Icon(
-                            imageVector = Icons.Rounded.Add,
+                            imageVector = DianMaoIcons.Add,
                             contentDescription = "增加间隔",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(18.dp)
@@ -460,7 +454,7 @@ internal fun ReminderLeadPickerDialog(
     QuietDialogContainer(
         onDismiss = onDismiss,
         title = "提醒提前量",
-        leadingIcon = Icons.Rounded.Schedule,
+        leadingIcon = DianMaoIcons.Schedule,
         leadingIconTint = MaterialTheme.colorScheme.secondary,
         actions = {
             TextButton(onClick = onDismiss) {
@@ -488,7 +482,7 @@ internal fun ReminderLeadPickerDialog(
                 ) {
                     if (selected) {
                         Icon(
-                            imageVector = Icons.Rounded.Check,
+                            imageVector = DianMaoIcons.Check,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(18.dp)
@@ -520,7 +514,7 @@ internal fun BatchMoveQuadrantDialog(
     QuietDialogContainer(
         onDismiss = onDismiss,
         title = "移动到象限",
-        leadingIcon = Icons.Rounded.Inventory2,
+        leadingIcon = DianMaoIcons.Inventory,
         leadingIconTint = MaterialTheme.colorScheme.primary,
         actions = {
             TextButton(onClick = onDismiss) {
@@ -566,7 +560,7 @@ internal fun BatchDeleteConfirmDialog(
     QuietDialogContainer(
         onDismiss = onDismiss,
         title = "批量删除",
-        leadingIcon = Icons.Rounded.Delete,
+        leadingIcon = DianMaoIcons.Delete,
         leadingIconTint = MaterialTheme.colorScheme.error,
         actions = {
             TextButton(onClick = onDismiss) {

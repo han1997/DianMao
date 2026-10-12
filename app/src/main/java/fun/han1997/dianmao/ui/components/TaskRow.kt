@@ -1,5 +1,7 @@
 package `fun`.han1997.dianmao
 
+import `fun`.han1997.dianmao.DianMaoIcons
+
 import `fun`.han1997.dianmao.data.RepeatRule
 import `fun`.han1997.dianmao.data.TaskRepository
 import `fun`.han1997.dianmao.data.TaskUiModel
@@ -27,19 +29,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.Notes
-import androidx.compose.material.icons.rounded.Alarm
-import androidx.compose.material.icons.rounded.Archive
-import androidx.compose.material.icons.rounded.CalendarMonth
-import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material.icons.rounded.DoneAll
-import androidx.compose.material.icons.rounded.Edit
-import androidx.compose.material.icons.rounded.EditNote
 import androidx.compose.material.icons.rounded.Inventory2
-import androidx.compose.material.icons.rounded.MoreVert
-import androidx.compose.material.icons.rounded.Repeat
-import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -232,37 +222,37 @@ internal fun TaskRow(
                 ) {
                     if (showQuadrantMeta) {
                         CompactMeta(
-                            icon = Icons.Rounded.Inventory2,
+                            icon = DianMaoIcons.Inventory,
                             text = task.quadrant.shortTitle,
                             tint = task.quadrant.color
                         )
                     }
                     displayedDueLabel?.let {
-                        CompactMeta(icon = Icons.Rounded.Schedule, text = it)
+                        CompactMeta(icon = DianMaoIcons.Schedule, text = it)
                     }
                     if (task.useCalendar) {
-                        CompactMeta(icon = Icons.Rounded.CalendarMonth, text = "系统日历")
+                        CompactMeta(icon = DianMaoIcons.Calendar, text = "系统日历")
                     }
                     if (task.useAlarm) {
-                        CompactMeta(icon = Icons.Rounded.Alarm, text = "响铃")
+                        CompactMeta(icon = DianMaoIcons.Alarm, text = "响铃")
                     }
                     if (task.repeatRule != RepeatRule.None) {
                         CompactMeta(
-                            icon = Icons.Rounded.Repeat,
+                            icon = DianMaoIcons.Repeat,
                             text = repeatRuleLabel(task.repeatRule, task.repeatInterval, task.repeatWeekdays)
                         )
                     }
                     if (task.subTasks.isNotEmpty()) {
-                        CompactMeta(icon = Icons.Rounded.CheckCircle, text = task.subTaskProgressLabel)
+                        CompactMeta(icon = DianMaoIcons.CheckCircle, text = task.subTaskProgressLabel)
                     }
                     if (task.completionNote != null) {
-                        CompactMeta(icon = Icons.AutoMirrored.Rounded.Notes, text = "有心得")
+                        CompactMeta(icon = DianMaoIcons.EditNote, text = "有心得")
                     }
                 }
             }
             Box {
                     HeaderActionButton(
-                        icon = Icons.Rounded.MoreVert,
+                        icon = DianMaoIcons.More,
                         contentDescription = "更多事项操作",
                         onClick = { actionsExpanded = true },
                         iconSize = 18.dp
@@ -275,7 +265,7 @@ internal fun TaskRow(
                             text = { Text(if (task.completed) "编辑完成备注" else "完成并写备注") },
                             leadingIcon = {
                                 Icon(
-                                    imageVector = if (task.completed) Icons.Rounded.EditNote else Icons.Rounded.DoneAll,
+                                    imageVector = if (task.completed) DianMaoIcons.EditNote else DianMaoIcons.DoneAll,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.primary
                                 )
@@ -289,7 +279,7 @@ internal fun TaskRow(
                             text = { Text("编辑事项") },
                             leadingIcon = {
                                 Icon(
-                                    imageVector = Icons.Rounded.Edit,
+                                    imageVector = DianMaoIcons.Edit,
                                     contentDescription = null
                                 )
                             },
@@ -303,7 +293,7 @@ internal fun TaskRow(
                                 text = { Text("归档") },
                                 leadingIcon = {
                                     Icon(
-                                        imageVector = Icons.Rounded.Archive,
+                                        imageVector = DianMaoIcons.Archive,
                                         contentDescription = null
                                     )
                                 },
@@ -317,7 +307,7 @@ internal fun TaskRow(
                             text = { Text("删除事项", color = MaterialTheme.colorScheme.error) },
                             leadingIcon = {
                                 Icon(
-                                    imageVector = Icons.Rounded.Delete,
+                                    imageVector = DianMaoIcons.Delete,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.error
                                 )

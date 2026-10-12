@@ -1,5 +1,7 @@
 package `fun`.han1997.dianmao
 
+import `fun`.han1997.dianmao.DianMaoIcons
+
 import `fun`.han1997.dianmao.data.TaskPriority
 import `fun`.han1997.dianmao.data.TaskRepository
 import `fun`.han1997.dianmao.data.TaskUiModel
@@ -26,11 +28,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
-import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Inventory2
-import androidx.compose.material.icons.rounded.KeyboardArrowDown
-import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -72,7 +70,7 @@ internal fun QuadrantDetailHeader(
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             HeaderActionButton(
-                icon = Icons.AutoMirrored.Rounded.ArrowBack,
+                icon = DianMaoIcons.ArrowBack,
                 contentDescription = "返回四象限",
                 onClick = onBack
             )
@@ -195,7 +193,7 @@ internal fun QuadrantDetailCompletedGroup(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Rounded.CheckCircle,
+                    imageVector = DianMaoIcons.CheckCircle,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted),
                     modifier = Modifier.size(16.dp)
@@ -216,9 +214,9 @@ internal fun QuadrantDetailCompletedGroup(
                 )
                 Icon(
                     imageVector = if (expanded) {
-                        Icons.Rounded.KeyboardArrowUp
+                        DianMaoIcons.ChevUp
                     } else {
-                        Icons.Rounded.KeyboardArrowDown
+                        DianMaoIcons.ChevDown
                     },
                     contentDescription = if (expanded) "收起已完成" else "展开已完成",
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong),
@@ -268,7 +266,7 @@ internal fun QuadrantDetailEmptyState(quadrant: TaskPriority) {
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 IconTile(
-                    icon = Icons.Rounded.Inventory2,
+                    icon = DianMaoIcons.Inventory,
                     contentDescription = null,
                     tint = quadrant.color,
                     containerColor = quadrant.color.copy(alpha = DianMaoAlpha.subtle),

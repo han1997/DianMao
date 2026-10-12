@@ -1,5 +1,7 @@
 package `fun`.han1997.dianmao
 
+import `fun`.han1997.dianmao.DianMaoIcons
+
 import `fun`.han1997.dianmao.backup.AutoBackupSettings
 import `fun`.han1997.dianmao.backup.WebDavSettings
 import `fun`.han1997.dianmao.backup.autoBackupStatusText
@@ -31,18 +33,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Archive
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.CloudDownload
-import androidx.compose.material.icons.rounded.CloudUpload
-import androidx.compose.material.icons.rounded.FileDownload
-import androidx.compose.material.icons.rounded.FileUpload
 import androidx.compose.material.icons.rounded.Inventory2
-import androidx.compose.material.icons.rounded.Save
-import androidx.compose.material.icons.rounded.Settings
-import androidx.compose.material.icons.rounded.Unarchive
-import androidx.compose.material.icons.rounded.Visibility
-import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -102,12 +93,12 @@ internal fun BackupPanel(
         FullScreenScaffold(
             title = "备份与恢复",
             subtitle = "本地文件与 WebDAV 同步",
-            leadingIcon = Icons.Rounded.Settings,
+            leadingIcon = DianMaoIcons.Settings,
             leadingIconTint = MaterialTheme.colorScheme.primary,
             onBack = onDismiss,
             actions = {
                 HeaderActionButton(
-                    icon = Icons.Rounded.Close,
+                    icon = DianMaoIcons.Close,
                     contentDescription = "关闭备份页面",
                     onClick = onDismiss
                 )
@@ -141,7 +132,7 @@ internal fun BackupPanel(
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             IconTile(
-                                icon = Icons.Rounded.CloudUpload,
+                                icon = DianMaoIcons.CloudUp,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 containerColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.10f),
@@ -214,7 +205,7 @@ internal fun BackupPanel(
                                         contentPadding = PaddingValues(vertical = 11.dp)
                                     ) {
                                         InlineButtonIcon(
-                                            icon = Icons.Rounded.FileUpload,
+                                            icon = DianMaoIcons.FileUp,
                                             tint = MaterialTheme.colorScheme.primary
                                         )
                                         Spacer(Modifier.width(6.dp))
@@ -229,7 +220,7 @@ internal fun BackupPanel(
                                         contentPadding = PaddingValues(vertical = 13.dp)
                                     ) {
                                         InlineButtonIcon(
-                                            icon = Icons.Rounded.FileUpload,
+                                            icon = DianMaoIcons.FileUp,
                                             tint = MaterialTheme.colorScheme.onPrimary,
                                             containerColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.12f)
                                         )
@@ -244,7 +235,7 @@ internal fun BackupPanel(
                                     contentPadding = PaddingValues(vertical = 11.dp)
                                 ) {
                                     InlineButtonIcon(
-                                        icon = Icons.Rounded.FileDownload,
+                                        icon = DianMaoIcons.FileDown,
                                         tint = MaterialTheme.colorScheme.primary
                                     )
                                     Spacer(Modifier.width(6.dp))
@@ -288,9 +279,9 @@ internal fun BackupPanel(
                                 trailingIcon = {
                                     HeaderActionButton(
                                         icon = if (passwordVisible) {
-                                            Icons.Rounded.VisibilityOff
+                                            DianMaoIcons.EyeOff
                                         } else {
-                                            Icons.Rounded.Visibility
+                                            DianMaoIcons.Eye
                                         },
                                         contentDescription = if (passwordVisible) "隐藏密码" else "显示密码",
                                         onClick = { passwordVisible = !passwordVisible },
@@ -309,7 +300,7 @@ internal fun BackupPanel(
                                 modifier = Modifier.align(Alignment.End)
                             ) {
                                 InlineButtonIcon(
-                                    icon = Icons.Rounded.Save,
+                                    icon = DianMaoIcons.Save,
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                                 Spacer(Modifier.width(6.dp))
@@ -333,7 +324,7 @@ internal fun BackupPanel(
                                     )
                                 } else {
                                     InlineButtonIcon(
-                                        icon = Icons.Rounded.CloudUpload,
+                                        icon = DianMaoIcons.CloudUp,
                                         tint = MaterialTheme.colorScheme.onPrimary,
                                         containerColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.12f)
                                     )
@@ -349,7 +340,7 @@ internal fun BackupPanel(
                                 contentPadding = PaddingValues(vertical = 11.dp)
                             ) {
                                 InlineButtonIcon(
-                                    icon = Icons.Rounded.CloudDownload,
+                                    icon = DianMaoIcons.CloudDown,
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                                 Spacer(Modifier.width(6.dp))
@@ -401,7 +392,7 @@ internal fun ArchivedPanel(
         FullScreenScaffold(
             title = if (tasks.isEmpty()) "归档事项" else "归档事项 · ${tasks.size}",
             subtitle = "查看已归档的旧事项，恢复后回到待办",
-            leadingIcon = Icons.Rounded.Archive,
+            leadingIcon = DianMaoIcons.Archive,
             leadingIconTint = MaterialTheme.colorScheme.primary,
             onBack = onDismiss
         ) {
@@ -415,7 +406,7 @@ internal fun ArchivedPanel(
                         verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
                         IconTile(
-                            icon = Icons.Rounded.Inventory2,
+                            icon = DianMaoIcons.Inventory,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong),
                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.48f),
@@ -503,7 +494,7 @@ internal fun ArchivedTaskItem(
                 }
             }
             HeaderActionButton(
-                icon = Icons.Rounded.Unarchive,
+                icon = DianMaoIcons.Unarchive,
                 contentDescription = "取消归档",
                 onClick = onUnarchive,
                 tint = MaterialTheme.colorScheme.primary,

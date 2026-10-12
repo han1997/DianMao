@@ -1,5 +1,7 @@
 package `fun`.han1997.dianmao
 
+import `fun`.han1997.dianmao.DianMaoIcons
+
 import `fun`.han1997.dianmao.data.TaskUiModel
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -20,10 +22,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -100,7 +98,7 @@ internal fun CalendarMonthScreen(
     FullScreenScaffold(
         title = "日历",
         subtitle = "按月浏览事项",
-        leadingIcon = Icons.Rounded.CalendarMonth,
+        leadingIcon = DianMaoIcons.Calendar,
         leadingIconTint = MaterialTheme.colorScheme.primary,
         onBack = onBack
     ) {
@@ -120,7 +118,7 @@ internal fun CalendarMonthScreen(
                     modifier = Modifier.size(48.dp)
                 ) {
                     Icon(
-                        Icons.AutoMirrored.Rounded.KeyboardArrowLeft,
+                        DianMaoIcons.ChevLeft,
                         contentDescription = "上个月",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -140,7 +138,7 @@ internal fun CalendarMonthScreen(
                     modifier = Modifier.size(48.dp)
                 ) {
                     Icon(
-                        Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                        DianMaoIcons.ChevRight,
                         contentDescription = "下个月",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -223,7 +221,7 @@ internal fun CalendarMonthScreen(
                         )
                         TextButton(onClick = { onQuickAdd(selectedDate) }) {
                             Icon(
-                                Icons.Rounded.Add,
+                                DianMaoIcons.Add,
                                 contentDescription = null,
                                 modifier = Modifier.size(16.dp),
                                 tint = MaterialTheme.colorScheme.primary
@@ -300,7 +298,7 @@ private fun MoveTaskDateDialog(
     QuietDialogContainer(
         onDismiss = onDismiss,
         title = "移动到…",
-        leadingIcon = Icons.Rounded.CalendarMonth,
+        leadingIcon = DianMaoIcons.Calendar,
         leadingIconTint = MaterialTheme.colorScheme.secondary,
         actions = {
             TextButton(onClick = onDismiss) {
@@ -328,7 +326,7 @@ private fun MoveTaskDateDialog(
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Rounded.CalendarMonth,
+                            imageVector = DianMaoIcons.Calendar,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.secondary,
                             modifier = Modifier.size(16.dp)

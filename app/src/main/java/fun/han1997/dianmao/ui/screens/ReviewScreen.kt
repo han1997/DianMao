@@ -1,5 +1,7 @@
 package `fun`.han1997.dianmao
 
+import `fun`.han1997.dianmao.DianMaoIcons
+
 import `fun`.han1997.dianmao.data.DateTimeFormatters
 import `fun`.han1997.dianmao.data.TaskPriority
 import `fun`.han1997.dianmao.FormSettingBlock
@@ -21,7 +23,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.QueryStats
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -52,7 +53,7 @@ internal fun ReviewScreen(
     FullScreenScaffold(
         title = "复盘",
         subtitle = "完成回顾与心得",
-        leadingIcon = Icons.Rounded.QueryStats,
+        leadingIcon = DianMaoIcons.Chart,
         leadingIconTint = MaterialTheme.colorScheme.primary,
         onBack = onBack
     ) {
@@ -66,7 +67,7 @@ internal fun ReviewScreen(
             FormSettingBlock(
                 title = "完成概览",
                 subtitle = "按本地时间统计完成次数",
-                icon = Icons.Rounded.QueryStats
+                icon = DianMaoIcons.Chart
             ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -87,7 +88,7 @@ internal fun ReviewScreen(
 
             FormSettingBlock(
                 title = "近 7 天每日分布",
-                icon = Icons.Rounded.QueryStats
+                icon = DianMaoIcons.Chart
             ) {
                 val maxCount = stats.dailyCounts.maxOfOrNull { it.count } ?: 0
                 stats.dailyCounts.forEach { day ->
@@ -102,7 +103,7 @@ internal fun ReviewScreen(
             FormSettingBlock(
                 title = "四象限占比",
                 subtitle = "近 30 天各象限完成次数",
-                icon = Icons.Rounded.QueryStats
+                icon = DianMaoIcons.Chart
             ) {
                 val total = stats.quadrantCounts.values.sum()
                 TaskPriority.entries.forEach { quadrant ->
@@ -136,7 +137,7 @@ internal fun ReviewScreen(
             FormSettingBlock(
                 title = "最近完成",
                 subtitle = "最新 ${minOf(events.size, REVIEW_EVENTS_LIMIT)} 条记录",
-                icon = Icons.Rounded.QueryStats
+                icon = DianMaoIcons.Chart
             ) {
                 if (events.isEmpty()) {
                     Text(

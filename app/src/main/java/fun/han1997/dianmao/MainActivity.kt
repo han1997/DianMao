@@ -1,5 +1,7 @@
 package `fun`.han1997.dianmao
 
+import `fun`.han1997.dianmao.DianMaoIcons
+
 import `fun`.han1997.dianmao.alerts.ReminderScheduler
 import `fun`.han1997.dianmao.alerts.TaskNotificationChannels
 import `fun`.han1997.dianmao.alerts.TaskReminderReceiver
@@ -91,11 +93,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material.icons.rounded.DoneAll
 import androidx.compose.material.icons.rounded.Inventory2
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -690,7 +687,7 @@ private fun DianMaoApp(initialTaskId: Long? = null, initialOpenAdd: Boolean = fa
                             shape = IconTileShape
                         ) {
                             Icon(
-                                Icons.Rounded.Add,
+                                DianMaoIcons.Add,
                                 contentDescription = "新增事项",
                                 modifier = Modifier.size(24.dp)
                             )
@@ -1451,7 +1448,7 @@ private fun TopNoticeHost(hostState: SnackbarHostState) {
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     IconTile(
-                        icon = if (isError) Icons.Rounded.Close else Icons.Rounded.CheckCircle,
+                        icon = if (isError) DianMaoIcons.Close else DianMaoIcons.CheckCircle,
                         contentDescription = null,
                         tint = toastTint,
                         containerColor = toastTint.copy(alpha = 0.10f),
@@ -1531,7 +1528,7 @@ private fun BatchSelectionBar(
                     modifier = Modifier.weight(1f),
                     shape = RowShape
                 ) {
-                    Icon(Icons.Rounded.DoneAll, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon(DianMaoIcons.DoneAll, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(6.dp))
                     Text("完成")
                 }
@@ -1541,7 +1538,7 @@ private fun BatchSelectionBar(
                     modifier = Modifier.weight(1f),
                     shape = RowShape
                 ) {
-                    Icon(Icons.Rounded.Inventory2, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon(DianMaoIcons.Inventory, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(6.dp))
                     Text("移动")
                 }
@@ -1555,7 +1552,7 @@ private fun BatchSelectionBar(
                         contentColor = MaterialTheme.colorScheme.onError
                     )
                 ) {
-                    Icon(Icons.Rounded.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon(DianMaoIcons.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(6.dp))
                     Text("删除")
                 }

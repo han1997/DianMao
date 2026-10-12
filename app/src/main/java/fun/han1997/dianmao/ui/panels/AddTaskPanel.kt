@@ -1,5 +1,7 @@
 package `fun`.han1997.dianmao
 
+import `fun`.han1997.dianmao.DianMaoIcons
+
 import `fun`.han1997.dianmao.data.RepeatRule
 import `fun`.han1997.dianmao.data.TaskFormState
 import `fun`.han1997.dianmao.data.TaskPriority
@@ -49,17 +51,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Alarm
-import androidx.compose.material.icons.rounded.CalendarMonth
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Inventory2
-import androidx.compose.material.icons.rounded.NotificationsActive
-import androidx.compose.material.icons.rounded.Repeat
-import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -237,12 +229,12 @@ internal fun AddTaskPanel(
         FullScreenScaffold(
             title = panelTitle,
             subtitle = if (isEditing) "更新事项内容与安排" else "先记录一件事，稍后再分类整理",
-            leadingIcon = if (isEditing) Icons.Rounded.Edit else Icons.Rounded.Add,
+            leadingIcon = if (isEditing) DianMaoIcons.Edit else DianMaoIcons.Add,
             leadingIconTint = MaterialTheme.colorScheme.primary,
             onBack = onDismiss,
             actions = {
                 HeaderActionButton(
-                    icon = Icons.Rounded.Close,
+                    icon = DianMaoIcons.Close,
                     contentDescription = if (isEditing) "关闭编辑页面" else "关闭新增页面",
                     onClick = onDismiss
                 )
@@ -303,7 +295,7 @@ internal fun AddTaskPanel(
                 TaskFormSection(
                     title = "优先级",
                     subtitle = "放入四象限，决定它的颜色与归类",
-                    icon = Icons.Rounded.Inventory2,
+                    icon = DianMaoIcons.Inventory,
                     iconTint = priority.color
                 ) {
                     // Prototype-first: same connected segmented row as the home
@@ -320,7 +312,7 @@ internal fun AddTaskPanel(
                 TaskFormSection(
                     title = "时间与提醒",
                     subtitle = "到期日决定时间、日历、响铃与重复是否可用",
-                    icon = Icons.Rounded.Schedule,
+                    icon = DianMaoIcons.Schedule,
                     iconTint = MaterialTheme.colorScheme.secondary
                 ) {
                     val hasDate = dueDateMillis != null
@@ -333,7 +325,7 @@ internal fun AddTaskPanel(
 
                     // 到期日
                     SettingRow(
-                        icon = Icons.Rounded.CalendarMonth,
+                        icon = DianMaoIcons.Calendar,
                         title = dateText ?: "添加到期日",
                         subtitle = if (dateText != null) {
                             "点按修改到期日"
@@ -359,7 +351,7 @@ internal fun AddTaskPanel(
                         "${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}"
                     }
                     SettingRow(
-                        icon = Icons.Rounded.Schedule,
+                        icon = DianMaoIcons.Schedule,
                         title = timeText ?: "添加提醒时间",
                         subtitle = when {
                             timeText != null -> "点按修改提醒时间"
@@ -374,7 +366,7 @@ internal fun AddTaskPanel(
 
                     // 同步系统日历 (toggle, master switch)
                     SettingRow(
-                        icon = Icons.Rounded.CalendarMonth,
+                        icon = DianMaoIcons.Calendar,
                         title = if (useCalendar) "已同步到系统日历" else "同步到系统日历",
                         subtitle = when {
                             useCalendar -> "到期日会写入系统日历"
@@ -401,7 +393,7 @@ internal fun AddTaskPanel(
                     // 日历响铃 (toggle, sub-switch of 同步到系统日历)
                     val alarmReady = hasDate && useCalendar
                     SettingRow(
-                        icon = Icons.Rounded.Alarm,
+                        icon = DianMaoIcons.Alarm,
                         title = if (useAlarm) "日历响铃已开启" else "开启日历响铃",
                         subtitle = when {
                             useAlarm -> "日程到点在系统日历响铃"
@@ -427,7 +419,7 @@ internal fun AddTaskPanel(
                     // 到点提醒 (toggle, DianMao's own local notification)
                     val reminderReady = hasDate
                     SettingRow(
-                        icon = Icons.Rounded.NotificationsActive,
+                        icon = DianMaoIcons.Bell,
                         title = if (useLocalReminder) "到点提醒已开启" else "开启到点提醒",
                         subtitle = when {
                             useLocalReminder -> if (reminderLeadMinutes.isEmpty()) {
@@ -456,7 +448,7 @@ internal fun AddTaskPanel(
                     // 提醒提前量 (sub-option of 到点提醒, multi-select)
                     val reminderLeadReady = hasDate && useLocalReminder
                     SettingRow(
-                        icon = Icons.Rounded.Schedule,
+                        icon = DianMaoIcons.Schedule,
                         title = leadLabel(reminderLeadMinutes),
                         subtitle = when {
                             !hasDate -> "需先设置到期日"
@@ -477,7 +469,7 @@ internal fun AddTaskPanel(
                         repeatRuleLabel(repeatRule, repeatInterval, repeatWeekdays)
                     }
                     SettingRow(
-                        icon = Icons.Rounded.Repeat,
+                        icon = DianMaoIcons.Repeat,
                         title = repeatText ?: "不重复",
                         subtitle = when {
                             repeatText != null -> "点按修改重复规则"
@@ -517,7 +509,7 @@ internal fun AddTaskPanel(
                             horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             IconTile(
-                                icon = if (saveFailed) Icons.Rounded.Close else Icons.Rounded.Check,
+                                icon = if (saveFailed) DianMaoIcons.Close else DianMaoIcons.Check,
                                 contentDescription = null,
                                 tint = if (saveFailed) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onPrimaryContainer,
                                 containerColor = if (saveFailed) {
@@ -573,7 +565,7 @@ internal fun AddTaskPanel(
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
                 InlineButtonIcon(
-                    icon = Icons.Rounded.Check,
+                    icon = DianMaoIcons.Check,
                     tint = MaterialTheme.colorScheme.onPrimary,
                     containerColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.12f)
                 )
@@ -705,7 +697,7 @@ private fun SettingRow(
             trailing()
         } else {
             Icon(
-                imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                imageVector = DianMaoIcons.ChevRight,
                 contentDescription = null,
                 tint = if (enabled) {
                     MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong)

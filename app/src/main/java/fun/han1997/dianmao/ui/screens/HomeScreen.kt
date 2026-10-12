@@ -1,5 +1,7 @@
 package `fun`.han1997.dianmao
 
+import `fun`.han1997.dianmao.DianMaoIcons
+
 import `fun`.han1997.dianmao.data.RepeatRule
 import `fun`.han1997.dianmao.data.TaskPriority
 import `fun`.han1997.dianmao.data.TaskRepository
@@ -54,19 +56,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Archive
-import androidx.compose.material.icons.rounded.CalendarMonth
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material.icons.rounded.DoneAll
-import androidx.compose.material.icons.rounded.ExpandLess
-import androidx.compose.material.icons.rounded.ExpandMore
-import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Inventory2
-import androidx.compose.material.icons.rounded.Replay
-import androidx.compose.material.icons.rounded.Schedule
-import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -224,7 +214,7 @@ internal fun AppHeader(
                     },
                     leadingIcon = {
                         Icon(
-                            imageVector = Icons.Rounded.Search,
+                            imageVector = DianMaoIcons.Search,
                             contentDescription = null
                         )
                     },
@@ -232,7 +222,7 @@ internal fun AppHeader(
                         if (query.isNotEmpty()) {
                             IconButton(onClick = { onQueryChanged("") }) {
                                 Icon(
-                                    imageVector = Icons.Rounded.Close,
+                                    imageVector = DianMaoIcons.Close,
                                     contentDescription = "清除"
                                 )
                             }
@@ -277,7 +267,7 @@ internal fun TimeFocusLane(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     IconTile(
-                        icon = Icons.Rounded.Schedule,
+                        icon = DianMaoIcons.Schedule,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.secondary,
                         containerColor = MaterialTheme.colorScheme.secondary.copy(alpha = DianMaoAlpha.subtle),
@@ -379,10 +369,10 @@ internal fun TimeFocusRow(
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 item.dueLabel?.let {
-                    CompactMeta(icon = Icons.Rounded.Schedule, text = it)
+                    CompactMeta(icon = DianMaoIcons.Schedule, text = it)
                 }
                 CompactMeta(
-                    icon = Icons.Rounded.Inventory2,
+                    icon = DianMaoIcons.Inventory,
                     text = item.task.quadrant.shortTitle,
                     tint = item.task.quadrant.color
                 )
@@ -415,7 +405,7 @@ internal fun QuadrantBoard(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 IconTile(
-                    icon = Icons.Rounded.Search,
+                    icon = DianMaoIcons.Search,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.48f),
@@ -639,7 +629,7 @@ internal fun CompactQuadrantTask(
         )
         if (task.dueLabel != null || task.useAlarm || task.useCalendar) {
             Icon(
-                imageVector = Icons.Rounded.Schedule,
+                imageVector = DianMaoIcons.Schedule,
                 contentDescription = "有提醒",
                 modifier = Modifier.size(14.dp),
                 tint = MaterialTheme.colorScheme.secondary.copy(alpha = DianMaoAlpha.muted)
@@ -705,7 +695,7 @@ internal fun HomeSmartTaskList(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 IconTile(
-                    icon = Icons.Rounded.Inventory2,
+                    icon = DianMaoIcons.Inventory,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong),
                     containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.48f),
@@ -726,7 +716,7 @@ internal fun HomeSmartTaskList(
                     )
                 ) {
                     InlineButtonIcon(
-                        icon = Icons.Rounded.Add,
+                        icon = DianMaoIcons.Add,
                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
                         containerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = DianMaoAlpha.subtle)
                     )
@@ -780,7 +770,7 @@ internal fun HomeSmartTaskList(
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong)
                         )
                         Icon(
-                            imageVector = if (collapsed) Icons.Rounded.ExpandMore else Icons.Rounded.ExpandLess,
+                            imageVector = if (collapsed) DianMaoIcons.ChevDown else DianMaoIcons.ChevUp,
                             contentDescription = if (collapsed) "展开${group.label}" else "收起${group.label}",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted),
                             modifier = Modifier.size(16.dp)
@@ -910,8 +900,8 @@ internal fun SwipeableTaskRow(
                 }
                 val icon = when (direction) {
                     SwipeToDismissBoxValue.StartToEnd ->
-                        if (task.completed) Icons.Rounded.Replay else Icons.Rounded.DoneAll
-                    else -> Icons.Rounded.Delete
+                        if (task.completed) DianMaoIcons.Replay else DianMaoIcons.DoneAll
+                    else -> DianMaoIcons.Delete
                 }
                 Box(
                     modifier = Modifier

@@ -1,5 +1,7 @@
 package `fun`.han1997.dianmao
 
+import `fun`.han1997.dianmao.DianMaoIcons
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,7 +15,6 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -106,7 +107,7 @@ internal fun FullScreenTopBar(
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             HeaderActionButton(
-                icon = Icons.AutoMirrored.Rounded.ArrowBack,
+                icon = DianMaoIcons.ArrowBack,
                 contentDescription = "返回",
                 onClick = onBack
             )

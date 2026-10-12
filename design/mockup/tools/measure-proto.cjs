@@ -34,8 +34,11 @@ const selectors = process.argv[4]
   await pg.waitForTimeout(300);
   await pg.evaluate(
     ([p, t]) => {
-      window.__setPage && window.__setPage(p);
-      window.__setTheme && window.__setTheme(t);
+      state = initial();
+      state.themeMode = t;
+      if (p === 'appearance') state.from = 'settings';
+      applyTheme();
+      navigate(p);
     },
     [page, theme]
   );

@@ -1,5 +1,7 @@
 package `fun`.han1997.dianmao
 
+import `fun`.han1997.dianmao.DianMaoIcons
+
 import `fun`.han1997.dianmao.data.TaskSubTask
 import `fun`.han1997.dianmao.data.TaskUiModel
 import `fun`.han1997.dianmao.IconTile
@@ -24,9 +26,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilledTonalButton
@@ -183,7 +182,7 @@ internal fun SubTaskEditor(
     TaskFormSection(
         title = "子事项",
         subtitle = if (subTasks.isEmpty()) "可选" else "$completed/${subTasks.size} 已完成",
-        icon = Icons.Rounded.CheckCircle,
+        icon = DianMaoIcons.CheckCircle,
         iconTint = MaterialTheme.colorScheme.primary
     ) {
         Row(
@@ -217,7 +216,7 @@ internal fun SubTaskEditor(
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp)
             ) {
                 InlineButtonIcon(
-                    icon = Icons.Rounded.Add,
+                    icon = DianMaoIcons.Add,
                     tint = MaterialTheme.colorScheme.onPrimaryContainer,
                     containerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.10f)
                 )
@@ -284,7 +283,7 @@ internal fun SubTaskEditRow(
                 colors = quietTextFieldColors()
             )
             HeaderActionButton(
-                icon = Icons.Rounded.Delete,
+                icon = DianMaoIcons.Delete,
                 contentDescription = "删除子事项",
                 onClick = onDelete,
                 tint = MaterialTheme.colorScheme.error,

@@ -1,5 +1,7 @@
 package `fun`.han1997.dianmao
 
+import `fun`.han1997.dianmao.DianMaoIcons
+
 import `fun`.han1997.dianmao.data.DateTimeFormatters
 import `fun`.han1997.dianmao.data.RepeatRule
 import `fun`.han1997.dianmao.data.TaskCompletionEntity
@@ -45,23 +47,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
-import androidx.compose.material.icons.rounded.Alarm
-import androidx.compose.material.icons.rounded.Archive
-import androidx.compose.material.icons.rounded.CalendarMonth
-import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material.icons.rounded.DoneAll
-import androidx.compose.material.icons.rounded.Edit
-import androidx.compose.material.icons.rounded.EditNote
-import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Inventory2
-import androidx.compose.material.icons.rounded.KeyboardArrowDown
-import androidx.compose.material.icons.rounded.KeyboardArrowUp
-import androidx.compose.material.icons.rounded.NotificationsActive
-import androidx.compose.material.icons.rounded.Repeat
-import androidx.compose.material.icons.rounded.Replay
-import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -121,12 +107,12 @@ internal fun TaskDetailScreen(
     FullScreenScaffold(
         title = "事项详情",
         subtitle = task.quadrant.shortTitle,
-        leadingIcon = Icons.Rounded.Inventory2,
+        leadingIcon = DianMaoIcons.Inventory,
         leadingIconTint = task.quadrant.color,
         onBack = onBack,
         actions = {
             HeaderActionButton(
-                icon = Icons.Rounded.Edit,
+                icon = DianMaoIcons.Edit,
                 contentDescription = "编辑",
                 onClick = onEdit,
                 tint = MaterialTheme.colorScheme.primary,
@@ -220,26 +206,26 @@ internal fun TaskDetailScreen(
                 item {
                     TaskFormSection(
                         title = "事项信息",
-                        icon = Icons.Rounded.Inventory2,
+                        icon = DianMaoIcons.Inventory,
                         iconTint = task.quadrant.color
                     ) {
                         DetailMetaRow(
-                            icon = Icons.Rounded.Schedule,
+                            icon = DianMaoIcons.Schedule,
                             iconTint = MaterialTheme.colorScheme.secondary,
                             label = if (task.dueLabel != null) task.dueLabel else "添加提醒"
                         )
                         DetailMetaRow(
-                            icon = Icons.Rounded.CalendarMonth,
+                            icon = DianMaoIcons.Calendar,
                             iconTint = MaterialTheme.colorScheme.secondary,
                             label = if (task.useCalendar) "已同步系统日历" else "未同步系统日历"
                         )
                         DetailMetaRow(
-                            icon = Icons.Rounded.Alarm,
+                            icon = DianMaoIcons.Alarm,
                             iconTint = MaterialTheme.colorScheme.secondary,
                             label = if (task.useAlarm) "响铃提醒已开启" else "未设置响铃"
                         )
                         DetailMetaRow(
-                            icon = Icons.Rounded.NotificationsActive,
+                            icon = DianMaoIcons.Bell,
                             iconTint = MaterialTheme.colorScheme.secondary,
                             label = if (task.useLocalReminder) {
                                 "到点提醒已开启（${leadLabel(task.reminderLeadMinutes)}）"
@@ -248,7 +234,7 @@ internal fun TaskDetailScreen(
                             }
                         )
                         DetailMetaRow(
-                            icon = Icons.Rounded.Repeat,
+                            icon = DianMaoIcons.Repeat,
                             iconTint = MaterialTheme.colorScheme.secondary,
                             label = if (task.repeatRule != RepeatRule.None) {
                                 repeatRuleLabel(task.repeatRule, task.repeatInterval, task.repeatWeekdays)
@@ -258,7 +244,7 @@ internal fun TaskDetailScreen(
                         )
                         if (task.completionCount > 0) {
                             DetailMetaRow(
-                                icon = Icons.Rounded.CheckCircle,
+                                icon = DianMaoIcons.CheckCircle,
                                 iconTint = task.quadrant.color,
                                 label = "已完成 ${task.completionCount} 次",
                                 onClick = { onOpenHistory(task) }
@@ -285,7 +271,7 @@ internal fun TaskDetailScreen(
                             contentPadding = PaddingValues(vertical = 11.dp)
                         ) {
                             InlineButtonIcon(
-                                icon = Icons.Rounded.CalendarMonth,
+                                icon = DianMaoIcons.Calendar,
                                 tint = MaterialTheme.colorScheme.secondary
                             )
                             Spacer(Modifier.width(8.dp))
@@ -299,7 +285,7 @@ internal fun TaskDetailScreen(
                     item {
                         TaskFormSection(
                             title = "完成心得",
-                            icon = Icons.Rounded.EditNote,
+                            icon = DianMaoIcons.EditNote,
                             iconTint = MaterialTheme.colorScheme.primary
                         ) {
                             Text(
@@ -386,7 +372,7 @@ internal fun TaskDetailScreen(
                     )
                 ) {
                     InlineButtonIcon(
-                        icon = if (task.completed) Icons.Rounded.Replay else Icons.Rounded.DoneAll,
+                        icon = if (task.completed) DianMaoIcons.Replay else DianMaoIcons.DoneAll,
                         tint = MaterialTheme.colorScheme.onPrimary,
                         containerColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.12f)
                     )
@@ -409,7 +395,7 @@ internal fun TaskDetailScreen(
                             )
                         ) {
                             InlineButtonIcon(
-                                icon = Icons.Rounded.Archive,
+                                icon = DianMaoIcons.Archive,
                                 tint = MaterialTheme.colorScheme.onPrimaryContainer,
                                 containerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.10f)
                             )
@@ -425,7 +411,7 @@ internal fun TaskDetailScreen(
                         )
                     }
                     HeaderActionButton(
-                        icon = Icons.Rounded.Delete,
+                        icon = DianMaoIcons.Delete,
                         contentDescription = "删除",
                         onClick = { onDelete(task) },
                         tint = MaterialTheme.colorScheme.error,
@@ -475,7 +461,7 @@ internal fun DetailMetaRow(
         if (onClick != null) {
             Spacer(Modifier.weight(1f))
             Icon(
-                imageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                imageVector = DianMaoIcons.ChevRight,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted),
                 modifier = Modifier.size(18.dp)
@@ -515,7 +501,7 @@ internal fun CompletionHistoryGroup(
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Rounded.History,
+                    imageVector = DianMaoIcons.History,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted),
                     modifier = Modifier.size(16.dp)
@@ -537,9 +523,9 @@ internal fun CompletionHistoryGroup(
                 )
                 Icon(
                     imageVector = if (expanded) {
-                        Icons.Rounded.KeyboardArrowUp
+                        DianMaoIcons.ChevUp
                     } else {
-                        Icons.Rounded.KeyboardArrowDown
+                        DianMaoIcons.ChevDown
                     },
                     contentDescription = if (expanded) "收起完成历史" else "展开完成历史",
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong),
@@ -630,7 +616,7 @@ fun CompletionItem(
                     )
                     Row(verticalAlignment = Alignment.CenterVertically) {
                     HeaderActionButton(
-                        icon = Icons.Rounded.Edit,
+                        icon = DianMaoIcons.Edit,
                         contentDescription = "编辑备注",
                         onClick = {
                             editNoteText = completion.note.orEmpty()
@@ -639,7 +625,7 @@ fun CompletionItem(
                         iconSize = 16.dp
                     )
                     HeaderActionButton(
-                        icon = Icons.Rounded.Delete,
+                        icon = DianMaoIcons.Delete,
                         contentDescription = "删除",
                         onClick = { showDeleteDialog = true },
                         tint = MaterialTheme.colorScheme.error,
@@ -699,7 +685,7 @@ fun CompletionItem(
         QuietDialogContainer(
             onDismiss = { showDeleteDialog = false },
             title = "删除完成记录",
-            leadingIcon = Icons.Rounded.Delete,
+            leadingIcon = DianMaoIcons.Delete,
             leadingIconTint = MaterialTheme.colorScheme.error,
             actions = {
                 TextButton(onClick = { showDeleteDialog = false }) {
@@ -740,12 +726,12 @@ fun RecurringTaskHistoryPanel(
     FullScreenScaffold(
         title = "完成历史",
         subtitle = task.title,
-        leadingIcon = Icons.Rounded.History,
+        leadingIcon = DianMaoIcons.History,
         leadingIconTint = MaterialTheme.colorScheme.primary,
         onBack = onDismiss,
         actions = {
             HeaderActionButton(
-                icon = Icons.Rounded.Edit,
+                icon = DianMaoIcons.Edit,
                 contentDescription = "编辑",
                 onClick = { onEdit(task) },
                 tint = MaterialTheme.colorScheme.primary,
@@ -773,7 +759,7 @@ fun RecurringTaskHistoryPanel(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     IconTile(
-                        icon = Icons.Rounded.CheckCircle,
+                        icon = DianMaoIcons.CheckCircle,
                         contentDescription = null,
                         tint = task.quadrant.color,
                         containerColor = task.quadrant.color.copy(alpha = 0.10f),
@@ -841,7 +827,7 @@ fun RecurringTaskHistoryPanel(
                 contentPadding = PaddingValues(vertical = 13.dp)
             ) {
                 InlineButtonIcon(
-                    icon = Icons.Rounded.DoneAll,
+                    icon = DianMaoIcons.DoneAll,
                     tint = MaterialTheme.colorScheme.onPrimary,
                     containerColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.12f)
                 )
@@ -862,7 +848,7 @@ fun RecurringTaskHistoryPanel(
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         IconTile(
-                            icon = Icons.Rounded.History,
+                            icon = DianMaoIcons.History,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted),
                             containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.48f),

@@ -706,7 +706,7 @@ object DianMaoIcons {
         ImageVector.Builder(name = "Eye", defaultWidth = 24.dp, defaultHeight = 24.dp, viewportWidth = 24f, viewportHeight = 24f)
             .apply {
             addPath(
-                pathData = PathParser().parsePathString("M12,9.0 a3,3 0 1,0 0,6.0 a3,3 0 1,0 0,-6.0").toNodes(),
+                pathData = PathParser().parsePathString("M2.6 12S6 5.6 12 5.6 21.4 12 21.4 12 18 18.4 12 18.4 2.6 12 2.6 12z").toNodes(),
                 fill = null,
                 stroke = SolidColor(Color.Black),
                 strokeLineWidth = 1.7f,
@@ -714,7 +714,7 @@ object DianMaoIcons {
                 strokeLineJoin = StrokeJoin.Round
             )
             addPath(
-                pathData = PathParser().parsePathString("M2.6 12S6 5.6 12 5.6 21.4 12 21.4 12 18 18.4 12 18.4 2.6 12 2.6 12z").toNodes(),
+                pathData = PathParser().parsePathString("M12,9.0 a3,3 0 1,0 0,6.0 a3,3 0 1,0 0,-6.0").toNodes(),
                 fill = null,
                 stroke = SolidColor(Color.Black),
                 strokeLineWidth = 1.7f,
@@ -752,11 +752,15 @@ object DianMaoIcons {
         ImageVector.Builder(name = "Chart", defaultWidth = 24.dp, defaultHeight = 24.dp, viewportWidth = 24f, viewportHeight = 24f)
             .apply {
             addPath(
-                pathData = PathParser().parsePathString("M20,3.8 a1.7,1.7 0 1,0 0,3.4 a1.7,1.7 0 1,0 0,-3.4").toNodes(),
-                fill = SolidColor(Color.Black)
+                pathData = PathParser().parsePathString("M4 19.5l5-7 3.5 3L20 5.5").toNodes(),
+                fill = null,
+                stroke = SolidColor(Color.Black),
+                strokeLineWidth = 1.7f,
+                strokeLineCap = StrokeCap.Round,
+                strokeLineJoin = StrokeJoin.Round
             )
             addPath(
-                pathData = PathParser().parsePathString("M4 19.5l5-7 3.5 3L20 5.5").toNodes(),
+                pathData = PathParser().parsePathString("M20,3.8 a1.7,1.7 0 1,0 0,3.4 a1.7,1.7 0 1,0 0,-3.4").toNodes(),
                 fill = SolidColor(Color.Black)
             )
             }
