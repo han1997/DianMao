@@ -306,34 +306,14 @@ internal fun AddTaskPanel(
                     icon = Icons.Rounded.Inventory2,
                     iconTint = priority.color
                 ) {
-                    SingleChoiceSegmentedButtonRow(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        TaskPriority.entries.forEachIndexed { index, item ->
-                            SegmentedButton(
-                                selected = item == priority,
-                                onClick = { priority = item },
-                                shape = SegmentedButtonDefaults.itemShape(
-                                    index = index,
-                                    count = TaskPriority.entries.size
-                                ),
-                                modifier = Modifier.weight(1f),
-                                label = {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(5.dp)
-                                    ) {
-                                        ColorDot(item.color, size = 8.dp)
-                                        Text(item.shortTitle, maxLines = 1)
-                                    }
-                                },
-                                colors = SegmentedButtonDefaults.colors(
-                                    activeContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                                    activeContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
-                            )
-                        }
-                    }
+                    // Prototype-first: same connected segmented row as the home
+                    // smart-view switcher, with an 8dp quadrant dot per segment.
+                    QuietSegmented(
+                        options = TaskPriority.entries.map { it.shortTitle },
+                        selectedIndex = TaskPriority.entries.indexOf(priority),
+                        onSelect = { priority = TaskPriority.entries[it] },
+                        leading = { index -> ColorDot(TaskPriority.entries[index].color, size = 8.dp) }
+                    )
                 }
 
                 // Time & reminder section: five self-explanatory setting rows.

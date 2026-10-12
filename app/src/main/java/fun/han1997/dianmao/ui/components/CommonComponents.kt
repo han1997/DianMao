@@ -19,17 +19,18 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -131,14 +132,23 @@ internal fun HeaderActionButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     tint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-    containerColor: Color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.50f),
-    buttonSize: androidx.compose.ui.unit.Dp = 48.dp,
-    iconSize: androidx.compose.ui.unit.Dp = 20.dp,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
+    buttonSize: androidx.compose.ui.unit.Dp = 40.dp,
+    iconSize: androidx.compose.ui.unit.Dp = 18.dp,
     tileShape: Shape = IconTileShape
 ) {
-    IconButton(
-        onClick = onClick,
-        modifier = modifier.size(buttonSize)
+    // Prototype-first: the confirmed prototype lays out every header action at
+    // 40x40 (with a 34x34 tonal tile inside). Material3's IconButton enforces a
+    // 48dp minimum, which widens the row and clips the title, so build the button
+    // from Box + clickable: 40dp layout box, and the 40dp target is still a
+    // comfortable size (the prototype's own target).
+    Box(
+        modifier = modifier
+            .size(buttonSize)
+            .clip(IconTileShape)
+            .clickable(role = Role.Button, onClick = onClick)
+            .semantics { this.contentDescription = contentDescription },
+        contentAlignment = Alignment.Center
     ) {
         IconTile(
             icon = icon,

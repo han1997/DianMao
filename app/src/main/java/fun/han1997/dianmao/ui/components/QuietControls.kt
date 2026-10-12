@@ -3,17 +3,32 @@ package `fun`.han1997.dianmao
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 /**
  * Quiet control styling (ui-polish round 2, 2026-09).
@@ -75,6 +90,64 @@ internal fun QuietSwitch(
             uncheckedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.24f)
         )
     )
+}
+
+/**
+ * Quiet segmented control (prototype-first, 2026-10).
+ *
+ * Mirrors the prototype `.segmented` / `.seg` exactly: a connected row where
+ * each segment is 9dp/4dp padding at labelMedium, joined by a 60%-alpha outline
+ * with a 1dp overlap, and the selected segment filled with primaryContainer.
+ * M3 `SegmentedButton` is NOT used here because it adds a leading check icon and
+ * its own padding/height, which visibly diverges from the confirmed prototype.
+ */
+@Composable
+internal fun QuietSegmented(
+    options: List<String>,
+    selectedIndex: Int,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+    /** Optional leading content per segment (e.g. an 8dp quadrant color dot). */
+    leading: (@Composable (Int) -> Unit)? = null
+) {
+    Row(modifier = modifier.fillMaxWidth()) {
+        options.forEachIndexed { index, label ->
+            val selected = index == selectedIndex
+            val shape = when (index) {
+                0 -> RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp)
+                options.lastIndex -> RoundedCornerShape(topEnd = 12.dp, bottomEnd = 12.dp)
+                else -> RoundedCornerShape(0.dp)
+            }
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .then(if (index > 0) Modifier.offset(x = (-1).dp) else Modifier)
+                    .clip(shape)
+                    .background(if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
+                    .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.60f), shape)
+                    .clickable(role = Role.RadioButton) { onSelect(index) }
+                    .padding(horizontal = 4.dp, vertical = 9.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                ) {
+                    leading?.invoke(index)
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 0.sp),
+                        color = if (selected) {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        },
+                        maxLines = 1
+                    )
+                }
+            }
+        }
+    }
 }
 
 @Composable

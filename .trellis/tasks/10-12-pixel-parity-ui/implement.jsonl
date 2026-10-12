@@ -1,0 +1,6 @@
+{"file": "design/mockup/BASELINE.md", "reason": "已确认原型基准、覆盖范围与待确认项;像素级对齐的权威参照"}
+{"file": "DESIGN.md", "reason": "设计系统与命名规则;原型 CSS 与 Compose 主题的共同来源"}
+{"file": "app/src/main/java/fun/han1997/dianmao/ui/theme/DianMaoTheme.kt", "reason": "亮/暗 colorScheme 与形状常量,像素级对齐的 token 权威"}
+{"file": "app/src/main/java/fun/han1997/dianmao/ui/theme/DianMaoTokens.kt", "reason": "DianMaoAlpha 透明度刻度"}
+{"file": ".trellis/spec/frontend/prototype-first.md", "reason": "像素级对齐铁律、允许偏差表与验收门槛"}
+{"file": "design/mockup/style.css", "reason": "原型逐组件尺寸/间距/圆角的精确取值,实现按此对齐"}

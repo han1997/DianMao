@@ -150,26 +150,30 @@ internal fun AppHeader(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+            // Prototype-first: .header-actions uses a 2dp gap between the four
+            // action buttons (the 10dp gap above separates the title cluster).
+            Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
             HeaderActionButton(
-                icon = if (searchVisible) Icons.Rounded.Close else Icons.Rounded.Search,
+                icon = if (searchVisible) DianMaoIcons.Close else DianMaoIcons.Search,
                 contentDescription = if (searchVisible) "关闭搜索" else "搜索",
                 onClick = onSearchToggle
             )
             HeaderActionButton(
-                icon = Icons.Rounded.CalendarMonth,
+                icon = DianMaoIcons.Calendar,
                 contentDescription = "日历",
                 onClick = onOpenCalendar
             )
             HeaderActionButton(
-                icon = Icons.Rounded.Archive,
+                icon = DianMaoIcons.Archive,
                 contentDescription = "归档事项",
                 onClick = onOpenArchived
             )
             HeaderActionButton(
-                icon = Icons.Rounded.Settings,
+                icon = DianMaoIcons.Settings,
                 contentDescription = "备份与恢复",
                 onClick = onOpenBackup
             )
+            }
         }
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
@@ -655,32 +659,14 @@ internal fun HomeSmartViewSwitcher(
     selected: HomeSmartView,
     onSelect: (HomeSmartView) -> Unit
 ) {
-    SingleChoiceSegmentedButtonRow(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        HomeSmartView.entries.forEachIndexed { index, view ->
-            SegmentedButton(
-                selected = view == selected,
-                onClick = { onSelect(view) },
-                shape = SegmentedButtonDefaults.itemShape(
-                    index = index,
-                    count = HomeSmartView.entries.size
-                ),
-                modifier = Modifier.weight(1f),
-                label = {
-                    Text(
-                        text = view.label,
-                        style = MaterialTheme.typography.labelMedium,
-                        maxLines = 1
-                    )
-                },
-                colors = SegmentedButtonDefaults.colors(
-                    activeContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                    activeContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            )
-        }
-    }
+    // Prototype-first: the confirmed prototype draws a plain connected segmented
+    // row (primaryContainer active fill, no check icon). M3 SegmentedButton adds
+    // a leading check and its own metrics, so use the shared QuietSegmented.
+    QuietSegmented(
+        options = HomeSmartView.entries.map { it.label },
+        selectedIndex = HomeSmartView.entries.indexOf(selected),
+        onSelect = { onSelect(HomeSmartView.entries[it]) }
+    )
 }
 
 /**

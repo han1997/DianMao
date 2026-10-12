@@ -17,3 +17,6 @@ local.properties
 .claude/
 /keystore/
 /keystore.properties
+
+# Pixel-parity working artifacts
+.tmp-shots/
