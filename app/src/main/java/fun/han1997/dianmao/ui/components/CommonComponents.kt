@@ -192,7 +192,6 @@ internal fun ColorDot(color: Color, modifier: Modifier = Modifier, size: android
 internal fun CompletionMark(completed: Boolean, color: Color, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
-            .padding(top = 2.dp)
             .size(18.dp)
             .background(
                 if (completed) color else Color.Transparent,
