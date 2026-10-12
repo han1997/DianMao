@@ -757,8 +757,10 @@ internal fun HomeSmartTaskList(
                                     collapsedGroupLabels + group.label
                                 }
                             }
-                            .padding(horizontal = 4.dp, vertical = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            // Prototype .group-head: 6px/4px padding, 8px gap.
+                            .padding(horizontal = 4.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
                             text = "${group.label} · ${group.items.size}",
