@@ -102,7 +102,7 @@ internal fun FullScreenTopBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
+                .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
@@ -126,18 +126,10 @@ internal fun FullScreenTopBar(
                 modifier = Modifier
                     .weight(1f)
                     .padding(horizontal = 2.dp),
-                verticalArrangement = Arrangement.spacedBy(1.dp)
+                verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        letterSpacing = 0.sp
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                // Prototype-first: secondary headers stack the small eyeline
+                // ABOVE the title (.eyeline then .header-title h2).
                 if (subtitle != null) {
                     Text(
                         text = subtitle,
@@ -149,6 +141,16 @@ internal fun FullScreenTopBar(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 0.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
             actions()
         }

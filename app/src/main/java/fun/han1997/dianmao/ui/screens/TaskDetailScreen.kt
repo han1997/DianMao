@@ -227,8 +227,10 @@ internal fun TaskDetailScreen(
                         DetailMetaRow(
                             icon = DianMaoIcons.Bell,
                             iconTint = MaterialTheme.colorScheme.secondary,
+                            // Prototype-first: the detail meta row shows only the
+                            // on/off state; lead time lives in the edit panel.
                             label = if (task.useLocalReminder) {
-                                "到点提醒已开启（${leadLabel(task.reminderLeadMinutes)}）"
+                                "到点提醒已开启"
                             } else {
                                 "未开启到点提醒"
                             }
