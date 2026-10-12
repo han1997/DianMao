@@ -84,7 +84,7 @@ internal fun TaskFormSection(
                         contentDescription = null,
                         tint = iconTint,
                         containerColor = iconTint.copy(alpha = 0.10f),
-                        iconSize = 16.dp
+                        iconSize = 18.dp
                     )
                 }
                 Column(
@@ -139,7 +139,9 @@ internal fun FormSettingBlock(
                         contentDescription = null,
                         tint = if (enabled) iconTint else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.muted),
                         containerColor = if (enabled) iconTint.copy(alpha = 0.10f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.20f),
-                        iconSize = 15.dp
+                        // Prototype .block .sec-head uses the 20dp "sm" tile
+                        // (icon 12dp), not the 30dp form-section tile.
+                        iconSize = 12.dp
                     )
                 }
                 Column(
@@ -148,13 +150,16 @@ internal fun FormSettingBlock(
                 ) {
                     Text(
                         text = title,
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                        style = MaterialTheme.typography.titleSmall.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = 0.sp
+                        ),
                         color = if (enabled) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     subtitle?.let {
                         Text(
                             text = it,
-                            style = MaterialTheme.typography.labelMedium,
+                            style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 0.sp),
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = if (enabled) 0.82f else 0.58f),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
