@@ -175,7 +175,7 @@ private fun WidgetPreview(
                         imageVector = DianMaoIcons.CheckCircle,
                         contentDescription = "完成「${task.title}」",
                         tint = accent,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                     Text(
                         text = task.title,
