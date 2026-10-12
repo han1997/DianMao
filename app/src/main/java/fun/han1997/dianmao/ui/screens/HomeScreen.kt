@@ -198,6 +198,7 @@ internal fun AppHeader(
                 onValueChange = onQueryChanged,
                 placeholder = "筛选当前视图",
                 modifier = Modifier
+                    .padding(top = 2.dp)
                     .fillMaxWidth()
                     .focusRequester(focusRequester),
                 textStyle = MaterialTheme.typography.bodyMedium.copy(
@@ -652,7 +653,9 @@ internal fun HomeSmartViewSwitcher(
     QuietSegmented(
         options = HomeSmartView.entries.map { it.label },
         selectedIndex = HomeSmartView.entries.indexOf(selected),
-        onSelect = { onSelect(HomeSmartView.entries[it]) }
+        onSelect = { onSelect(HomeSmartView.entries[it]) },
+        // Prototype: the home segmented row carries an extra 4px top margin.
+        modifier = Modifier.padding(top = 4.dp)
     )
 }
 
