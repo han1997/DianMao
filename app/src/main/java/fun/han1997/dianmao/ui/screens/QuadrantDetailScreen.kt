@@ -253,16 +253,18 @@ internal fun QuadrantDetailCompletedGroup(
 
 @Composable
 internal fun QuadrantDetailEmptyState(quadrant: TaskPriority) {
+    // Prototype: a .form-section accent card — 18dp radius, 11px/14px padding,
+    // a 30dp/18dp icon head at 16sp and a 12sp hint line.
     Surface(
         color = quadrant.color.copy(alpha = DianMaoAlpha.subtle),
-        shape = InlineShape,
-        border = quietBorder(0.12f)
+        shape = PanelShape,
+        border = quietBorder(0.16f)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(horizontal = 14.dp, vertical = 11.dp),
+            verticalArrangement = Arrangement.spacedBy(9.dp)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -277,14 +279,14 @@ internal fun QuadrantDetailEmptyState(quadrant: TaskPriority) {
                 )
                 Text(
                     text = "这个象限还没有事项",
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleMedium.copy(letterSpacing = 0.sp),
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
             Text(
-                text = "点右下角新增事项，会默认放入“${quadrant.title}”。",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                text = "点右下角新增事项,会默认放入“${quadrant.title}”。",
+                style = MaterialTheme.typography.bodySmall.copy(letterSpacing = 0.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong)
             )
         }
     }
