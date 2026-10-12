@@ -16,7 +16,6 @@ import `fun`.han1997.dianmao.InlineStatDot
 import `fun`.han1997.dianmao.SubTaskReadOnlySection
 import `fun`.han1997.dianmao.TaskFormSection
 import `fun`.han1997.dianmao.quietBorder
-import `fun`.han1997.dianmao.quietTextFieldColors
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -58,7 +57,6 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -637,17 +635,19 @@ fun CompletionItem(
                 }
             }
             if (isEditingNote) {
-                OutlinedTextField(
+                QuietField(
                     value = editNoteText,
                     onValueChange = { editNoteText = it },
-                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-                    placeholder = { Text("写点什么") },
-                    textStyle = MaterialTheme.typography.bodyMedium,
-                    singleLine = false,
+                    placeholder = "写点什么",
+                    modifier = Modifier.padding(top = 6.dp),
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(
+                        fontSize = 14.sp,
+                        lineHeight = 20.sp,
+                        letterSpacing = 0.sp
+                    ),
                     minLines = 2,
                     maxLines = 4,
-                    shape = RowShape,
-                    colors = quietTextFieldColors(),
+                    singleLine = false,
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = {
                         onUpdateNote(completion.id, editNoteText)

@@ -5,7 +5,6 @@ import `fun`.han1997.dianmao.DianMaoIcons
 import `fun`.han1997.dianmao.data.RepeatRule
 import `fun`.han1997.dianmao.data.TaskPriority
 import `fun`.han1997.dianmao.data.TaskUiModel
-import `fun`.han1997.dianmao.quietTextFieldColors
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -28,7 +27,6 @@ import androidx.compose.material.icons.rounded.Inventory2
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -129,17 +127,20 @@ internal fun CompletionNoteDialog(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
-            OutlinedTextField(
+            QuietField(
                 value = note,
                 onValueChange = { note = it },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("心得或复盘") },
-                placeholder = { Text("这件事完成后，我学到或确认了什么？") },
+                placeholder = "这件事完成后,我学到或确认了什么?",
+                label = "心得或复盘",
+                textStyle = MaterialTheme.typography.bodyMedium.copy(
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp,
+                    letterSpacing = 0.sp
+                ),
                 minLines = 3,
                 maxLines = 6,
-                shape = RowShape,
-                textStyle = MaterialTheme.typography.bodyMedium,
-                colors = quietTextFieldColors()
+                singleLine = false,
+                contentMinHeight = 66.dp
             )
         }
     }

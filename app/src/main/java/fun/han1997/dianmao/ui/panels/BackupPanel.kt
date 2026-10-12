@@ -16,7 +16,6 @@ import `fun`.han1997.dianmao.IconTile
 import `fun`.han1997.dianmao.InlineButtonIcon
 import `fun`.han1997.dianmao.webDavHost
 import `fun`.han1997.dianmao.quietBorder
-import `fun`.han1997.dianmao.quietTextFieldColors
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,7 +37,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -244,39 +242,31 @@ internal fun BackupPanel(
                             }
                         }
 
-                         FormSettingBlock(title = "WebDAV 配置", subtitle = "填目录地址自动建目录备份；以 .json 结尾则视为文件") {
-                             OutlinedTextField(
+                         FormSettingBlock(title = "WebDAV 配置", subtitle = "填目录地址自动建目录备份;以 .json 结尾则视为文件") {
+                             QuietField(
                                  value = url,
                                  onValueChange = { url = it },
-                                 modifier = Modifier.fillMaxWidth(),
-                                 label = { Text("备份目录 URL") },
-                                 placeholder = { Text("https://dav.example.com/dianmao/ 或 http://192.168.x.x/dav/") },
-                                 supportingText = { Text("备份写入目录内 dianmao-backup-latest.json；目录不存在会自动创建") },
-                                 singleLine = true,
-                                 shape = RowShape,
-                                 colors = quietTextFieldColors()
+                                 placeholder = "https://dav.example.com/dianmao/ 或 http://192.168.x.x/dav/",
+                                 label = "备份目录 URL",
+                                 supportingText = "备份写入目录内 dianmao-backup-latest.json;目录不存在会自动创建"
                              )
-                            OutlinedTextField(
+                            QuietField(
                                 value = username,
                                 onValueChange = { username = it },
-                                modifier = Modifier.fillMaxWidth(),
-                                label = { Text("用户名") },
-                                singleLine = true,
-                                shape = RowShape,
-                                colors = quietTextFieldColors()
+                                placeholder = "",
+                                label = "用户名"
                             )
-                            OutlinedTextField(
+                            QuietField(
                                 value = password,
                                 onValueChange = { password = it },
-                                modifier = Modifier.fillMaxWidth(),
-                                label = { Text("密码") },
-                                singleLine = true,
+                                placeholder = "",
+                                label = "密码",
                                 visualTransformation = if (passwordVisible) {
                                     VisualTransformation.None
                                 } else {
                                     PasswordVisualTransformation()
                                 },
-                                trailingIcon = {
+                                trailing = {
                                     HeaderActionButton(
                                         icon = if (passwordVisible) {
                                             DianMaoIcons.EyeOff
@@ -285,15 +275,13 @@ internal fun BackupPanel(
                                         },
                                         contentDescription = if (passwordVisible) "隐藏密码" else "显示密码",
                                         onClick = { passwordVisible = !passwordVisible },
-                                        modifier = Modifier
-                                            .size(40.dp)
-                                            .minimumInteractiveComponentSize(),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                                        buttonSize = 34.dp,
                                         iconSize = 18.dp,
                                         tileShape = ChipShape
                                     )
-                                },
-                                shape = RowShape,
-                                colors = quietTextFieldColors()
+                                }
                             )
                             TextButton(
                                 onClick = { onSaveWebDav(webDavSettings) },

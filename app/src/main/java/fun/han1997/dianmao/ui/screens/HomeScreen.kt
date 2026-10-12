@@ -21,7 +21,6 @@ import `fun`.han1997.dianmao.TimeFocusItem
 import `fun`.han1997.dianmao.TimeFocusKind
 import `fun`.han1997.dianmao.buildTimeFocusItems
 import `fun`.han1997.dianmao.quietBorder
-import `fun`.han1997.dianmao.quietTextFieldColors
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
@@ -32,6 +31,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -60,10 +60,8 @@ import androidx.compose.material.icons.rounded.Inventory2
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalButton
@@ -192,47 +190,46 @@ internal fun AppHeader(
                     targetOffsetY = { it / 4 }
                 )).withReducedMotion()
         ) {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RowShape,
-                color = MaterialTheme.colorScheme.surface,
-                border = quietBorder(0.10f)
-            ) {
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = onQueryChanged,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .focusRequester(focusRequester),
-                    singleLine = true,
-                    textStyle = MaterialTheme.typography.bodyMedium.copy(letterSpacing = 0.sp),
-                    placeholder = {
-                        Text(
-                            text = "筛选当前视图",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = DianMaoIcons.Search,
-                            contentDescription = null
-                        )
-                    },
-                    trailingIcon = {
-                        if (query.isNotEmpty()) {
-                            IconButton(onClick = { onQueryChanged("") }) {
-                                Icon(
-                                    imageVector = DianMaoIcons.Close,
-                                    contentDescription = "清除"
-                                )
-                            }
+            // Prototype-first: the search box is the same .field box as the
+            // form (9px/10px/8px padding, 18dp leading search icon), not a
+            // 56dp OutlinedTextField.
+            QuietField(
+                value = query,
+                onValueChange = onQueryChanged,
+                placeholder = "筛选当前视图",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focusRequester),
+                textStyle = MaterialTheme.typography.bodyMedium.copy(
+                    fontSize = 16.sp,
+                    lineHeight = 24.sp,
+                    letterSpacing = 0.sp
+                ),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                    start = 10.dp, end = 10.dp, top = 9.dp, bottom = 8.dp
+                ),
+                keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
+                leadingIcon = DianMaoIcons.Search,
+                trailing = if (query.isNotEmpty()) {
+                    {
+                        Box(
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .clickable(role = Role.Button) { onQueryChanged("") },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = DianMaoIcons.Close,
+                                contentDescription = "清除",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
                         }
-                    },
-                    keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
-                    colors = quietTextFieldColors(),
-                    shape = RowShape
-                )
-            }
+                    }
+                } else {
+                    null
+                }
+            )
         }
     }
 }

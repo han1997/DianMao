@@ -58,74 +58,109 @@ internal fun QuietField(
     leadingIconTint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
     // `.field textarea` fixes min-height:72px for the multi-line detail box.
     contentMinHeight: androidx.compose.ui.unit.Dp = 0.dp,
+    // `.search-field` overrides the box padding to 9px 10px 8px.
+    contentPadding: androidx.compose.foundation.layout.PaddingValues =
+        androidx.compose.foundation.layout.PaddingValues(
+            start = 12.dp, end = 12.dp, top = 10.dp, bottom = 9.dp
+        ),
+    // `.field .flabel` — an 11sp label inside the box above the input.
+    label: String? = null,
+    // `.field` support text rendered under the box (backup form).
+    supportingText: String? = null,
+    visualTransformation: androidx.compose.ui.text.input.VisualTransformation =
+        androidx.compose.ui.text.input.VisualTransformation.None,
     trailing: @Composable (() -> Unit)? = null
 ) {
     var focused by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(RowShape)
-            .background(MaterialTheme.colorScheme.surface)
-    ) {
-        Row(
+    Column(modifier = modifier.fillMaxWidth()) {
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                // .field padding: 10px 12px 9px
-                .padding(start = 12.dp, end = 12.dp, top = 10.dp, bottom = 9.dp),
-            verticalAlignment = if (singleLine) Alignment.CenterVertically else Alignment.Top
+                .clip(RowShape)
+                .background(MaterialTheme.colorScheme.surface)
         ) {
-            if (leadingIcon != null) {
-                Icon(
-                    imageVector = leadingIcon,
-                    contentDescription = null,
-                    tint = leadingIconTint,
-                    modifier = Modifier
-                        .padding(end = 8.dp)
-                        .size(18.dp)
-                )
-            }
-            Box(
+            Row(
                 modifier = Modifier
-                    .weight(1f)
-                    .then(if (contentMinHeight > 0.dp) Modifier.heightIn(min = contentMinHeight) else Modifier)
+                    .fillMaxWidth()
+                    .padding(contentPadding),
+                verticalAlignment = if (singleLine) Alignment.CenterVertically else Alignment.Top
             ) {
-                if (value.isEmpty()) {
-                    Text(
-                        text = placeholder,
-                        style = textStyle,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.58f)
+                if (leadingIcon != null) {
+                    Icon(
+                        imageVector = leadingIcon,
+                        contentDescription = null,
+                        tint = leadingIconTint,
+                        modifier = Modifier
+                            .padding(end = 8.dp)
+                            .size(18.dp)
                     )
                 }
-                BasicTextField(
-                    value = value,
-                    onValueChange = onValueChange,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .onFocusChanged { focused = it.isFocused },
-                    textStyle = textStyle.copy(color = MaterialTheme.colorScheme.onSurface),
-                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                    singleLine = singleLine,
-                    minLines = minLines,
-                    maxLines = maxLines,
-                    keyboardOptions = keyboardOptions,
-                    keyboardActions = keyboardActions
-                )
+                Column(modifier = Modifier.weight(1f)) {
+                    if (label != null) {
+                        Text(
+                            text = label,
+                            modifier = Modifier.padding(bottom = 3.dp),
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 11.sp,
+                                letterSpacing = 0.sp
+                            ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .then(if (contentMinHeight > 0.dp) Modifier.heightIn(min = contentMinHeight) else Modifier)
+                    ) {
+                        if (value.isEmpty()) {
+                            Text(
+                                text = placeholder,
+                                style = textStyle,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.58f)
+                            )
+                        }
+                        BasicTextField(
+                            value = value,
+                            onValueChange = onValueChange,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .onFocusChanged { focused = it.isFocused },
+                            textStyle = textStyle.copy(color = MaterialTheme.colorScheme.onSurface),
+                            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                            singleLine = singleLine,
+                            minLines = minLines,
+                            maxLines = maxLines,
+                            visualTransformation = visualTransformation,
+                            keyboardOptions = keyboardOptions,
+                            keyboardActions = keyboardActions
+                        )
+                    }
+                }
+                if (trailing != null) {
+                    trailing()
+                }
             }
-            if (trailing != null) {
-                trailing()
-            }
+            // .field inset hairline; .field.focus adds a 2dp primary underline.
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(if (focused) 2.dp else 1.dp)
+                    .background(
+                        if (focused) MaterialTheme.colorScheme.primary.copy(alpha = 0.45f)
+                        else MaterialTheme.colorScheme.outline.copy(alpha = 0.18f)
+                    )
+            )
         }
-        // .field inset hairline; .field.focus adds a 2dp primary underline.
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(if (focused) 2.dp else 1.dp)
-                .background(
-                    if (focused) MaterialTheme.colorScheme.primary.copy(alpha = 0.45f)
-                    else MaterialTheme.colorScheme.outline.copy(alpha = 0.18f)
-                )
-        )
+        if (supportingText != null) {
+            Text(
+                text = supportingText,
+                modifier = Modifier.padding(start = 4.dp, top = 6.dp),
+                style = MaterialTheme.typography.bodySmall.copy(letterSpacing = 0.sp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong)
+            )
+        }
     }
 }
 

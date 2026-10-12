@@ -7,7 +7,6 @@ import `fun`.han1997.dianmao.data.TaskUiModel
 import `fun`.han1997.dianmao.IconTile
 import `fun`.han1997.dianmao.InlineButtonIcon
 import `fun`.han1997.dianmao.quietBorder
-import `fun`.han1997.dianmao.quietTextFieldColors
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -30,7 +29,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -44,6 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 
 @Composable
 internal fun TaskFormSection(
@@ -190,30 +189,30 @@ internal fun SubTaskEditor(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            OutlinedTextField(
+            QuietField(
                 value = draft,
                 onValueChange = onDraftChange,
-                modifier = Modifier
-                    .weight(1f)
-                    .heightIn(min = 56.dp),
-                placeholder = { Text("添加一个小任务") },
-                singleLine = true,
-                shape = RowShape,
-                textStyle = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                placeholder = "添加一个小任务",
+                modifier = Modifier.weight(1f),
+                textStyle = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Medium,
+                    fontSize = 16.sp,
+                    lineHeight = 24.sp,
+                    letterSpacing = 0.sp
+                ),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                keyboardActions = KeyboardActions(onDone = { onAdd() }),
-                colors = quietTextFieldColors()
+                keyboardActions = KeyboardActions(onDone = { onAdd() })
             )
+            // Prototype .btn.tonal: 12px/14px padding, 12dp radius.
             FilledTonalButton(
                 onClick = onAdd,
                 enabled = draft.isNotBlank(),
-                modifier = Modifier.heightIn(min = 56.dp),
                 shape = RowShape,
+                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 12.dp),
                 colors = ButtonDefaults.filledTonalButtonColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                ),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp)
+                )
             ) {
                 InlineButtonIcon(
                     icon = DianMaoIcons.Add,
@@ -270,17 +269,16 @@ internal fun SubTaskEditRow(
                 checked = item.completed,
                 onCheckedChange = onCheckedChange
             )
-            OutlinedTextField(
+            QuietField(
                 value = item.title,
                 onValueChange = onTitleChange,
-                modifier = Modifier
-                    .weight(1f)
-                    .heightIn(min = 52.dp),
-                placeholder = { Text("子事项") },
-                singleLine = true,
-                shape = RowShape,
-                textStyle = MaterialTheme.typography.bodyMedium,
-                colors = quietTextFieldColors()
+                placeholder = "子事项",
+                modifier = Modifier.weight(1f),
+                textStyle = MaterialTheme.typography.bodyMedium.copy(
+                    fontSize = 14.sp,
+                    lineHeight = 20.sp,
+                    letterSpacing = 0.sp
+                )
             )
             HeaderActionButton(
                 icon = DianMaoIcons.Delete,

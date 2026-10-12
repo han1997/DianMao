@@ -6,7 +6,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
@@ -110,16 +109,6 @@ internal fun DianMaoTheme(
 internal fun quietBorder(alpha: Float = 0.22f): BorderStroke {
     return BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = alpha))
 }
-
-@Composable
-internal fun quietTextFieldColors() = TextFieldDefaults.colors(
-    focusedContainerColor = MaterialTheme.colorScheme.surface,
-    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.18f),
-    focusedIndicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.45f),
-    unfocusedIndicatorColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.18f),
-    disabledIndicatorColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.10f)
-)
 
 internal val PanelShape = RoundedCornerShape(18.dp)
 internal val SheetShape = RoundedCornerShape(topStart = 22.dp, topEnd = 22.dp)
