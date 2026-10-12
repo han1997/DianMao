@@ -172,22 +172,26 @@ internal fun CalendarMonthScreen(
                 }
             }
 
-            cells.chunked(7).forEach { week ->
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    week.forEach { cell ->
-                        CalendarDayCell(
-                            cell = cell,
-                            isToday = cell.date == today,
-                            isSelected = cell.date == selectedDate,
-                            tasks = dayMap[cell.date].orEmpty(),
-                            onClick = {
-                                selectedEpochDay = cell.date.toEpochDay()
-                                if (!cell.inMonth) {
-                                    monthStartEpochDay = cell.date.withDayOfMonth(1).toEpochDay()
-                                }
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
+            // Prototype-first: .cal-weekrow rows sit flush (no gap between
+            // week rows), unlike the 8dp rhythm used by the surrounding blocks.
+            Column {
+                cells.chunked(7).forEach { week ->
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        week.forEach { cell ->
+                            CalendarDayCell(
+                                cell = cell,
+                                isToday = cell.date == today,
+                                isSelected = cell.date == selectedDate,
+                                tasks = dayMap[cell.date].orEmpty(),
+                                onClick = {
+                                    selectedEpochDay = cell.date.toEpochDay()
+                                    if (!cell.inMonth) {
+                                        monthStartEpochDay = cell.date.withDayOfMonth(1).toEpochDay()
+                                    }
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
                 }
             }
@@ -424,6 +428,8 @@ private fun CalendarTaskRow(
     onLongPress: (() -> Unit)? = null
 ) {
     val task = item.task
+    // Prototype-first: .cal-task is a surface card (surface bg + 12% inset
+    // outline) with min-height 48dp and padding 8px 10px 8px 6px.
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RowShape,

@@ -99,6 +99,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.FloatingActionButtonDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -675,16 +677,24 @@ private fun DianMaoApp(initialTaskId: Long? = null, initialOpenAdd: Boolean = fa
                 contentWindowInsets = WindowInsets(0, 0, 0, 0),
                 floatingActionButton = {
                     // Home and quadrant-detail surfaces, and never while an
-                    // overlay panel is open — the FAB lives above the content
-                    // layer and would otherwise float over the panel.
-                    if (taskForDetail == null &&
+                    // overlay panel or full-screen destination is open — the
+                    // FAB lives above the content layer and would otherwise
+                    // float over it. Prototype: #fab is hidden unless the page
+                    // is home or quadrant.
+                    if (taskForDetail == null && !showCalendarView &&
                         !showBackupPanel && !showArchivedPanel && !showReviewPanel && !isTaskPanelVisible
                     ) {
                         FloatingActionButton(
                             onClick = { showAddSheet = true },
                             containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = MaterialTheme.colorScheme.onPrimary,
-                            shape = IconTileShape
+                            // Prototype .fab: 56x56 with a 16dp radius and a
+                            // primary-tinted 6/16 drop shadow.
+                            shape = RoundedCornerShape(16.dp),
+                            elevation = FloatingActionButtonDefaults.elevation(
+                                defaultElevation = 6.dp,
+                                pressedElevation = 8.dp
+                            )
                         ) {
                             Icon(
                                 DianMaoIcons.Add,
