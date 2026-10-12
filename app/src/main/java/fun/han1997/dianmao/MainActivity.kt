@@ -719,7 +719,9 @@ private fun DianMaoApp(
                     // float over it. Prototype: #fab is hidden unless the page
                     // is home or quadrant.
                     if (taskForDetail == null && !showCalendarView &&
-                        !showBackupPanel && !showArchivedPanel && !showReviewPanel && !isTaskPanelVisible
+                        !showBackupPanel && !showArchivedPanel && !showReviewPanel &&
+                        !showSettingsPanel && !showAppearancePanel && !showWidgetPanel &&
+                        !isTaskPanelVisible
                     ) {
                         FloatingActionButton(
                             onClick = { showAddSheet = true },
@@ -1192,59 +1194,68 @@ private fun DianMaoApp(
                 // Two-level settings hub and its destinations. These were
                 // dropped by mistake in the pixel-parity refactor (the state
                 // flags were set but nothing consumed them, so the 设置/日历
-                // header buttons appeared dead). Restored here.
-                SettingsScreen(
-                    themeMode = themeMode,
-                    backupConnected = webDavSettings.isConfigured,
-                    backupHost = webDavSettings.url.trim().takeIf { it.isNotEmpty() }?.let { url ->
-                        runCatching { java.net.URI(url).host }.getOrNull()
-                    },
-                    archivedCount = archivedTasks.size,
-                    completedCount = activeTasks.count { it.completed },
-                    onBack = { showSettingsPanel = false },
-                    onOpenAppearance = {
-                        showSettingsPanel = false
-                        showAppearancePanel = true
-                    },
-                    onOpenWidget = {
-                        showSettingsPanel = false
-                        returnToSettings = true
-                        showWidgetPanel = true
-                    },
-                    onOpenBackup = {
-                        showSettingsPanel = false
-                        returnToSettings = true
-                        showBackupPanel = true
-                    },
-                    onOpenArchive = {
-                        showSettingsPanel = false
-                        returnToSettings = true
-                        showArchivedPanel = true
-                    },
-                    onOpenReview = {
-                        showSettingsPanel = false
-                        returnToSettings = true
-                        showReviewPanel = true
-                    }
-                )
-                WidgetNotificationsScreen(
-                    sampleTasks = activeTasks
-                        .filter { !it.completed }
-                        .sortedBy { it.dueAtMillis ?: Long.MAX_VALUE },
-                    onBack = {
-                        showWidgetPanel = false
-                        showSettingsPanel = true
-                    }
-                )
-                AppearanceScreen(
-                    themeMode = themeMode,
-                    isSystemDark = isSystemInDarkTheme(),
-                    onBack = {
-                        showAppearancePanel = false
-                        showSettingsPanel = true
-                    },
-                    onSelect = onThemeModeChange
-                )
+                // header buttons appeared dead). Restored here, gated on their
+                // panel flags — unlike BackupPanel/ReviewScreen these screens
+                // have no `visible` parameter and would otherwise render on top
+                // of home unconditionally.
+                if (showSettingsPanel) {
+                    SettingsScreen(
+                        themeMode = themeMode,
+                        backupConnected = webDavSettings.isConfigured,
+                        backupHost = webDavSettings.url.trim().takeIf { it.isNotEmpty() }?.let { url ->
+                            runCatching { java.net.URI(url).host }.getOrNull()
+                        },
+                        archivedCount = archivedTasks.size,
+                        completedCount = activeTasks.count { it.completed },
+                        onBack = { showSettingsPanel = false },
+                        onOpenAppearance = {
+                            showSettingsPanel = false
+                            showAppearancePanel = true
+                        },
+                        onOpenWidget = {
+                            showSettingsPanel = false
+                            returnToSettings = true
+                            showWidgetPanel = true
+                        },
+                        onOpenBackup = {
+                            showSettingsPanel = false
+                            returnToSettings = true
+                            showBackupPanel = true
+                        },
+                        onOpenArchive = {
+                            showSettingsPanel = false
+                            returnToSettings = true
+                            showArchivedPanel = true
+                        },
+                        onOpenReview = {
+                            showSettingsPanel = false
+                            returnToSettings = true
+                            showReviewPanel = true
+                        }
+                    )
+                }
+                if (showWidgetPanel) {
+                    WidgetNotificationsScreen(
+                        sampleTasks = activeTasks
+                            .filter { !it.completed }
+                            .sortedBy { it.dueAtMillis ?: Long.MAX_VALUE },
+                        onBack = {
+                            showWidgetPanel = false
+                            showSettingsPanel = true
+                        }
+                    )
+                }
+                if (showAppearancePanel) {
+                    AppearanceScreen(
+                        themeMode = themeMode,
+                        isSystemDark = isSystemInDarkTheme(),
+                        onBack = {
+                            showAppearancePanel = false
+                            showSettingsPanel = true
+                        },
+                        onSelect = onThemeModeChange
+                    )
+                }
                 BackupPanel(
                     visible = showBackupPanel,
                     initialSettings = webDavSettings,

@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.2.2 — gate the restored settings screens (2026-10-12)
+
+- **Fix**: v1.2.1 restored the settings/calendar rendering but `SettingsScreen`,
+  `WidgetNotificationsScreen` and `AppearanceScreen` have no `visible`
+  parameter (unlike `BackupPanel`/`ReviewScreen`/`CalendarMonthScreen`), so
+  they were composed unconditionally and `AppearanceScreen` covered the app on
+  launch — the app appeared stuck on the light/dark theme page. Each screen is
+  now gated on its panel flag.
+- **Fix**: the floating 新增 button is hidden while the settings, appearance or
+  widget screens are open, matching the other full-screen destinations.
+
+Verification: `:app:compileDebugKotlin` and `:app:assembleRelease` pass.
+
 ## v1.2.1 — fix dead 设置/日历 buttons (2026-10-12)
 
 - **Fix**: the pixel-parity refactor (v1.2.0, commit 473d5a0) accidentally
