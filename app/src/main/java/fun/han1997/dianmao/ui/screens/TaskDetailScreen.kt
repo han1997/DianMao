@@ -206,6 +206,9 @@ internal fun TaskDetailScreen(
                         icon = DianMaoIcons.Inventory,
                         iconTint = task.quadrant.color
                     ) {
+                        // Prototype wraps these in .meta-list (a zero-gap
+                        // column); each .meta-row carries its own 36dp height.
+                        Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
                         DetailMetaRow(
                             icon = DianMaoIcons.Schedule,
                             iconTint = MaterialTheme.colorScheme.secondary,
@@ -251,6 +254,7 @@ internal fun TaskDetailScreen(
                                 // destination.
                                 label = "已完成 ${task.completionCount} 次"
                             )
+                        }
                         }
                     }
                 }
