@@ -255,6 +255,10 @@ internal fun TaskRow(
                         icon = DianMaoIcons.More,
                         contentDescription = "更多事项操作",
                         onClick = { actionsExpanded = true },
+                        // Prototype-first: .task-row .more is a bare 34dp
+                        // transparent tile (border:0, no background).
+                        containerColor = androidx.compose.ui.graphics.Color.Transparent,
+                        buttonSize = 34.dp,
                         iconSize = 18.dp
                     )
                     QuietDropdownMenu(
