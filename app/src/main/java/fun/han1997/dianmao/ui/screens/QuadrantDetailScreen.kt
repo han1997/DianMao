@@ -57,35 +57,42 @@ internal fun QuadrantDetailHeader(
 ) {
     val openTasks = tasks.count { !it.completed }
 
-    // Prototype-first: the quadrant header sits inside the list's horizontal
-    // content padding (20dp), so it adds none of its own on the sides.
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 10.dp, bottom = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    // Prototype-first: the quadrant header is a fixed .app-header.scaffold bar —
+    // surface fill, 8px/16px padding and a 1px bottom hairline — that does not
+    // scroll with the task list.
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.surface,
+        border = quietBorder(0.10f)
     ) {
-        HeaderActionButton(
-            icon = DianMaoIcons.ArrowBack,
-            contentDescription = "返回四象限",
-            onClick = onBack
-        )
-        ColorDot(quadrant.color)
-        Text(
-            modifier = Modifier.weight(1f),
-            text = quadrant.title,
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Text(
-            text = "$openTasks 未完成",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            HeaderActionButton(
+                icon = DianMaoIcons.ArrowBack,
+                contentDescription = "返回四象限",
+                onClick = onBack
+            )
+            ColorDot(quadrant.color)
+            Text(
+                modifier = Modifier.weight(1f),
+                text = quadrant.title,
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = "$openTasks 未完成",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1
+            )
+        }
     }
 }
 

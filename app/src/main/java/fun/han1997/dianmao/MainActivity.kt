@@ -867,8 +867,9 @@ private fun DianMaoApp(
                         derivedStateOf { reorderableDetailTasks.count { !it.completed } }
                     }
                     // Constant prefix of non-task items before the first task
-                    // row in this list (header + intro + section label).
-                    val detailTaskIndexPrefix = 3
+                    // row in this list (intro + section label; the quadrant
+                    // header is now a fixed bar above the list).
+                    val detailTaskIndexPrefix = 2
                     val dragDropState = rememberDragDropListState(
                         lazyListState = listState,
                         onMove = { fromIndex, toIndex ->
@@ -898,11 +899,24 @@ private fun DianMaoApp(
                         }
                     }
 
+                    // Prototype-first: the quadrant header is a fixed bar; only
+                    // the intro/labels/task rows scroll beneath it.
+                    Column(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .windowInsetsPadding(WindowInsets.safeDrawing)
+                    ) {
+                        activePriority?.let { priority ->
+                            QuadrantDetailHeader(
+                                quadrant = priority,
+                                tasks = reorderableDetailTasks,
+                                onBack = { activePriority = null }
+                            )
+                        }
                     LazyColumn(
                         state = listState,
                         modifier = Modifier
                             .fillMaxSize()
-                            .windowInsetsPadding(WindowInsets.safeDrawing)
                             .pointerInput(Unit) {
                                 detectDragGesturesAfterLongPress(
                                     onDragStart = { offset ->
@@ -938,13 +952,6 @@ private fun DianMaoApp(
                         verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
                         activePriority?.let { priority ->
-                            item {
-                                QuadrantDetailHeader(
-                                    quadrant = priority,
-                                    tasks = reorderableDetailTasks,
-                                    onBack = { activePriority = null }
-                                )
-                            }
                             item {
                                 QuadrantDetailIntro(
                                     quadrant = priority,
@@ -1042,6 +1049,7 @@ private fun DianMaoApp(
                                 }
                             }
                         }
+                    }
                     }
                 }
                 }
