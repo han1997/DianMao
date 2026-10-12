@@ -34,6 +34,7 @@ function initial() {
   const t = (o) => Object.assign({ detail: null, useCalendar: false, useAlarm: false, useLocalReminder: false, repeat: null, subTasks: [], completed: false, completionNote: null, completionCount: 0, archived: false, dueAt: null, dueLabel: null }, o);
   return {
     page: 'home',
+    from: null, // where a level-2 settings page was opened from
     homeView: 'quadrants',
     search: false, query: '',
     activeQ: 'iu',
@@ -181,7 +182,7 @@ function homeHeader() {
         <button class="icon-button tile" data-action="search" aria-label="搜索">${itile(state.search ? 'close' : 'search', 'var(--on-surface-variant)')}</button>
         <button class="icon-button tile" data-page="calendar" aria-label="日历">${itile('calendar', 'var(--on-surface-variant)')}</button>
         <button class="icon-button tile" data-page="archive" aria-label="归档事项">${itile('archive', 'var(--on-surface-variant)')}</button>
-        <button class="icon-button tile" data-page="backup" aria-label="备份与恢复">${itile('settings', 'var(--on-surface-variant)')}</button>
+        <button class="icon-button tile" data-page="settings" aria-label="设置">${itile('settings', 'var(--on-surface-variant)')}</button>
       </div>
     </div>
     <div class="pills">
@@ -563,6 +564,56 @@ function reviewContent() {
 }
 
 /* ---------- page: backup ---------- */
+/* ---------- page: settings (level 1) ---------- */
+function settingsHeader() {
+  return `<button class="icon-button tile" data-action="back" aria-label="返回">${itile('arrow-back', 'var(--on-surface-variant)')}</button>
+    ${itile('settings', 'var(--primary)')}
+    <div class="header-title"><div class="eyeline">偏好与数据</div><h2>设置</h2></div>`;
+}
+const THEME_MODE_LABEL = { system: '跟随系统', light: '浅色', dark: '深色' };
+function settingsContent() {
+  const b = state.backup;
+  const host = b.url.trim() ? (b.url.match(/^https?:\/\/([^/]+)/) || [, ''])[1] : null;
+  const doneCount = active().filter(t => t.completed).length;
+  const group = (title, rows) => `<div class="section-label" style="padding:0 4px 6px">${title}</div><div class="settings-group">${rows}</div>`;
+  const row = (a, ic, tint, title, sub, trailing) => `<button class="settings-row" data-action="${a}">
+      ${itile(ic, tint)}<span class="sr-tx"><b>${title}</b><span>${sub}</span></span>${trailing || icon('chev-right', 's18 set-chev')}</button>`;
+  const tag = (label, tone = '') => `<span class="set-tag${tone ? ' ' + tone : ''}">${label}</span>`;
+  return `
+    <div class="settings-hero">
+      <span class="brand-mark">D</span>
+      <div><h2>DianMao</h2><span class="hint">v1.1.2 · The Day Compass</span></div>
+    </div>
+    ${group('外观', row('settings-appearance', 'moon', 'var(--primary)', '主题', '浅色、深色或跟随系统', tag(THEME_MODE_LABEL[state.themeMode])) + row('settings-widget', 'inventory', 'var(--secondary)', '小组件与通知', '桌面小组件与到点提醒样式', ''))}
+    ${group('数据', row('settings-backup', 'cloud-up', 'var(--secondary)', '备份与恢复', host ? `${host} · 已连接` : '本地导出与 WebDAV 同步', tag(host ? '已连接' : '未配置', host ? '' : 'warn')) + row('settings-archive', 'archive', 'var(--q-nn)', '归档事项', `${state.tasks.filter(t => t.archived).length} 项已归档`, '') + row('settings-review', 'chart', 'var(--primary)', '复盘', `${doneCount} 项已完成可复盘`, ''))}
+    ${group('关于', row('settings-about', 'compass', 'var(--primary)', '关于 DianMao', '版本、设计语言与隐私说明', ''))}
+    <span class="hint" style="padding:4px">所有数据与偏好仅保存在本机;备份由你自行指定目标。</span>`;
+}
+
+/* ---------- page: appearance (level 2) ---------- */
+function appearanceHeader() {
+  return `<button class="icon-button tile" data-action="settings-back" aria-label="返回设置">${itile('arrow-back', 'var(--on-surface-variant)')}</button>
+    ${itile('moon', 'var(--primary)')}
+    <div class="header-title"><div class="eyeline">浅色、深色或跟随系统</div><h2>主题</h2></div>`;
+}
+function appearanceContent() {
+  const modes = [['system', '跟随系统', '随系统设置自动切换', 'moon'], ['light', '浅色', '始终使用暖纸亮色主题', 'sun'], ['dark', '深色', '始终使用深暖色主题', 'moon']];
+  const list = modes.map(([k, label, sub, ic]) => `<button class="choice-row${state.themeMode === k ? ' on' : ''}" data-action="theme-mode" data-mode="${k}" role="radio" aria-checked="${state.themeMode === k}">
+      ${itile(ic, 'var(--primary)')}
+      <span class="sr-tx"><b>${label}</b><span>${sub}</span></span>
+      <span class="radio${state.themeMode === k ? ' on' : ''}" aria-hidden="true"></span>
+    </button>`).join('');
+  const preview = `<div class="theme-preview">
+      <div class="tp-card dark"><span class="tp-swatch"></span><span class="tp-line"></span><span class="tp-line short"></span></div>
+      <div class="tp-card light"><span class="tp-swatch"></span><span class="tp-line"></span><span class="tp-line short"></span></div>
+    </div>`;
+  return `<div class="settings-group choice-list">${list}</div>
+    ${preview}
+    <span class="hint" style="padding:0 4px">${state.themeMode === 'system' ? `当前跟随系统:${isDarkNow() ? '深色' : '浅色'}` : `已固定为${THEME_MODE_LABEL[state.themeMode]}主题`}${state.themeMode === 'system' ? ',系统主题变化时自动生效。' : '。切回跟随系统即可自动跟随。'}</span>
+    <span class="hint" style="padding:0 4px">主题偏好保存在本机,不随备份上传。</span>`;
+}
+
+/* ---------- page: backup (level 2) ---------- */
 function backupHeader() {
   return `<button class="icon-button tile" data-action="back" aria-label="返回">${itile('arrow-back', 'var(--on-surface-variant)')}</button>
     ${itile('settings', 'var(--primary)')}
@@ -613,15 +664,7 @@ function backupContent() {
           <span class="hint">${b.auto ? '上次成功:今天 08:30' : '需要先配置 WebDAV'}</span></div>
         <span class="switch${b.auto ? ' on' : ''}" data-action="toggle-auto" role="switch" aria-checked="${b.auto}"><span class="thumb"></span></span>
       </div>
-    </div>
-    <div class="block">
-      <div class="sec-head">${itile('moon', 'var(--primary)', true)}<div class="tx"><span class="sec-title sm">外观</span><span class="sec-sub">选择浅色、深色,或跟随系统</span></div></div>
-      <div class="segmented">
-        ${[['system', '跟随系统'], ['light', '浅色'], ['dark', '深色']].map(([k, l]) => `<button class="seg ${state.themeMode === k ? 'on' : ''}" data-action="theme-mode" data-mode="${k}">${l}</button>`).join('')}
-      </div>
-      <span class="hint">${state.themeMode === 'system' ? `当前跟随系统:${isDarkNow() ? '深色' : '浅色'}` : `已固定为${state.themeMode === 'dark' ? '深色' : '浅色'}主题`}</span>
-    </div>
-    <span class="hint" style="padding:0 4px">数据与外观设置均保存在本机,不上传。</span>`;
+    </div>`;
 }
 
 /* ---------- page: archive ---------- */
@@ -723,7 +766,7 @@ function dialogsContent() {
 }
 
 /* ---------- navigation + notes ---------- */
-const PAGES = [['home', '首页'], ['quadrant', '象限详情'], ['detail', '事项详情'], ['add', '新增事项'], ['calendar', '日历'], ['review', '复盘'], ['backup', '备份'], ['archive', '归档'], ['dialogs', '对话框'], ['widget', '小组件与通知']];
+const PAGES = [['home', '首页'], ['quadrant', '象限详情'], ['detail', '事项详情'], ['add', '新增事项'], ['calendar', '日历'], ['review', '复盘'], ['settings', '设置'], ['backup', '备份'], ['archive', '归档'], ['dialogs', '对话框'], ['widget', '小组件与通知']];
 const NOTES = {
   home: ['01', '先捕捉,<br>再分类。', '四象限不是分类表单,而是一眼看清今天该往哪走。时间关注把过期与今天提到最上层。', ['切到「今天 / 近期 / 收集箱」看分组列表', '右滑完成 / 左滑删除任务行', '长按任务进入多选,可全选与批量操作', '点一个象限进入详情']],
   quadrant: ['02', '一个象限,<br>一种节奏。', '象限色只做低透明度底纹(8%),头部与空态用同一层 tint,不抢正文。', ['长按任务行拖拽排序(抬起态)', '点「已完成」展开收起', '点标题进事项详情']],
@@ -732,6 +775,8 @@ const NOTES = {
   calendar: ['05', '时间有它<br/>自己的声音。', '日历相关的蓝色只用于时间语义;月格里的点表示当天事项的象限。', ['切换月份', '点某一天看当天列表', '长按任务「移动到...」']],
   review: ['06', '完成之后,<br>留下一点什么。', '统计只用现有事实:近 7/30 天次数、每日分布、象限占比与完成心得。', ['滚动查看各区', '点顶部「已复盘」pill 也能到这里']],
   backup: ['07', '数据在手里,<br>也在云上。', '表单用静默边框,唯一的主按钮属于「上传备份」;未配置时本地导出接管主按钮。', ['切换密码可见性', '开关自动备份', '点「保存设置」']],
+  settings: ['07', '先看全局,<br>再进细节。', '一级设置页只列出分组入口:外观、数据、关于。每行一句现状,不堆控件。', ['点「主题」进二级页', '点「备份与恢复」进备份页', '点「小组件与通知」看样式']],
+  appearance: ['07', '亮或暗,<br>你说了算。', '二级主题页用单选列表 + 双主题小预览,选择即时生效;跟随系统时自动跟随 OS。', ['切换跟随系统 / 浅色 / 深色', '看下方明暗对比预览']],
   archive: ['08', '旧的完成,<br>不必消失。', '归档行保留象限色点、标题、meta 与一个明确的恢复按钮。', ['点「恢复」把它放回待办']],
   dialogs: ['09', '同一家族,<br>同一套语气。', '所有紧凑对话框共享同一个容器:暖纸 scrim、18dp 圆角卡、发丝级边框与 6dp 阴影。', ['删除 / 取消完成重复 / 完成心得', '日期 / 重复规则 / 提醒提前量', '移动到象限 / 批量删除']],
   widget: ['10', '不打开应用,<br>也知道今天。', '桌面小组件展示今天的待办并可勾选完成;到点提醒的通知带「完成」与「稍后提醒」。', ['看宽/窄两种小组件尺寸', '勾选小组件里的任务(演示)', '看提醒通知的两个动作按钮']],
@@ -740,16 +785,19 @@ const TITLES = Object.fromEntries(PAGES);
 const HEADERS = {
   home: homeHeader, quadrant: quadrantHeader, detail: detailHeader, add: addHeader,
   calendar: calendarHeader, review: reviewHeader, backup: backupHeader, archive: archiveHeader, dialogs: dialogsHeader, widget: widgetHeader,
+  settings: settingsHeader, appearance: appearanceHeader,
 };
 const CONTENTS = {
   home: homeContent, quadrant: quadrantContent, detail: detailContent, add: addContent,
   calendar: calendarContent, review: reviewContent, backup: backupContent, archive: archiveContent, dialogs: dialogsContent, widget: widgetContent,
+  settings: settingsContent, appearance: appearanceContent,
 };
-const SCAFFOLD = { quadrant: 1, detail: 1, add: 1, calendar: 1, review: 1, backup: 1, archive: 1, dialogs: 1, widget: 1 };
+const SCAFFOLD = { quadrant: 1, detail: 1, add: 1, calendar: 1, review: 1, backup: 1, archive: 1, dialogs: 1, widget: 1, settings: 1, appearance: 1 };
 
 function navigate(page) {
   if (page === 'add' && !state.form) { state.editingId = null; state.form = blankForm('iu'); }
   if (page === 'detail' && state.detailId == null) { state.detailId = openTasks()[0] ? openTasks()[0].id : (active()[0] || {}).id; }
+  if (page !== 'backup' && page !== 'archive' && page !== 'review' && page !== 'widget') state.from = null;
   state.page = page;
   if (page !== 'home') state.search = false;
   if (page !== 'home' && page !== 'quadrant') state.selection = [];
@@ -828,10 +876,23 @@ function menuItem(action, label, ico, data = '', danger = false) {
 /* ---------- actions ---------- */
 const actions = {
   'home': () => navigate('home'),
+  'settings-back': () => navigate('settings'),
+  'settings-appearance': () => navigate('appearance'),
+  'settings-backup': () => { state.from = 'settings'; navigate('backup'); },
+  'settings-archive': () => { state.from = 'settings'; navigate('archive'); },
+  'settings-review': () => { state.from = 'settings'; navigate('review'); },
+  'settings-widget': () => { state.from = 'settings'; navigate('widget'); },
+  'settings-about': () => sheet('关于 DianMao', `<div style="font-size:14px;line-height:22px;color:var(--on-surface-variant)">
+      <b style="color:var(--on-surface)">DianMao v1.1.2</b><br>个人任务指挥台。四象限决定方向,时间决定什么时候看它。<br><br>
+      设计语言:The Day Compass。数据与偏好仅保存在本机;日历、提醒与备份均由你显式授权后才发生。
+    </div>
+    <div class="dlg-actions"><button class="btn text" data-action="close">关闭</button></div>`, { icon: 'compass', tint: 'var(--primary)' }),
   'back': () => {
     if (state.page === 'detail') return navigate('home');
     if (state.page === 'quadrant') return navigate('home');
     if (state.page === 'add') return navigate(state.editingId ? 'detail' : 'home');
+    if (state.page === 'appearance') return navigate('settings');
+    if (['backup', 'archive', 'review', 'widget'].includes(state.page) && state.from === 'settings') return navigate('settings');
     navigate('home');
   },
   'add': () => { state.editingId = null; state.form = blankForm(state.homeView === 'quadrants' ? 'iu' : 'iu'); navigate('add'); },

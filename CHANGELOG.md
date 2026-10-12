@@ -2,6 +2,15 @@
 
 # Changelog
 
+# Changelog
+
+- Prototype v1.5 — two-level settings (2026-10-11): the single backup page becomes
+  a proper settings hub. A new level-1 设置 page groups 外观 / 数据 / 关于 with a
+  profile header and one-line status rows; a new level-2 主题 page holds the
+  system/light/dark choice with a light-dark preview. Backup, archive, review, and
+  widget become level-2 entries that remember their origin and return to settings.
+  New structure, logged as pending confirmation in `design/mockup/BASELINE.md`.
+
 - Prototype v1.4 — appearance switch + polish (2026-10-11): the settings/backup
   page gains an 外观 section with three modes — 跟随系统 / 浅色 / 深色 — following
   the OS live in system mode. This is a new capability: the app currently only

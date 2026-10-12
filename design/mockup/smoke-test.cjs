@@ -184,11 +184,26 @@ const assert = require('node:assert/strict');
   assert.equal(await page.locator('#content .task-row.selected').count(), 0, 'batch move exits selection');
   await click('#appHeader [data-action="home-view"][data-view="quadrants"]');
 
-  // 10g. AppHeader settings icon opens backup, not a theme toggle
-  const settingsBtnIcon = await page.evaluate(() => document.querySelector('#appHeader [data-page="backup"] use').getAttribute('href'));
+  // 10g. AppHeader settings icon opens the settings hub, not a theme toggle
+  const settingsBtnIcon = await page.evaluate(() => document.querySelector('#appHeader [data-page="settings"] use').getAttribute('href'));
   assert.equal(settingsBtnIcon, '#i-settings', 'header settings button uses the settings icon');
-  await click('#appHeader [data-page="backup"]');
-  assert.match(await headerText(), /备份与恢复/, 'header settings icon opens backup');
+  await click('#appHeader [data-page="settings"]');
+  assert.match(await headerText(), /设置/, 'header settings icon opens settings');
+
+  // 10h. two-level settings: hub rows, appearance page, and back routing
+  assert.equal(await page.locator('#content .settings-row').count() >= 6, true, 'settings hub rows');
+  await click('#content [data-action="settings-appearance"]');
+  assert.match(await headerText(), /主题/, 'appearance page opens');
+  assert.equal(await page.locator('#content .choice-row').count(), 3, 'three theme choices on appearance page');
+  await click('#content [data-action="theme-mode"][data-mode="dark"]');
+  assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'dark', 'appearance page applies theme');
+  assert.equal(await page.locator('#content .radio.on').count(), 1, 'selected radio reflects mode');
+  await click('#appHeader [data-action="settings-back"]');
+  assert.match(await headerText(), /设置/, 'back returns to settings hub');
+  await click('#content [data-action="settings-backup"]');
+  assert.match(await headerText(), /备份与恢复/, 'settings row opens backup');
+  await click('#appHeader [data-action="back"]');
+  assert.match(await headerText(), /设置/, 'backup back returns to settings');
 
   // 11. dialogs chapter
   await goChapter('dialogs');
@@ -240,8 +255,9 @@ const assert = require('node:assert/strict');
   await click('.overlay-card .sheet-heading [data-action="close"]');
   await click('#appHeader [data-action="home-view"][data-view="quadrants"]');
 
-  // 12. appearance: system / light / dark (three-state, mirrors the in-app 外观 setting)
-  await goChapter('backup');
+  // 12. appearance: system / light / dark (three-state, mirrors the in-app 主题 setting)
+  await goChapter('settings');
+  await click('#content [data-action="settings-appearance"]');
   assert.equal(await page.locator('#content [data-action="theme-mode"]').count(), 3, 'three appearance modes');
   await click('#content [data-action="theme-mode"][data-mode="dark"]');
   assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'dark', 'dark mode applies');
