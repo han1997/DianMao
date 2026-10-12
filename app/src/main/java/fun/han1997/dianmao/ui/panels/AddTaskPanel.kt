@@ -756,8 +756,12 @@ private fun QuickDateChipRow(
             ) {
                 Text(
                     text = option.label,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                    style = MaterialTheme.typography.labelMedium.copy(letterSpacing = 0.sp),
+                    // Prototype reuses .lane-chip: 3px 7px padding, 12sp/500.
+                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontWeight = FontWeight.Medium,
+                        letterSpacing = 0.sp
+                    ),
                     maxLines = 1
                 )
             }
