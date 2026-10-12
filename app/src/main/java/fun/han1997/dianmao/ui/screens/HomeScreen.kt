@@ -406,22 +406,31 @@ internal fun QuadrantBoard(
                     icon = DianMaoIcons.Search,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.48f),
+                    // Prototype .empty uses the default .itile (30dp tile,
+                    // 18dp icon) with a 10% tinted background.
+                    containerColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.10f),
                     iconSize = 18.dp
                 )
                 Spacer(Modifier.height(10.dp))
                 Text(
                     text = emptyMessage,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.onSurface,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 0.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong),
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = "换个关键词，或关闭搜索查看全部象限。",
-                    modifier = Modifier.padding(top = 4.dp),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = "换个关键词,或关闭搜索查看全部象限。",
+                    modifier = Modifier.padding(top = 8.dp),
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontSize = 13.sp,
+                        lineHeight = 24.sp,
+                        letterSpacing = 0.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong)
                 )
             }
         } else Column {
@@ -697,14 +706,17 @@ internal fun HomeSmartTaskList(
                 IconTile(
                     icon = DianMaoIcons.Inventory,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong),
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.48f),
-                    iconSize = 22.dp,
-                    modifier = Modifier.size(48.dp)
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    // Prototype .empty .itile: 30dp tile / 18dp icon, 10% tint.
+                    containerColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.10f),
+                    iconSize = 18.dp
                 )
                 Text(
                     text = emptyMessage ?: "这里还没有事项",
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 0.sp
+                    ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong)
                 )
                 FilledTonalButton(
