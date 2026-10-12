@@ -4,6 +4,40 @@
 
 # Changelog
 
+## v1.2.0 — pixel-parity UI pass (2026-10-12)
+
+Every screen is now aligned to the confirmed prototype as the single visual
+reference (task `10-12-pixel-parity-ui`).
+
+- **Icons**: the app's Material Filled icons are replaced app-wide by the
+  prototype's thin round-cap stroke vectors, generated from the prototype sprite
+  into `DianMaoIcons`.
+- **Two-level settings**: new 设置 hub (外观 / 数据 / 关于 with a profile header),
+  new 主题 page (跟随系统 / 浅色 / 深色 with a light-dark preview) and new
+  小组件与通知 page. Backup, archive, review and widget become level-2 entries that
+  return to settings. The header gear now opens settings instead of backup.
+- **Appearance preference**: `ThemeMode` is persisted in its own
+  `appearance_settings` SharedPreferences file (never uploaded with backups) and
+  applied through `DianMaoTheme(themeMode)`.
+- **Forms**: a new `QuietField` reproduces the prototype's 44dp `.field` box
+  (12dp radius, hairline inset outline, 2dp focused underline) and replaces every
+  `OutlinedTextField`, restoring the prototype's form rhythm.
+- **Quadrant detail**: the header is a fixed scaffold bar (surface fill + bottom
+  hairline) instead of a scrolling transparent row; empty state uses the accent
+  form-section card.
+- **Multi-select**: the header becomes 关闭 / 已选 N 项 / 全选 and the bottom bar
+  is the prototype's two buttons (移动象限 / 删除所选).
+- **Details**: header eyeline sits above the title, meta rows form a zero-gap
+  list, completion history stays inline, and the extra full-screen history
+  destination is removed (the prototype never had one).
+- **Calendar / review / empty states / widget**: month grid rows are flush (48dp),
+  the FAB only appears on home/quadrant, review bars and event rows match the
+  prototype metrics, empty states share the `.empty` pattern, and the Glance
+  widget row uses `.wg-row` padding.
+
+Verification: `:app:assembleDebug`, `:app:lintDebug` and `:app:testDebugUnitTest`
+pass with 0 errors; the prototype smoke test passes.
+
 - Prototype v1.5 — two-level settings (2026-10-11): the single backup page becomes
   a proper settings hub. A new level-1 设置 page groups 外观 / 数据 / 关于 with a
   profile header and one-line status rows; a new level-2 主题 page holds the
