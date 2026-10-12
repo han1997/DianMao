@@ -194,7 +194,8 @@ private fun WidgetTaskRow(
     Row(
         modifier = GlanceModifier
             .fillMaxWidth()
-            .padding(top = 6.dp),
+            // Prototype .wg-row: 3px vertical padding, 8px gap.
+            .padding(top = 3.dp, bottom = 3.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Image(
