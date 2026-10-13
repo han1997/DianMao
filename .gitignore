@@ -20,3 +20,8 @@ local.properties
 
 # Pixel-parity working artifacts
 .tmp-shots/
+# Screenshot evidence + capture scripts are local verification artifacts; the
+# prototype source (index.html / style.css / app.js) stays the tracked baseline.
+design/mockup/shots-*/
+design/mockup/shots-*.cjs
+design/mockup/preview-*.png

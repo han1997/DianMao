@@ -34,13 +34,17 @@
 ## 文件摘要
 
 基准 commit:`efb5b6f`(原型首次提交)、`3ad307c`(原型优先契约与基准登记)。
-下表 SHA-256 对应 2026-10-13 的 v1.6 修订;此前版本见「变更记录」。
+下表 SHA-256 对应 2026-10-13 的 v1.7 修订(含 `bumpVersion` 同步到 v1.2.4 的 `APP_VERSION`);此前版本见「变更记录」。
 
 | 文件 | SHA-256 |
 |---|---|
 | index.html | `cd3b906cbf1e5ac97f41645519174dc2752374b4aef8dba350f48c48c6ee3a88` |
 | style.css | `0bb4d484c3ab4a78a0a11b2ea8bb5a54c1ab94c7235cbb381362d6949fff6eae` |
-| app.js | `89a056186664d89eebb79fe980cce10669c3130b9a2f58307a070d91ebbdd81e` |
+| app.js | `30b1f4d125155ee642c22bb2b5313b6e3bc035cd634a2780fc62db5ecb436e24` |
+
+> 截图与生成脚本(`preview-*.png`、`shots-1013/`、`shots-1013.cjs`、`preview-empty-quadrants.png`)
+> 是本地验收证据,不纳入版本库;需要复现时重跑 `smoke-test.cjs` / `shots-1013.cjs` 即可。
+> 校验文件摘要请以**原型源码**(`index.html` / `style.css` / `app.js`)为准。
 
 ## 明确待确认项
 
@@ -69,7 +73,50 @@
 每次补充或改动记录:版本名、修改页面/状态、源码摘要或已提交 hash、用户确认范围、待确认项、
 对应 Android 实施/截图证据。源文件摘要变化时,差异部分处于待确认状态。
 
+## 实现侧验收方式(2026-10-13 起)
+
+用户指令「永远不要使用模拟器了,没必要」:实现侧不再启动 AVD、安装 APK 或做设备截图/并排比对。
+实现验收以上述 Gradle 检查(`assembleDebug` / `lintDebug` / `testDebugUnitTest`)、`git diff --check`
+和原型冒烟测试为准;只能在设备上观察的行为(系统通知设置页跳转、首启真实空态在真机上的排版)
+登记为**设备侧未验证**的残余风险,交由用户自行确认,不得据编译通过声称视觉验收完成。
+
 ## 变更记录
+
+### v1.7:零任务空状态 + 通知设置入口(2026-10-13)
+
+**触发**:功能盘点发现三个收尾缺口,用户确认本次范围(任务 10-13-small-gap-fixes)。
+
+1. **零任务首启空状态**:`quadrantsView()` 在全库无活跃任务且无搜索词时渲染空态块
+   (compass 图标 primary 色 + 「创建第一个任务」+ 引导文案「写下第一件事,四象限会帮你决定方向。」
+   + tonal「新增事项」按钮);`smartList()` 在全库无活跃任务时显示同样引导(替代「这里还没有事项」)。
+   复用既有 `.empty` 结构与 smartList 空态按钮标记。配套实现侧将移除 `seedIfEmpty` 演示数据。
+2. **通知设置入口**:「小组件与通知」页两个通知预览后新增「系统」分组 +
+   `.settings-row`「通知设置 · 打开系统的应用通知设置」(bell 图标 primary 色),
+   action 为 toast 演示(不伪造系统页面)。
+3. **关于弹层**:原型 v1.5/v1.6 已含 `settings-about` 弹层,本次无原型改动;
+   smoke test 补充其打开/版本令牌/关闭断言。
+
+**验证**:`smoke-test.cjs` 新增空态(四象限+智能视图,断言后立即恢复演示数据)、
+widget 页通知设置行 + toast、About 弹层三组断言,全部通过。
+
+**确认状态**:**已确认(用户 2026-10-13)**。用户目视确认零任务空态(四象限 + 智能视图)、
+「小组件与通知」页新增「通知设置」行、About 弹层三处原型改动,并明确确认**移除 `seedIfEmpty`
+演示数据、新装首启改为空状态引导**。截图证据:`design/mockup/shots-1013/`
+(`empty-home-light/dark`、`empty-today-light`、`widget-row-light/dark`、`about-sheet-light/dark`)。
+以此为像素级实施基准,进入 Compose 实现。
+
+**实施状态(2026-10-13)**:
+
+- About 弹层 `AboutDialog`(`ui/panels/Dialogs.kt`)+ 设置页 `onOpenAbout` 接通;
+- 移除 `TaskRepository.seedIfEmpty` / `PlatformHelpers.seedTaskEntities()` / `TaskDao.countTasks()`;
+  首页 `QuadrantBoard`(判据 `activeTasks.isEmpty()`)与 `HomeSmartTaskList`(判据 `activeTasks.none { it.isOpenTask() }`)
+  各自接入 first-run 引导,共享 `AddTaskTonalButton`;
+- 「小组件与通知」页新增「系统」分组 + `SettingsRow`「通知设置」,
+  点击经 `openAppNotificationSettings(context)` 打开系统应用通知设置页
+  (原型侧是 toast 演示;实现侧是真入口,属允许的「演示→真实平台能力」差异)。
+
+**验收范围**:`assembleDebug` / `lintDebug` / `testDebugUnitTest` / `git diff --check` 通过,原型冒烟测试通过。
+按用户指令「永远不要使用模拟器了,没必要」,**实现侧设备截图与并排比对未执行**,登记为残余风险。
 
 ### v1.6:版本号单一来源与备份 URL 辅助行(2026-10-13)
 

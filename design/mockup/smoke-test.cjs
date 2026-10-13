@@ -205,6 +205,14 @@ const assert = require('node:assert/strict');
   await click('#appHeader [data-action="back"]');
   assert.match(await headerText(), /设置/, 'backup back returns to settings');
 
+  // 10i. about sheet: version token rendered via withVersion()
+  await click('#content [data-action="settings-about"]');
+  assert.equal(await page.locator('#overlay:not([hidden])').count(), 1, 'about sheet opens');
+  assert.match(await page.locator('#overlay').innerText(), /关于 DianMao/, 'about sheet title');
+  assert.match(await page.locator('#overlay').innerText(), new RegExp('v' + await page.evaluate(() => APP_VERSION)), 'about sheet shows APP_VERSION');
+  await click('.overlay-card .sheet-heading [data-action="close"]');
+  assert.equal(await page.locator('#overlay:not([hidden])').count(), 0, 'about sheet closes');
+
   // 11. dialogs chapter
   await goChapter('dialogs');
   assert.equal(await page.locator('.dialog-preview .dlg').count(), 8, 'eight dialog examples');
@@ -215,6 +223,9 @@ const assert = require('node:assert/strict');
   assert.equal(await page.locator('.wg.wide .wg-row').count() > 0, true, 'widget lists today rows');
   assert.equal(await page.locator('.notif').count(), 2, 'plain + recurring notification');
   assert.match(await page.locator('.notif').last().innerText(), /记一次完成/, 'recurring notification label');
+  assert.equal(await page.locator('#content [data-action="open-notification-settings"]').count(), 1, 'notification settings row on widget page');
+  await click('#content [data-action="open-notification-settings"]');
+  assert.match(await page.locator('#toast').innerText(), /已打开系统通知设置/, 'notification settings row toasts');
 
   // 11d. long-press drag lift in quadrant detail (do this before swipes: swipes mutate the list)
   await goChapter('quadrant');
@@ -280,6 +291,19 @@ const assert = require('node:assert/strict');
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   assert.ok(overflow <= 1, `no horizontal overflow on mobile (${overflow}px)`);
   await page.screenshot({ path: path.join(__dirname, 'preview-mobile.png'), fullPage: true });
+
+  // 13b. zero-task first-run empty state (quadrants + smart views), then restore demo data
+  await page.evaluate(() => { state = initial(); state.tasks = []; state.page = 'home'; state.homeView = 'quadrants'; render(); });
+  await page.waitForTimeout(60);
+  assert.match(await page.locator('#content').innerText(), /创建第一个任务/, 'quadrants empty state headline');
+  assert.equal(await page.locator('#content [data-action="add"]').count(), 1, 'empty state add button');
+  await page.screenshot({ path: path.join(__dirname, 'preview-empty-quadrants.png'), fullPage: true });
+  await page.evaluate(() => { state.homeView = 'today'; render(); });
+  await page.waitForTimeout(60);
+  assert.match(await page.locator('#content').innerText(), /创建第一个任务/, 'smart list empty state headline');
+  await page.evaluate(() => { state = initial(); state.page = 'home'; state.homeView = 'quadrants'; render(); });
+  await page.waitForTimeout(60);
+  assert.equal(await page.locator('.qboard .qpane').count(), 4, 'demo data restored after empty-state check');
 
   assert.deepEqual(errors, [], 'no page errors');
   await browser.close();

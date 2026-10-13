@@ -16,7 +16,7 @@ const btnIcon = (n, tint, cls = '') => `<span class="itile ${cls}" style="--t:${
 /* App version shown in the settings hero and the about sheet.
    Mirrors `gradle.properties` `app.versionName`; the `bumpVersion` Gradle task
    rewrites this constant in the same run so the prototype never drifts. */
-const APP_VERSION = '1.2.3';
+const APP_VERSION = '1.2.4';
 
 /* Markup writes the literal `__APP_VERSION__` placeholder; every render
    substitutes the constant above so the version has a single source. */
@@ -237,6 +237,14 @@ function quadrantsView() {
       <p>换个关键词,或关闭搜索查看全部象限。</p></div></div>`;
   }
 
+  if (!active().length && !state.query) {
+    return `<div class="qboard"><div class="empty" style="margin:auto">
+      ${itile('compass', 'var(--primary)')}
+      <h3>创建第一个任务</h3>
+      <p>写下第一件事,四象限会帮你决定方向。</p>
+      <button class="btn tonal" data-action="add" style="margin-top:14px">${btnIcon('add', 'var(--on-primary-container)')}新增事项</button></div></div>`;
+  }
+
   const pane = q => {
     const all = filtered ? filtered.filter(t => t.q === q) : qTasks(q);
     const vis = all.slice(0, 5);
@@ -270,6 +278,11 @@ function smartList(view) {
   if (view === 'inbox') items = items.filter(t => t.dueAt == null);
 
   if (!items.length) {
+    if (!openTasks().length && !state.query) {
+      return `<div class="empty">${itile('compass', 'var(--primary)')}
+        <h3>创建第一个任务</h3><p>写下第一件事,四象限会帮你决定方向。</p>
+        <button class="btn tonal" data-action="add" style="margin-top:14px">${btnIcon('add', 'var(--on-primary-container)')}新增事项</button></div>`;
+    }
     return `<div class="empty">${itile('inventory', 'var(--on-surface-variant)')}
       <h3>这里还没有事项</h3><p>${state.query ? `没有匹配“${esc(state.query)}”的事项` : '换个视图,或新增一条。'}</p>
       <button class="btn tonal" data-action="add" style="margin-top:14px">${btnIcon('add', 'var(--on-primary-container)')}新增事项</button></div>`;
@@ -740,6 +753,9 @@ function widgetContent() {
       ${notif(false)}
       <div class="section-label">重复事项提醒 · 完成文案变为「记一次完成」</div>
       ${notif(true)}
+      <div class="section-label" style="padding:0 4px 6px">系统</div>
+      <div class="settings-group"><button class="settings-row" data-action="open-notification-settings">
+        ${itile('bell', 'var(--primary)')}<span class="sr-tx"><b>通知设置</b><span>打开系统的应用通知设置</span></span>${icon('chev-right', 's18 set-chev')}</button></div>
       <span class="hint">小组件与通知均为演示:勾选/按钮不会真正修改数据或发送通知。</span>
     </div>`;
 }
@@ -899,6 +915,7 @@ const actions = {
       设计语言:The Day Compass。数据与偏好仅保存在本机;日历、提醒与备份均由你显式授权后才发生。
     </div>
     <div class="dlg-actions"><button class="btn text" data-action="close">关闭</button></div>`, { icon: 'compass', tint: 'var(--primary)' }),
+  'open-notification-settings': () => toast('演示:已打开系统通知设置'),
   'back': () => {
     if (state.page === 'detail') return navigate('home');
     if (state.page === 'quadrant') return navigate('home');
