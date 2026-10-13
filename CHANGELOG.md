@@ -1,5 +1,21 @@
 # Changelog
 
+## v1.2.3 — fix backup page layout regression (2026-10-13)
+
+- **Fix**: `3d7e0af` unwrapped the backup setting blocks from the status header
+  card, but the scroll column's closing brace landed right after the header
+  card. The four `FormSettingBlock`s became direct children of the non-scrolling
+  outer column, so the weighted scroll column collapsed to zero height: the
+  cloud-sync status header card was invisible and the tail of the page
+  (下载恢复 / 自动备份) could not be scrolled into view (broken at font scale
+  1.3 too). The blocks are now inside the scroll column again, and the
+  connection chip sits in the text column under the subtitle, matching the
+  prototype's `.sync-head .tx`.
+
+Verification: `:app:assembleDebug`, `:app:lintDebug` and
+`:app:testDebugUnitTest` pass; on-device the status header card renders and
+all blocks are reachable by scrolling at font scales 1.0 and 1.3.
+
 ## v1.2.2 — gate the restored settings screens (2026-10-12)
 
 - **Fix**: v1.2.1 restored the settings/calendar rendering but `SettingsScreen`,

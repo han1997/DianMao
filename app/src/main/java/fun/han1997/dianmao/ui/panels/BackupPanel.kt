@@ -157,11 +157,10 @@ internal fun BackupPanel(
                                         "配置下方地址后可上传与恢复"
                                     },
                                     style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong),
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
                                 Surface(
                                     color = if (webDavReady) {
                                         MaterialTheme.colorScheme.primaryContainer.copy(alpha = DianMaoAlpha.muted)
@@ -367,6 +366,7 @@ internal fun BackupPanel(
                 }
             }
         }
+    }
 }
 
 @Composable
