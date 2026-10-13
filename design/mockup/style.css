@@ -380,6 +380,7 @@ small{font-size:11px;line-height:1.8}
 .chip{border-radius:8px;padding:3px 8px;font-size:12px;font-weight:500;line-height:16px;background:color-mix(in srgb,var(--primary-container) 62%,transparent);color:var(--on-primary-container)}
 .chip.muted{background:color-mix(in srgb,var(--surface-variant) 48%,transparent);color:color-mix(in srgb,var(--on-surface-variant) 80%,transparent)}
 .fields{display:flex;flex-direction:column;gap:10px}
+.field-group{display:flex;flex-direction:column}
 .save-pill{display:flex;align-items:center;gap:10px;border-radius:12px;padding:9px 12px;background:color-mix(in srgb,var(--primary-container) 62%,transparent);color:var(--on-primary-container);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--outline) 8%,transparent);font-size:14px;line-height:20px}
 
 /* dialogs — overlay is positioned inside .phone so it never escapes the device frame */

@@ -181,7 +181,7 @@ private fun SettingsHero() {
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                text = "v1.1.2 · The Day Compass",
+                text = "v${BuildConfig.VERSION_NAME} · The Day Compass",
                 modifier = Modifier.padding(top = 2.dp),
                 style = MaterialTheme.typography.bodySmall.copy(letterSpacing = 0.sp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong)

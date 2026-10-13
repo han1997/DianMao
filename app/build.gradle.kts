@@ -73,6 +73,8 @@ android {
     }
     buildFeatures {
         compose = true
+        // `BuildConfig.VERSION_NAME` drives the settings hero version label.
+        buildConfig = true
     }
 
     // Output APKs as dianmao-<versionName>.apk for both build types.
@@ -125,6 +127,24 @@ tasks.register("bumpVersion") {
         }
 
         propsFile.writeText(lines.joinToString(System.lineSeparator()) + System.lineSeparator())
+
+        // Keep the design prototype's version label in sync with `app.versionName`,
+        // so the settings hero never drifts between prototype and app.
+        val newVersionName = lines.firstOrNull { it.trimStart().startsWith("app.versionName=") }
+            ?.substringAfter('=')?.trim()
+        val appJs = rootProject.file("design/mockup/app.js")
+        if (newVersionName != null && appJs.exists()) {
+            val text = appJs.readText()
+            val updated = text.replace(
+                Regex("const APP_VERSION = '[^']*';"),
+                "const APP_VERSION = '$newVersionName';"
+            )
+            if (updated != text) {
+                appJs.writeText(updated)
+                logger.lifecycle("synced design/mockup/app.js APP_VERSION=$newVersionName")
+            }
+        }
+
         logger.lifecycle("bumped to versionCode=$newCode")
     }
 }

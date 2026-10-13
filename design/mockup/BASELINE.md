@@ -34,13 +34,13 @@
 ## 文件摘要
 
 基准 commit:`efb5b6f`(原型首次提交)、`3ad307c`(原型优先契约与基准登记)。
-下表 SHA-256 对应 2026-10-11 的 v1.5 版本,基准 commit `55243fd`;此前版本见「变更记录」。
+下表 SHA-256 对应 2026-10-13 的 v1.6 修订;此前版本见「变更记录」。
 
 | 文件 | SHA-256 |
 |---|---|
 | index.html | `cd3b906cbf1e5ac97f41645519174dc2752374b4aef8dba350f48c48c6ee3a88` |
-| style.css | `2690de507b3f6be2901289e946defb96ee421c44377295e80d869e498845a0c9` |
-| app.js | `72e526358c59ec61c696ee65759ef24390292b45280e3e25cee04850132f3fcd` |
+| style.css | `0bb4d484c3ab4a78a0a11b2ea8bb5a54c1ab94c7235cbb381362d6949fff6eae` |
+| app.js | `89a056186664d89eebb79fe980cce10669c3130b9a2f58307a070d91ebbdd81e` |
 
 ## 明确待确认项
 
@@ -70,6 +70,23 @@
 对应 Android 实施/截图证据。源文件摘要变化时,差异部分处于待确认状态。
 
 ## 变更记录
+
+### v1.6:版本号单一来源与备份 URL 辅助行(2026-10-13)
+
+**触发**:像素级对齐任务(10-12)验收阶段登记的两条遗留项,用户 2026-10-13 要求全部关闭。
+
+1. **版本号改为单一来源**:设置页 hero 与「关于 DianMao」弹层中写死的 `v1.1.2`
+   改为在标记中写字面量 `__APP_VERSION__` 占位符,渲染时由 `withVersion()` 替换为
+   `APP_VERSION` 常量(`v__APP_VERSION__ · The Day Compass`)。该常量镜像
+   `gradle.properties` 的 `app.versionName`,并由 `bumpVersion` Gradle 任务在同一次
+   运行中改写,原型与实现不再漂移;实现侧读取 `BuildConfig.VERSION_NAME`。
+2. **备份 URL 辅助行补齐**:「备份与恢复」页 WebDAV 配置的「备份目录 URL」字段下方
+   增加说明行「备份写入目录内 dianmao-backup-latest.json;目录不存在会自动创建」,
+   复用 `.hint` 样式(12px/16px、`on-surface-variant` 78%),并对齐实现的
+   `QuietField.supportingText`(start 4px / top 6px),消除此前的允许偏差。
+
+**确认状态**:用户明确指示按上述方案处理(版本号采用 `APP_VERSION` 常量注入),
+视为**范围已确认**;具体呈现待目视复验。
 
 ### v1.5:设置页两级化(2026-10-11)
 

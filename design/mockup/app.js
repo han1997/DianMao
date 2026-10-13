@@ -13,6 +13,15 @@ const metas = list => list.filter(Boolean).map(x => meta(x[0], x[1], x[2])).join
 const statdot = (count, label, tint) => `<span class="statdot" style="--c:${tint}"><span class="dot6"></span>${count} ${esc(label)}</span>`;
 const btnIcon = (n, tint, cls = '') => `<span class="itile ${cls}" style="--t:${tint};background:color-mix(in srgb,${tint} 12%,transparent)">${icon(n, 's15')}</span>`;
 
+/* App version shown in the settings hero and the about sheet.
+   Mirrors `gradle.properties` `app.versionName`; the `bumpVersion` Gradle task
+   rewrites this constant in the same run so the prototype never drifts. */
+const APP_VERSION = '1.2.3';
+
+/* Markup writes the literal `__APP_VERSION__` placeholder; every render
+   substitutes the constant above so the version has a single source. */
+const withVersion = html => html.split('__APP_VERSION__').join(APP_VERSION);
+
 const QUAD = {
   iu: { key: 'iu', label: '重要且紧急', short: '重急', desc: '今天必须推进', color: 'var(--q-iu)' },
   in: { key: 'in', label: '重要不紧急', short: '重要', desc: '长期价值任务', color: 'var(--q-in)' },
@@ -582,7 +591,7 @@ function settingsContent() {
   return `
     <div class="settings-hero">
       <span class="brand-mark">D</span>
-      <div><h2>DianMao</h2><span class="hint">v1.1.2 · The Day Compass</span></div>
+      <div><h2>DianMao</h2><span class="hint">v__APP_VERSION__ · The Day Compass</span></div>
     </div>
     ${group('外观', row('settings-appearance', 'moon', 'var(--primary)', '主题', '浅色、深色或跟随系统', tag(THEME_MODE_LABEL[state.themeMode])) + row('settings-widget', 'inventory', 'var(--secondary)', '小组件与通知', '桌面小组件与到点提醒样式', ''))}
     ${group('数据', row('settings-backup', 'cloud-up', 'var(--secondary)', '备份与恢复', host ? `${host} · 已连接` : '本地导出与 WebDAV 同步', tag(host ? '已连接' : '未配置', host ? '' : 'warn')) + row('settings-archive', 'archive', 'var(--q-nn)', '归档事项', `${state.tasks.filter(t => t.archived).length} 项已归档`, '') + row('settings-review', 'chart', 'var(--primary)', '复盘', `${doneCount} 项已完成可复盘`, ''))}
@@ -643,7 +652,10 @@ function backupContent() {
     <div class="block">
       <div class="sec-head"><div class="tx"><span class="sec-title sm">WebDAV 配置</span><span class="sec-sub">填目录地址自动建目录备份;以 .json 结尾则视为文件</span></div></div>
       <div class="fields">
-        <div class="field"><div class="flabel">备份目录 URL</div><input id="davUrl" value="${esc(b.url)}" placeholder="https://dav.example.com/dianmao/"></div>
+        <div class="field-group">
+          <div class="field"><div class="flabel">备份目录 URL</div><input id="davUrl" value="${esc(b.url)}" placeholder="https://dav.example.com/dianmao/"></div>
+          <div class="hint" style="padding:6px 0 0 4px">备份写入目录内 dianmao-backup-latest.json;目录不存在会自动创建</div>
+        </div>
         <div class="field"><div class="flabel">用户名</div><input id="davUser" value="${esc(b.user)}"></div>
         <div class="field" style="display:flex;align-items:center;gap:8px">
           <div style="flex:1;min-width:0"><div class="flabel">密码</div><input id="davPass" type="${b.visible ? 'text' : 'password'}" value="${esc(b.pass)}"></div>
@@ -822,7 +834,7 @@ function render() {
       <button class="btn tonal" style="flex:1" data-action="batch-move">${btnIcon('inventory', 'var(--on-primary-container)')}移动象限</button>
       <button class="btn" style="flex:1;color:var(--error);background:color-mix(in srgb,var(--error) 10%,transparent)" data-action="batch-delete">${btnIcon('delete', 'var(--error)')}删除所选</button>
     </div>` : '';
-  $('#content').innerHTML = body + bar;
+  $('#content').innerHTML = withVersion(body + bar);
   $('#fab').classList.toggle('hidden', selecting || !(page === 'home' || page === 'quadrant'));
 
   $('#chapterNav').innerHTML = PAGES.map(([p, n], i) => `<button data-page="${p}" class="${page === p ? 'active' : ''}" ${page === p ? 'aria-current="page"' : ''}><span>0${i + 1}</span>${n}</button>`).join('');
@@ -854,7 +866,7 @@ function sheet(title, body, opts = {}) {
     iconHost.innerHTML = '';
     iconHost.style.display = 'none';
   }
-  $('#sheetBody').innerHTML = body;
+  $('#sheetBody').innerHTML = withVersion(body);
   const overlay = $('#overlay');
   overlay.hidden = false;
   const card = overlay.querySelector('.overlay-card');
@@ -883,7 +895,7 @@ const actions = {
   'settings-review': () => { state.from = 'settings'; navigate('review'); },
   'settings-widget': () => { state.from = 'settings'; navigate('widget'); },
   'settings-about': () => sheet('关于 DianMao', `<div style="font-size:14px;line-height:22px;color:var(--on-surface-variant)">
-      <b style="color:var(--on-surface)">DianMao v1.1.2</b><br>个人任务指挥台。四象限决定方向,时间决定什么时候看它。<br><br>
+      <b style="color:var(--on-surface)">DianMao v__APP_VERSION__</b><br>个人任务指挥台。四象限决定方向,时间决定什么时候看它。<br><br>
       设计语言:The Day Compass。数据与偏好仅保存在本机;日历、提醒与备份均由你显式授权后才发生。
     </div>
     <div class="dlg-actions"><button class="btn text" data-action="close">关闭</button></div>`, { icon: 'compass', tint: 'var(--primary)' }),
