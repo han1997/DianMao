@@ -347,3 +347,36 @@ Deep code review across UI + data layers. Fixed the ISO-weekly cycle bug (calend
 ### Next Steps
 
 - None - task complete
+
+
+## Session 69: 复盘窗口常量收敛 + 边界测试
+
+**Date**: 2026-10-13
+**Task**: 复盘窗口常量收敛 + 边界测试
+**Branch**: `master`
+
+### Summary
+
+承 10-13-dismissible-time-focus-lane 修复的同类问题排查:buildReviewStats 的「近 7 天」计数(minusDays(6))、30 天计数(minusDays(29))、每日分布图((6 downTo 0))三处裸字面量隐式耦合,当前一致但无测试锁定。提为 REVIEW_WINDOW_DAYS / REVIEW_MONTH_DAYS 常量;ReviewModelsTest 新增边界断言(第 6 天计入/第 7 天排除、第 29 天计入/第 30 天排除)与「图表总数 == 头部计数」不变量。变异验证:常量改 6 或 8 均失败 4 项测试,仅改图表跨度失败 3 项 —— 证明确实锁住了不变量而非复述实现。UI 文案(ReviewScreen 的「近 7 天」/「近 30 天」)按用户确认范围保持字面量,已在 spec 登记为已接受的重复。行为不变。spec 的「Sibling Views Silently Disagreeing on a Window」补记本实例。验证:testDebugUnitTest(130)/lintDebug/assembleDebug/git diff --check + 原型冒烟测试全通过;bumpVersion -> 1.2.6 (versionCode 20)。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `2e1436e` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

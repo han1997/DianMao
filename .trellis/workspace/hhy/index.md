@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 68
+- **Total Sessions**: 69
 - **Last Active**: 2026-10-13
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~349 | Active |
+| `journal-2.md` | ~382 | Active |
 | `journal-1.md` | ~1990 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 69 | 2026-10-13 | 复盘窗口常量收敛 + 边界测试 | `2e1436e` | `master` |
 | 68 | 2026-10-13 | 时间关注可移除 + 近期窗口语义统一 | `0d856f5`, `8f5b679` | `master` |
 | 67 | 2026-10-13 | 小缺口修补:About 弹层 + 首启空态 + 通知设置入口 | `8fed4c1`, `dd1b2f6` | `master` |
 | 66 | 2026-10-13 | 关闭像素级对齐遗留项:版本号单一来源 + 备份 URL 辅助行补齐 | `7b1de29`, `576328c`, `2b49bae` | `master` |
