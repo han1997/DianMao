@@ -16,7 +16,7 @@ const btnIcon = (n, tint, cls = '') => `<span class="itile ${cls}" style="--t:${
 /* App version shown in the settings hero and the about sheet.
    Mirrors `gradle.properties` `app.versionName`; the `bumpVersion` Gradle task
    rewrites this constant in the same run so the prototype never drifts. */
-const APP_VERSION = '1.2.5';
+const APP_VERSION = '1.2.6';
 
 /* Markup writes the literal `__APP_VERSION__` placeholder; every render
    substitutes the constant above so the version has a single source. */

@@ -31,6 +31,18 @@ internal data class ReviewStats(
 internal const val REVIEW_EVENTS_LIMIT = 20
 
 /**
+ * "近 7 天" spans this many local days, today included — so its oldest day is
+ * `today - (REVIEW_WINDOW_DAYS - 1)`. The headline count and the daily
+ * distribution are two readings of the same window and must share this number;
+ * when they each carried their own literal, changing one left the label and the
+ * chart describing different spans.
+ */
+private const val REVIEW_WINDOW_DAYS = 7L
+
+/** "近 30 天" spans this many local days, today included. */
+private const val REVIEW_MONTH_DAYS = 30L
+
+/**
  * Merges the two completion sources into one event stream: recurring-task
  * per-cycle completions from task_completions, plus one event per completed
  * non-recurring task (its last completion). Sorted newest first.
@@ -72,14 +84,14 @@ internal fun buildReviewStats(
     zoneId: ZoneId
 ): ReviewStats {
     val today = Instant.ofEpochMilli(nowMillis).atZone(zoneId).toLocalDate()
-    val day7Start = today.minusDays(6).atStartOfDay(zoneId).toInstant().toEpochMilli()
-    val day30Start = today.minusDays(29).atStartOfDay(zoneId).toInstant().toEpochMilli()
+    val day7Start = today.minusDays(REVIEW_WINDOW_DAYS - 1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+    val day30Start = today.minusDays(REVIEW_MONTH_DAYS - 1).atStartOfDay(zoneId).toInstant().toEpochMilli()
 
     val last7 = events.count { it.completedAtMillis >= day7Start }
     val last30 = events.count { it.completedAtMillis >= day30Start }
 
-    val dailyCounts = (6 downTo 0).map { offset ->
-        val date = today.minusDays(offset.toLong())
+    val dailyCounts = ((REVIEW_WINDOW_DAYS - 1) downTo 0L).map { offset ->
+        val date = today.minusDays(offset)
         ReviewDayCount(
             date = date,
             count = events.count { event ->

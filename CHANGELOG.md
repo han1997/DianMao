@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.2.6 — review window constants + boundary tests (2026-10-13)
+
+Internal cleanup, no user-visible change. The 「近 7 天」 headline count, the
+30-day count and the daily distribution chart each carried their own day
+literal (`minusDays(6)`, `minusDays(29)`, `(6 downTo 0)`), so changing one would
+have left the label and the chart describing different spans — the same defect
+class as the time-focus lane drift fixed in v1.2.5. They now share
+`REVIEW_WINDOW_DAYS` / `REVIEW_MONTH_DAYS`, and `ReviewModelsTest` asserts the
+window boundaries (day 6 in / day 7 out, day 29 in / day 30 out) plus the
+invariant that the chart's total equals the headline count. Verified by
+mutation: widening or narrowing either constant now fails the suite.
+
+Verification: `:app:assembleDebug`, `:app:lintDebug`, `:app:testDebugUnitTest`
+and `git diff --check` pass.
+
 ## v1.2.5 — dismissible time-focus lane + 「近期」 window parity (2026-10-13)
 
 - **The time-focus lane is now removable, and still appears on first open.**

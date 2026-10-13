@@ -1505,6 +1505,13 @@ its horizon rather than mislabelling it, so `lane ⊆ view` holds for every inpu
 过期), assert the subset relation in a test, not each window in isolation. Ask
 "what input would make these two disagree?" before freezing a boundary value.
 
+**Known instance — review windows**: `buildReviewStats` had the same shape: the
+headline 「近 7 天」 count used `minusDays(6)`, the 30-day count used
+`minusDays(29)`, and the daily chart used a third literal `(6 downTo 0)`. They
+now share `REVIEW_WINDOW_DAYS` / `REVIEW_MONTH_DAYS`. `ReviewScreen.kt` still
+spells 「近 7 天」 and 「近 30 天」 as UI literals — accepted duplication, but
+changing either constant means changing that copy by hand.
+
 ---
 
 ## Related Specs

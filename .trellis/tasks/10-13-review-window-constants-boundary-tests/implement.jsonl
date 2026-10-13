@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/backend/compose-patterns.md", "reason": "新增的「Sibling Views Silently Disagreeing on a Window」条目是本任务的直接依据:窗口断言必须锁不变量而非复述实现"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "重构 + 补测试需按质量门槛执行 unit tests / lint / assemble / git diff --check"}

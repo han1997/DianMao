@@ -1,0 +1,2 @@
+{"file": ".trellis/spec/backend/compose-patterns.md", "reason": "复核新增测试是否真的锁住了窗口不变量(而非复述常量),以及 spec 条目是否自洽"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "按质量门槛执行验证命令,并确认行为不变(既有用例未改动即通过)"}

@@ -35,14 +35,14 @@
 
 基准 commit:`efb5b6f`(原型首次提交)、`3ad307c`(原型优先契约与基准登记)。
 下表 SHA-256 对应 2026-10-13 的 v1.8 修订(时间关注可移除 + 近期窗口语义统一);
-`app.js` 的摘要随后又因 `bumpVersion` 将 `APP_VERSION` 同步为 `1.2.5` 而变化(仅版本常量一行),
+`app.js` 的摘要随后又因 `bumpVersion` 同步版本常量而变化(仅 `APP_VERSION` 一行),
 其余内容与 v1.8 一致。此前版本见「变更记录」。
 
 | 文件 | SHA-256 |
 |---|---|
 | index.html | `cd3b906cbf1e5ac97f41645519174dc2752374b4aef8dba350f48c48c6ee3a88` |
 | style.css | `43ae55e6c21c8affc643a28575ac9c9330af235e4b78a8be66075d2fcc506cc4` |
-| app.js | `9ab2d0a774f7155a3bae1d90df697ebb15d755851a7cb82d71ed030ec4094e11` |
+| app.js | `4621af143b6350dd32352b35f3a9fabe54f8e179bb2ca02643630c7e6b756b0b` |
 
 > 截图与生成脚本(`preview-*.png`、`shots-1013/`、`shots-1013.cjs`、`preview-empty-quadrants.png`)
 > 是本地验收证据,不纳入版本库;需要复现时重跑 `smoke-test.cjs` / `shots-1013.cjs` 即可。
