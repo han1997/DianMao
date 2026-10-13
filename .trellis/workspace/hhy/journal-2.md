@@ -244,3 +244,38 @@ Deep code review across UI + data layers. Fixed the ISO-weekly cycle bug (calend
 ### Next Steps
 
 - None - task complete
+
+
+## Session 66: 关闭像素级对齐遗留项:版本号单一来源 + 备份 URL 辅助行补齐
+
+**Date**: 2026-10-13
+**Task**: 关闭像素级对齐遗留项:版本号单一来源 + 备份 URL 辅助行补齐
+**Branch**: `master`
+
+### Summary
+
+按原型优先契约先改原型再改实现,关闭 10-12 遗留的两条偏差。版本号:设置页 hero 与「关于」弹层的写死 v1.1.2 改为原型侧 __APP_VERSION__ 占位符 + APP_VERSION 常量(render()/sheet() 经 withVersion 替换),实现侧改读 BuildConfig.VERSION_NAME(开启 buildConfig);bumpVersion Gradle 任务同步改写 app.js 常量,杜绝漂移。备份 URL 辅助行:按严格对齐在原型 WebDAV 配置补上支持说明行(新增 .field-group,复用 .hint 12/16 @78%,对齐 QuietField.supportingText 的 4/6 间距),消除此前登记的允许偏差。更新 BASELINE.md v1.6 变更记录与新 SHA-256,并在 design-prototypes 规范固化版本号单一来源约定。验证:原型 smoke test 通过、assembleDebug/lintDebug/testDebugUnitTest 全绿、BuildConfig.VERSION_NAME 与原型 APP_VERSION 均为 1.2.3。归档任务 10-13。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `7b1de29` | (see git log) |
+| `576328c` | (see git log) |
+| `2b49bae` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
