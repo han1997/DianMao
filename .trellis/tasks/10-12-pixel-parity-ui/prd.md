@@ -57,3 +57,31 @@
 - [ ] `:app:assembleDebug` + `:app:lintDebug` + `:app:testDebugUnitTest` 通过。
 - [ ] 320dp / 390dp / 410dp 无横向溢出;字体 1.0 与 1.3 不破版。
 - [ ] 明暗双主题均与原型一致。
+
+## 验收进展(2026-10-13)
+
+- 并排图补齐(compare.sh):`cmp-{settings,appearance,widget,backup,archive,review,quadrant}-{light,dark}.png`,
+  加上既有 home/detail/add/calendar/quadrant 等共 12 屏 ×2 主题。
+- 几何 diff(443dpi,390×808dp 归一化):新增屏 x 向偏差 ≤3.8dp;
+  行内间距与原型一致(appearance 69/69、widget 204/204/159、settings 组内匀速)。
+  存在与已验收首页相同的 ~-20dp 系统纵向偏移(设备真实状态栏 vs 原型假状态栏),属既有基线。
+- **对话框**:原型 `dialogs` 页是 8 个预览卡片堆叠的静态展示页,设备侧无对应单屏;
+  登记为**允许偏差**,容器规格(330dp max-width / 18dp 圆角 / 发丝边框 / 6dp 阴影)
+  经共享 `QuietDialogContainer` 与既有 `dev-datepicker`/`dev-timepicker` 证据核对。
+- **允许偏差**:WebDAV URL 字段的 `supportingText`(“备份写入目录内 …”)原型无此行,
+  属实现侧辅助说明,登记为允许偏差。
+
+### 本轮修复(检查阶段发现)
+
+- `BackupPanel`:`3d7e0af` 拆卡片时误将滚动列提前闭合,四个 `FormSettingBlock` 变成
+  外层非滚动列的兄弟节点,导致 `weight(1f)` 滚动列塌缩为 0 高——云同步状态头卡
+  **完全不可见**,页面尾部(下载恢复/自动备份)无法滚动到达(字体 1.3 亦破版)。
+  已把块重新放回滚动列,连接 chip 回到文本列(对齐原型 `.sync-head .tx`)。
+  设备复核:头卡渲染、尾部可滚动到、1.0/1.3 无横向溢出。
+
+### 遗留待确认(不属本任务)
+
+- `SettingsScreen` hero 的版本号写死为 `v1.1.2 · The Day Compass`(与原型一致,
+  故像素对齐无偏差),但已落后于 `versionName`。需先改原型再取确认,不能单侧修改;
+  建议后续改为从 `BuildConfig.VERSION_NAME` 读取并在原型同步占位符。
+- WebDAV URL 字段的 `supportingText` 已登记为允许偏差;若要严格对齐,需先在原型补该行。

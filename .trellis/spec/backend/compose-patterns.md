@@ -1309,6 +1309,70 @@ DropdownMenus still used default M3 chrome.
 
 ---
 
+## Common Mistake: Container Unwrap Breaks the Layout Scope
+
+### Symptom
+The cloud-sync status header card on the 备份与恢复 page was invisible, and the
+tail of the page (下载恢复 / 自动备份) could not be scrolled into view. Nothing
+crashed, lint and unit tests were green, and the file compiled — the only
+signal was that a whole card and the last two 设置块 were missing on device.
+
+### Cause
+`3d7e0af` unwrapped the four `FormSettingBlock`s from the status header
+`Surface` (they had accidentally been composed inside it). The added closing
+brace landed after the header card instead of after the `Surface`, so it closed
+the enclosing **scroll column**:
+
+```kotlin
+Column(modifier = Modifier.weight(1f).verticalScroll(state)) {  // scroll column
+    Surface { /* status header card */ }                        // only child
+}                                                               // <-- closed too early
+FormSettingBlock("本地备份") { ... }                             // sibling of the scroll column
+FormSettingBlock("WebDAV 配置") { ... }
+```
+
+Because the non-weighted `FormSettingBlock`s were measured first, the weighted
+scroll column collapsed to ~0dp. The header card was clipped to nothing, and
+none of the page content could scroll. At font scale 1.3 the tail became
+unreachable entirely.
+
+### Root Cause
+Kotlin lambda braces carry no names. Moving a composable out of one container
+and into another is a brace move, and a misplaced `}` silently re-parents every
+following sibling — the code still compiles because the brace count stays
+balanced. `weight(1f)` then turns the mistake into zero-height content instead
+of an obvious overflow.
+
+### Fix
+Keep the scroll column wrapping **all** scrollable children, and only the
+scrollable children:
+
+```kotlin
+Column(modifier = Modifier.weight(1f).verticalScroll(state)) {
+    Surface { /* status header card, chip inside its text column */ }
+    FormSettingBlock("本地备份") { ... }
+    FormSettingBlock("WebDAV 配置") { ... }
+    FormSettingBlock("云端同步") { ... }
+    FormSettingBlock("自动备份") { ... }
+}
+```
+
+The connection chip belongs in the text column under the subtitle, matching
+`.sync-head .tx` in the prototype.
+
+### Prevention
+1. After moving a composable between containers, re-check which closing brace
+   now terminates the enclosing scope — do not eyeball indentation alone.
+2. A `weight(1f)` scroll container must not be the parent of a single fixed
+   child while its siblings sit outside; that is almost always a brace slip.
+3. When a whole card or the page tail disappears, dump the UI hierarchy
+   (`uiautomator`) and compare child bounds — a zero-height weighted column
+   shows up immediately.
+4. Verify the affected screen at font scales 1.0 **and** 1.3: an unscrollable
+   page only reveals itself when the content grows.
+
+---
+
 ## Related Specs
 
 - [Overlay Navigation Thinking Guide](../guides/overlay-navigation-thinking-guide.md) - Checklist for back navigation design
