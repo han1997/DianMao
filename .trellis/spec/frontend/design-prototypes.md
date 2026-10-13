@@ -37,6 +37,12 @@ must not be treated as a source of product behavior.
 - **Demo boundaries are documented.** The README and the notes column must state
   that no calendar/notification/network/disk access happens. The prototype is
   in-memory only and resets on reload.
+- **The version label has a single source.** The app reads
+  `BuildConfig.VERSION_NAME` (needs `buildConfig = true`); the prototype writes
+  the literal `__APP_VERSION__` token and `withVersion()` substitutes the
+  `APP_VERSION` constant at render time. The `bumpVersion` Gradle task rewrites
+  that constant together with `gradle.properties`, so the settings hero never
+  drifts between prototype and app — do not hard-code a version string in either.
 
 ## Common Mistake: Nested interactive HTML elements
 
