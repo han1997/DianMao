@@ -1373,6 +1373,92 @@ The connection chip belongs in the text column under the subtitle, matching
 
 ---
 
+## Pattern: Caller-Owned Empty-State Criteria
+
+**Problem**: Two surfaces showing the same empty state can look identical but be
+driven by *different* meanings of "empty". `QuadrantBoard` and
+`HomeSmartTaskList` both render the prototype's first-run guidance (compass
+tile, 创建第一个任务, 新增事项 CTA), yet the prototype gates them on different
+sets: the board on the whole non-archived library, the smart list on tasks still
+open in the current view. Deriving the flag from the composable's own `tasks`
+parameter gets this wrong — `QuadrantBoard.tasks` is already the *filtered*
+home list, so `tasks.isEmpty()` is true whenever a search simply matched
+nothing.
+
+**Solution**: Never infer the empty-state variant from the parameter the
+composable already receives. Take an explicit `firstRun: Boolean` from the
+single call site in `MainActivity`, where the repository's `activeTasks` list is
+in scope, and let each surface apply its own predicate there.
+
+**Signatures**:
+```kotlin
+@Composable
+internal fun QuadrantBoard(
+    tasks: List<TaskUiModel>,        // already filtered by the search query
+    modifier: Modifier = Modifier,
+    onSelected: (TaskPriority) -> Unit,
+    onAddTask: () -> Unit = {},
+    firstRun: Boolean = false,
+    emptyMessage: String? = null,    // search-empty copy; wins over firstRun
+)
+
+@Composable
+internal fun HomeSmartTaskList(
+    items: List<HomeSmartTaskItem>,
+    // ... row callbacks; onAddTask and emptyMessage are required ...
+    firstRun: Boolean = false,
+    modifier: Modifier = Modifier
+)
+```
+
+**Contracts**:
+- Branch precedence is `emptyMessage != null` → `firstRun` → normal content. A
+  search-empty state must always win, because the query provably excluded rows
+  from a non-empty library.
+- The board's predicate is "the whole non-archived library is empty"
+  (`activeTasks.isEmpty()`); the smart list's is "no open task remains"
+  (`activeTasks.none { it.isOpenTask() }`). They can differ, and that is
+  intended: a library of only completed tasks still shows the board, but the
+  smart list guides.
+- The first-run CTA (`AddTaskTonalButton`, prototype `.empty .btn.tonal`) opens
+  the add sheet via the same `onAddTask` callback the normal empty state uses.
+- On a first-run board the time-focus lane is simply absent because it has no
+  items — do not add presence logic for it. `TimeFocusLane` already self-hides
+  through `AnimatedVisibility(visible = focusItems.isNotEmpty())`, matching the
+  prototype's early `return` before the lane is built.
+
+**Good**:
+```kotlin
+QuadrantBoard(
+    tasks = homeVisibleTasks,
+    onAddTask = { showAddSheet = true },
+    firstRun = activeTasks.isEmpty(),
+    emptyMessage = if (homeSearchQuery.isNotBlank() && homeVisibleTasks.isEmpty()) {
+        "没有匹配“${homeSearchQuery.trim()}”的事项"
+    } else null
+)
+```
+
+**Bad**:
+```kotlin
+// Derived from the filtered list the composable already has: shows first-run
+// guidance for an ordinary "search matched nothing" state.
+if (tasks.isEmpty()) { FirstRunGuidance(onAddTask) }
+else if (emptyMessage != null) { SearchEmpty(emptyMessage) }
+```
+
+**Tests Required**:
+- No JVM unit test is possible for the branch itself; verify with
+  `:app:assembleDebug` plus `:app:lintDebug` (the flag is a required parameter
+  change, so a missed call site fails compilation).
+- Add prototype coverage in `design/mockup/smoke-test.cjs`: after emptying
+  `state.tasks`, assert the 创建第一个任务 headline and exactly one
+  `[data-action="add"]` on both the quadrant board and a smart view, take the
+  screenshot, then immediately restore `initial()` so later sections are not
+  polluted.
+
+---
+
 ## Related Specs
 
 - [Overlay Navigation Thinking Guide](../guides/overlay-navigation-thinking-guide.md) - Checklist for back navigation design

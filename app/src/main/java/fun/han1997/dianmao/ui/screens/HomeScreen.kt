@@ -12,7 +12,6 @@ import `fun`.han1997.dianmao.CompactMeta
 import `fun`.han1997.dianmao.CompletionMark
 import `fun`.han1997.dianmao.HeaderActionButton
 import `fun`.han1997.dianmao.IconTile
-import `fun`.han1997.dianmao.InlineButtonIcon
 import `fun`.han1997.dianmao.SummaryPill
 import `fun`.han1997.dianmao.TaskRow
 import `fun`.han1997.dianmao.HomeSmartTaskItem
@@ -63,8 +62,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
@@ -384,6 +381,8 @@ internal fun QuadrantBoard(
     tasks: List<TaskUiModel>,
     modifier: Modifier = Modifier,
     onSelected: (TaskPriority) -> Unit,
+    onAddTask: () -> Unit = {},
+    firstRun: Boolean = false,
     emptyMessage: String? = null
 ) {
     Surface(
@@ -431,6 +430,47 @@ internal fun QuadrantBoard(
                         letterSpacing = 0.sp
                     ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong)
+                )
+            }
+        } else if (firstRun) {
+            // Prototype quadrantsView(): with an empty library and no search
+            // term the four panes are replaced by the first-run guidance.
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(18.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                IconTile(
+                    icon = DianMaoIcons.Compass,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f),
+                    iconSize = 18.dp
+                )
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    text = "创建第一个任务",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 0.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong)
+                )
+                Text(
+                    text = "写下第一件事,四象限会帮你决定方向。",
+                    modifier = Modifier.padding(top = 8.dp),
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontSize = 13.sp,
+                        lineHeight = 24.sp,
+                        letterSpacing = 0.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong)
+                )
+                AddTaskTonalButton(
+                    onClick = onAddTask,
+                    modifier = Modifier.padding(top = 14.dp)
                 )
             }
         } else Column {
@@ -687,6 +727,7 @@ internal fun HomeSmartTaskList(
     onViewDetail: (TaskUiModel) -> Unit,
     onAddTask: () -> Unit,
     emptyMessage: String?,
+    firstRun: Boolean = false,
     nowMillis: Long = System.currentTimeMillis(),
     isSelectionMode: Boolean = false,
     selectedTaskIds: Set<Long> = emptySet(),
@@ -704,37 +745,45 @@ internal fun HomeSmartTaskList(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 IconTile(
-                    icon = DianMaoIcons.Inventory,
+                    icon = if (firstRun) DianMaoIcons.Compass else DianMaoIcons.Inventory,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = if (firstRun) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
                     // Prototype .empty .itile: 30dp tile / 18dp icon, 10% tint.
-                    containerColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.10f),
+                    containerColor = if (firstRun) {
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.10f)
+                    },
                     iconSize = 18.dp
                 )
                 Text(
-                    text = emptyMessage ?: "这里还没有事项",
+                    text = if (firstRun && emptyMessage == null) {
+                        "创建第一个任务"
+                    } else {
+                        emptyMessage ?: "这里还没有事项"
+                    },
                     style = MaterialTheme.typography.bodyMedium.copy(
                         fontWeight = FontWeight.SemiBold,
                         letterSpacing = 0.sp
                     ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong)
                 )
-                FilledTonalButton(
-                    onClick = onAddTask,
-                    shape = RowShape,
-                    colors = ButtonDefaults.filledTonalButtonColors(
-                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                if (firstRun && emptyMessage == null) {
+                    Text(
+                        text = "写下第一件事,四象限会帮你决定方向。",
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontSize = 13.sp,
+                            lineHeight = 24.sp,
+                            letterSpacing = 0.sp
+                        ),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong)
                     )
-                ) {
-                    InlineButtonIcon(
-                        icon = DianMaoIcons.Add,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        containerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = DianMaoAlpha.subtle)
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Text("新增事项")
                 }
+                AddTaskTonalButton(onClick = onAddTask)
             }
         }
         return

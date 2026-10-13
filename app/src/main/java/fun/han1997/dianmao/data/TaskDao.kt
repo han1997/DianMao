@@ -19,9 +19,6 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE archived = 1 ORDER BY updatedAtMillis DESC")
     fun observeArchivedTasks(): Flow<List<TaskEntity>>
 
-    @Query("SELECT COUNT(*) FROM tasks")
-    suspend fun countTasks(): Long
-
     @Query("SELECT * FROM tasks WHERE id = :id LIMIT 1")
     suspend fun findById(id: Long): TaskEntity?
 

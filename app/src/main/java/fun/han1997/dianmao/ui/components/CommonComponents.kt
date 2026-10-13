@@ -12,13 +12,17 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -185,6 +189,32 @@ internal fun InlineButtonIcon(
                 modifier = Modifier.size(15.dp)
             )
         }
+    }
+}
+
+/**
+ * Prototype `.empty .btn.tonal`: the "新增事项" call to action shared by both
+ * first-run empty states (quadrant board and smart list). Uses the button-icon
+ * recipe of the other empty state so all three render identically.
+ */
+@Composable
+internal fun AddTaskTonalButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    FilledTonalButton(
+        onClick = onClick,
+        modifier = modifier,
+        shape = RowShape,
+        colors = ButtonDefaults.filledTonalButtonColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+        )
+    ) {
+        InlineButtonIcon(
+            icon = DianMaoIcons.Add,
+            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+            containerColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = DianMaoAlpha.subtle)
+        )
+        Spacer(Modifier.width(6.dp))
+        Text("新增事项")
     }
 }
 

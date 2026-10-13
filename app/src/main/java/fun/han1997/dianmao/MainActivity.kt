@@ -26,10 +26,10 @@ import `fun`.han1997.dianmao.resolveInAppBackTarget
 import `fun`.han1997.dianmao.TaskSaveOutcome
 import `fun`.han1997.dianmao.defaultBackupFileName
 import `fun`.han1997.dianmao.deleteCalendarEvent
+import `fun`.han1997.dianmao.openAppNotificationSettings
 import `fun`.han1997.dianmao.openCalendarReminder
 import `fun`.han1997.dianmao.readTextFromUri
 import `fun`.han1997.dianmao.saveOrOpenCalendarEvent
-import `fun`.han1997.dianmao.seedTaskEntities
 import `fun`.han1997.dianmao.writeTextToUri
 import `fun`.han1997.dianmao.AddTaskPanel
 import `fun`.han1997.dianmao.ArchivedPanel
@@ -255,6 +255,7 @@ private fun DianMaoApp(
     var showSettingsPanel by rememberSaveable { mutableStateOf(false) }
     var showAppearancePanel by rememberSaveable { mutableStateOf(false) }
     var showWidgetPanel by rememberSaveable { mutableStateOf(false) }
+    var showAboutDialog by rememberSaveable { mutableStateOf(false) }
     // Prototype-first: backup/archive/review/widget are entered from the
     // settings hub (state.from), so their back/close returns to settings
     // rather than jumping straight home.
@@ -413,7 +414,6 @@ private fun DianMaoApp(
     }
 
     LaunchedEffect(repository, scheduler) {
-        repository.seedIfEmpty(seedTaskEntities())
         repository.resetExpiredCycleTasks()
         // Re-arm local reminders after process start (covers reboot-less kills;
         // reboot itself is handled by ReminderRestoreReceiver).
@@ -832,6 +832,11 @@ private fun DianMaoApp(
                                         tasks = homeVisibleTasks,
                                         modifier = Modifier.weight(1f),
                                         onSelected = { priority -> activePriority = priority },
+                                        onAddTask = { showAddSheet = true },
+                                        // Prototype quadrantsView(): an empty
+                                        // library with no search term replaces
+                                        // the four panes with first-run guidance.
+                                        firstRun = activeTasks.isEmpty(),
                                         emptyMessage = if (homeSearchQuery.isNotBlank() && homeVisibleTasks.isEmpty()) {
                                             "没有匹配“${homeSearchQuery.trim()}”的事项"
                                         } else {
@@ -857,6 +862,11 @@ private fun DianMaoApp(
                                     selectedTaskIds = selectedTaskIds,
                                     onToggleSelection = { toggleSelection(it) },
                                     onLongPressTask = { enterSelection(it) },
+                                    // Prototype smartList(): with no open task
+                                    // left and no search term the list shows the
+                                    // first-run guidance instead of the per-view
+                                    // empty copy.
+                                    firstRun = activeTasks.none { it.isOpenTask() },
                                     emptyMessage = if (homeSearchQuery.isNotBlank() && homeVisibleTasks.isEmpty()) {
                                         "没有匹配“${homeSearchQuery.trim()}”的事项"
                                     } else {
@@ -1231,7 +1241,8 @@ private fun DianMaoApp(
                             showSettingsPanel = false
                             returnToSettings = true
                             showReviewPanel = true
-                        }
+                        },
+                        onOpenAbout = { showAboutDialog = true }
                     )
                 }
                 if (showWidgetPanel) {
@@ -1242,6 +1253,9 @@ private fun DianMaoApp(
                         onBack = {
                             showWidgetPanel = false
                             showSettingsPanel = true
+                        },
+                        onOpenNotificationSettings = {
+                            openAppNotificationSettings(context)
                         }
                     )
                 }
@@ -1421,6 +1435,10 @@ private fun DianMaoApp(
                 batchDelete()
             }
         )
+    }
+
+    if (showAboutDialog) {
+        AboutDialog(onDismiss = { showAboutDialog = false })
     }
 
         // Global notice overlay: fixed top anchoring on every page. The

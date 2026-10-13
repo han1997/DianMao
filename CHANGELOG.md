@@ -1,5 +1,30 @@
 # Changelog
 
+## v1.2.4 — close three loose ends: About sheet, first-run empty state, notification settings (2026-10-13)
+
+- **About sheet**: the settings row 「关于 DianMao」 was a dead button
+  (`onClick = {}`). It now opens `AboutDialog`, matching the prototype's
+  `settings-about` sheet: bold `DianMao v<BuildConfig.VERSION_NAME>` line, the
+  one-line pitch and the privacy note, with a single 关闭 action.
+- **First-run empty state instead of seeded demo data**: a fresh install used
+  to be filled with 13 demo tasks by `seedIfEmpty`, so the real empty state was
+  never reachable. `TaskRepository.seedIfEmpty`, `seedTaskEntities()` and the
+  seed-only `TaskDao.countTasks()` are removed. `QuadrantBoard` and
+  `HomeSmartTaskList` now render the prototype's first-run guidance (compass
+  tile, 创建第一个任务, 「写下第一件事,四象限会帮你决定方向。」 and a tonal
+  新增事项 button) when the library is empty — using the prototype's own
+  criteria: whole non-archived library empty for the board, no open task for
+  the smart list. Existing installs are unaffected.
+- **Notification settings entry**: the 「小组件与通知」 page gains a 系统 group
+  with a 通知设置 row that opens the system app-notification-settings page via
+  `Settings.ACTION_APP_NOTIFICATION_SETTINGS` (`openAppNotificationSettings`,
+  best-effort `runCatching` like the other platform helpers); the prototype
+  only simulates this row with a toast.
+
+Verification: `:app:assembleDebug`, `:app:lintDebug`, `:app:testDebugUnitTest`
+and `git diff --check` pass, and the prototype smoke test passes. Per the user
+directive, no emulator/device screenshot pass was run this session.
+
 ## v1.2.3 — fix backup page layout regression (2026-10-13)
 
 - **Fix**: `3d7e0af` unwrapped the backup setting blocks from the status header

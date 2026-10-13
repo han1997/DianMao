@@ -40,7 +40,8 @@ import androidx.compose.ui.unit.sp
 @Composable
 internal fun WidgetNotificationsScreen(
     sampleTasks: List<TaskUiModel>,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onOpenNotificationSettings: () -> Unit
 ) {
     FullScreenScaffold(
         title = "小组件与通知",
@@ -82,6 +83,17 @@ internal fun WidgetNotificationsScreen(
                 title = sampleTasks.firstOrNull()?.title ?: "整理季度 OKR 复盘草稿",
                 recurring = true
             )
+
+            WidgetSectionLabel("系统")
+            SettingsGroup {
+                SettingsRow(
+                    icon = DianMaoIcons.Bell,
+                    iconTint = MaterialTheme.colorScheme.primary,
+                    title = "通知设置",
+                    subtitle = "打开系统的应用通知设置",
+                    onClick = onOpenNotificationSettings
+                )
+            }
 
             Text(
                 text = "小组件与通知均为演示:勾选/按钮不会真正修改数据或发送通知。",

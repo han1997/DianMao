@@ -53,7 +53,8 @@ internal fun SettingsScreen(
     onOpenWidget: () -> Unit,
     onOpenBackup: () -> Unit,
     onOpenArchive: () -> Unit,
-    onOpenReview: () -> Unit
+    onOpenReview: () -> Unit,
+    onOpenAbout: () -> Unit
 ) {
     FullScreenScaffold(
         title = "设置",
@@ -134,7 +135,7 @@ internal fun SettingsScreen(
                     iconTint = MaterialTheme.colorScheme.primary,
                     title = "关于 DianMao",
                     subtitle = "版本、设计语言与隐私说明",
-                    onClick = {}
+                    onClick = onOpenAbout
                 )
             }
 
@@ -201,7 +202,7 @@ private fun SettingsGroupLabel(text: String) {
 }
 
 @Composable
-private fun SettingsGroup(content: @Composable () -> Unit) {
+internal fun SettingsGroup(content: @Composable () -> Unit) {
     androidx.compose.material3.Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -225,7 +226,7 @@ private fun SettingsRowDivider() {
 }
 
 @Composable
-private fun SettingsRow(
+internal fun SettingsRow(
     icon: ImageVector,
     iconTint: Color,
     title: String,

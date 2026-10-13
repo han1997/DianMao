@@ -1,0 +1,3 @@
+{"file": ".trellis/spec/frontend/prototype-first.md", "reason": "检查原型与实现是否逐字逐样式对齐,确认关卡是否已记录"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "按质量门槛执行验证命令"}
+{"file": ".trellis/spec/backend/compose-patterns.md", "reason": "复核 Compose 改动是否符合既有弹层/组件模式"}

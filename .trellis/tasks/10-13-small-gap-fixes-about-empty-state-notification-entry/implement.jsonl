@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/frontend/prototype-first.md", "reason": "原型优先契约:项 B/C 必须先改原型并经用户确认关卡,再动 Compose"}
+{"file": ".trellis/spec/frontend/design-prototypes.md", "reason": "原型结构约定、版本号单一来源(APP_VERSION 令牌)、BASELINE.md 记录规范"}
+{"file": ".trellis/spec/backend/compose-patterns.md", "reason": "Compose 弹层/组件模式与花括号作用域陷阱(近期回归来源)"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "验证命令与质量门槛(assembleDebug/lintDebug/testDebugUnitTest)"}

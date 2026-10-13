@@ -37,8 +37,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.getValue
@@ -549,6 +552,52 @@ internal fun BatchMoveQuadrantDialog(
                 }
             }
         }
+    }
+}
+
+/**
+ * The prototype's About sheet (`actions['settings-about']`): the version line,
+ * a one-line pitch and the privacy note, with a single 关闭 action. The version
+ * comes from the same single source as the settings hero, so the prototype's
+ * `__APP_VERSION__` token cannot drift from the app.
+ */
+@Composable
+internal fun AboutDialog(onDismiss: () -> Unit) {
+    QuietDialogContainer(
+        onDismiss = onDismiss,
+        title = "关于 DianMao",
+        leadingIcon = DianMaoIcons.Compass,
+        leadingIconTint = MaterialTheme.colorScheme.primary,
+        actions = {
+            TextButton(onClick = onDismiss) {
+                Text("关闭")
+            }
+        }
+    ) {
+        Text(
+            text = buildAnnotatedString {
+                // Prototype: <b style="color:var(--on-surface)"> on the version
+                // line only; the surrounding copy stays on-surface-variant.
+                withStyle(
+                    SpanStyle(
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Bold
+                    )
+                ) {
+                    append("DianMao v${BuildConfig.VERSION_NAME}")
+                }
+                append("\n个人任务指挥台。四象限决定方向,时间决定什么时候看它。")
+                append("\n\n设计语言:The Day Compass。数据与偏好仅保存在本机;")
+                append("日历、提醒与备份均由你显式授权后才发生。")
+            },
+            // Prototype body: 14px/22px, on-surface-variant.
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontSize = 14.sp,
+                lineHeight = 22.sp,
+                letterSpacing = 0.sp
+            ),
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 

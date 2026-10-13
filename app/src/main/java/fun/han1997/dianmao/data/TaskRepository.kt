@@ -26,12 +26,6 @@ class TaskRepository(context: Context) {
 
     val completionsWithTask: Flow<List<CompletionWithTask>> = db.taskCompletionDao().observeCompletionsWithTask()
 
-    suspend fun seedIfEmpty(items: List<TaskEntity>) {
-        if (dao.countTasks() == 0L) {
-            dao.insertAll(items)
-        }
-    }
-
     suspend fun addTask(form: TaskFormState): TaskUiModel {
         val normalizedForm = form.normalizedTimeSettings()
         val now = System.currentTimeMillis()
