@@ -8,6 +8,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TimeFocusItemsTest {
@@ -116,6 +117,41 @@ class TimeFocusItemsTest {
         // anything 近期 that the 「近期」 view's own window would drop.
         assertEquals(listOf(1L, 2L), items.map { it.task.id })
         assertEquals(listOf(TimeFocusKind.Upcoming, TimeFocusKind.Upcoming), items.map { it.kind })
+    }
+
+    @Test
+    fun everyLaneUpcomingItemIsReachableInTheUpcomingSmartView() {
+        val today = LocalDate.of(2026, 6, 19)
+        val now = millis(today, hour = 10)
+
+        // Deliberately spans both horizons, plus two tasks in the same local
+        // day, so the subset relation is exercised rather than each window
+        // being restated in isolation.
+        val tasks = listOf(
+            task(id = 1, dueAtMillis = millis(today.minusDays(2), hour = 9)),
+            task(id = 2, dueAtMillis = millis(today, hour = 8)),
+            task(id = 3, dueAtMillis = millis(today, hour = 18)),
+            task(id = 4, dueAtMillis = millis(today.plusDays(1), hour = 9)),
+            task(id = 5, dueAtMillis = millis(today.plusDays(1), hour = 15)),
+            task(id = 6, dueAtMillis = millis(today.plusDays(6), hour = 23)),
+            task(id = 7, dueAtMillis = millis(today.plusDays(7), hour = 0)),
+            task(id = 8, dueAtMillis = millis(today.plusDays(13), hour = 9)),
+            task(id = 9, dueAtMillis = millis(today.plusDays(14), hour = 9))
+        )
+
+        // No limit: compare the lane's whole horizon against the view, not just
+        // the four rows the user happens to see.
+        val laneUpcomingIds = buildTimeFocusItems(tasks, now, zoneId, limit = Int.MAX_VALUE)
+            .filter { it.kind == TimeFocusKind.Upcoming }
+            .map { it.task.id }
+        val smartViewIds = buildHomeSmartTaskItems(tasks, HomeSmartView.Upcoming, "", now, zoneId)
+            .map { it.task.id }
+
+        assertEquals(listOf(4L, 5L, 6L), laneUpcomingIds)
+        assertTrue(
+            "lane 近期 items must be reachable in the 近期 view: $laneUpcomingIds vs $smartViewIds",
+            smartViewIds.containsAll(laneUpcomingIds)
+        )
     }
 
     @Test

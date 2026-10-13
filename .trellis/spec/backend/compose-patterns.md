@@ -1482,6 +1482,31 @@ else if (emptyMessage != null) { SearchEmpty(emptyMessage) }
 
 ---
 
+## Common Mistake: Sibling Views Silently Disagreeing on a Window
+
+**Symptom**: The home lane labels a task 「近期」 but the 「近期」 smart view does
+not contain that task. Nothing throws, nothing fails to compile, and both sides
+have passing tests.
+
+**Cause**: Two helpers independently encode what the same user-facing word
+means. `buildTimeFocusItems` treated everything past today as `Upcoming` with no
+upper bound, while `buildHomeSmartTaskItems` cut `Upcoming` off at 7 days. The
+tests did not catch it because `upcomingSmartViewShowsNextSevenLocalDaysOnly`
+asserted *the number that was already there* — it froze the behaviour instead of
+cross-checking it against the lane. A window assertion that only restates the
+implementation is a change detector, not a contract.
+
+**Fix**: Give both helpers the horizon from named constants in one file
+(`FOCUS_LANE_UPCOMING_DAYS` / `UPCOMING_SMART_VIEW_DAYS`), and make the narrower
+one a *subset* of the wider one by construction — the lane drops anything past
+its horizon rather than mislabelling it, so `lane ⊆ view` holds for every input.
+
+**Prevention**: When two views share a user-visible vocabulary (今天 / 近期 /
+过期), assert the subset relation in a test, not each window in isolation. Ask
+"what input would make these two disagree?" before freezing a boundary value.
+
+---
+
 ## Related Specs
 
 - [Overlay Navigation Thinking Guide](../guides/overlay-navigation-thinking-guide.md) - Checklist for back navigation design
