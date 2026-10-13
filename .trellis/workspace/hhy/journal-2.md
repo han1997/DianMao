@@ -210,3 +210,37 @@ Deep code review across UI + data layers. Fixed the ISO-weekly cycle bug (calend
 ### Next Steps
 
 - None - task complete
+
+
+## Session 65: 像素级 UI 对齐收尾:补齐并排证据并修复备份页滚动列回归
+
+**Date**: 2026-10-13
+**Task**: 像素级 UI 对齐收尾:补齐并排证据并修复备份页滚动列回归
+**Branch**: `master`
+
+### Summary
+
+完成 10-12 像素级对齐的验收阶段:补齐 settings/appearance/widget/backup/archive/review/quadrant 共 14 张明暗并排图;用 443dpi 几何 diff 复核新增屏 x 偏差 ≤3.8dp、行内间距与原型一致(纵向 ~-20dp 为既有状态栏基线),并将 dialogs 展示页与 WebDAV supportingText 登记为允许偏差。检查阶段发现并修复 3d7e0af 引入的备份页回归:滚动列被提前闭合,weight(1f) 列塌缩为 0 高,云同步状态头卡不可见且下载恢复/自动备份无法滚动到达(字体 1.3 破版);已把 FormSettingBlock 放回滚动列、chip 归位文本列,并在 compose-patterns 规范记录该花括号作用域陷阱。assembleDebug/lintDebug/testDebugUnitTest 全绿,版本升至 1.2.3。归档 10-11、10-12 两个任务。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `d7062c1` | (see git log) |
+| `f0b3b91` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
