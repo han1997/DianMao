@@ -279,3 +279,37 @@ Deep code review across UI + data layers. Fixed the ISO-weekly cycle bug (calend
 ### Next Steps
 
 - None - task complete
+
+
+## Session 67: 小缺口修补:About 弹层 + 首启空态 + 通知设置入口
+
+**Date**: 2026-10-13
+**Task**: 小缺口修补:About 弹层 + 首启空态 + 通知设置入口
+**Branch**: `master`
+
+### Summary
+
+接通设置页「关于 DianMao」弹层(AboutDialog);彻底移除 seedIfEmpty/seedTaskEntities/countTasks,首启改走真实空状态引导(四象限板按 activeTasks.isEmpty()、智能视图按无进行中任务,共享 AddTaskTonalButton);「小组件与通知」页新增系统分组「通知设置」行,经 openAppNotificationSettings 打开系统应用通知设置。原型 v1.7 已确认,新增三组 smoke 断言;screenshots 与抓图脚本转本地不追踪。bumpVersion -> 1.2.4 (versionCode 18),release APK 已构建并验签。验证:assembleDebug/lintDebug/testDebugUnitTest/git diff --check 全通过。按用户指令不再使用模拟器,设备侧视觉并排比对未执行。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `8fed4c1` | (see git log) |
+| `dd1b2f6` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

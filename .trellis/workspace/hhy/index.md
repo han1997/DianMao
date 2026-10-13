@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 66
+- **Total Sessions**: 67
 - **Last Active**: 2026-10-13
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~281 | Active |
+| `journal-2.md` | ~315 | Active |
 | `journal-1.md` | ~1990 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 67 | 2026-10-13 | 小缺口修补:About 弹层 + 首启空态 + 通知设置入口 | `8fed4c1`, `dd1b2f6` | `master` |
 | 66 | 2026-10-13 | 关闭像素级对齐遗留项:版本号单一来源 + 备份 URL 辅助行补齐 | `7b1de29`, `576328c`, `2b49bae` | `master` |
 | 65 | 2026-10-13 | 像素级 UI 对齐收尾:补齐并排证据并修复备份页滚动列回归 | `d7062c1`, `f0b3b91` | `master` |
 | 64 | 2026-10-11 | UI/代码深度审查：修复周期判定与备份面板 bug，统一错误守卫与死导入清理 | `8fe93a1`, `3d7e0af`, `10e94c2` | `master` |
