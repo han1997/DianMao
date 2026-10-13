@@ -278,6 +278,9 @@ private fun DianMaoApp(
     var homeSmartView by rememberSaveable { mutableStateOf(HomeSmartView.Quadrants) }
     var homeSearchQuery by rememberSaveable { mutableStateOf("") }
     var homeSearchVisible by rememberSaveable { mutableStateOf(false) }
+    // Session-only: dismissing 时间关注 hides it until the process dies, so a
+    // fresh launch always brings it back. Deliberately not persisted anywhere.
+    var timeFocusDismissed by rememberSaveable { mutableStateOf(false) }
     val homeSmartItems = remember(activeTasks, homeSmartView, homeSearchQuery, nowMillis) {
         buildHomeSmartTaskItems(
             tasks = activeTasks,
@@ -826,7 +829,14 @@ private fun DianMaoApp(
                                     TimeFocusLane(
                                         tasks = homeVisibleTasks,
                                         onTaskSelected = { taskForDetail = it },
-                                        nowMillis = nowMillis
+                                        nowMillis = nowMillis,
+                                        dismissed = timeFocusDismissed,
+                                        onDismiss = {
+                                            timeFocusDismissed = true
+                                            scope.launch {
+                                                snackbarHostState.showSnackbar("已移除时间关注")
+                                            }
+                                        }
                                     )
                                     QuadrantBoard(
                                         tasks = homeVisibleTasks,

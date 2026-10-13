@@ -16,7 +16,7 @@ const btnIcon = (n, tint, cls = '') => `<span class="itile ${cls}" style="--t:${
 /* App version shown in the settings hero and the about sheet.
    Mirrors `gradle.properties` `app.versionName`; the `bumpVersion` Gradle task
    rewrites this constant in the same run so the prototype never drifts. */
-const APP_VERSION = '1.2.4';
+const APP_VERSION = '1.2.5';
 
 /* Markup writes the literal `__APP_VERSION__` placeholder; every render
    substitutes the constant above so the version has a single source. */
@@ -45,6 +45,9 @@ function initial() {
     page: 'home',
     from: null, // where a level-2 settings page was opened from
     homeView: 'quadrants',
+    // Session-only: the 时间关注 lane can be dismissed for this session and
+    // comes back on reload — mirroring "removable, but shown on first open".
+    focusLaneDismissed: false,
     search: false, query: '',
     activeQ: 'iu',
     detailId: null,
@@ -97,12 +100,16 @@ const qTasks = q => active().filter(t => t.q === q);
 
 function timeFocus() {
   const items = [];
+  const dayStart = midnight(NOW);
   openTasks().filter(t => !state.query || (t.title + (t.detail || '')).toLowerCase().includes(state.query.toLowerCase())).forEach(t => {
     if (t.dueAt == null) return;
+    // Classify by instant, matching the Compose helper: an item due earlier
+    // today is overdue, not "today". Upcoming is capped at 7 days (exclusive),
+    // so the lane only ever shows what the 「近期」 view can also reach.
     let kind = null;
-    if (t.dueAt < midnight(NOW)) kind = 'overdue';
-    else if (sameDay(t.dueAt, NOW)) kind = 'today';
-    else if (t.dueAt - midnight(NOW) <= 7 * DAY) kind = 'upcoming';
+    if (t.dueAt < NOW) kind = 'overdue';
+    else if (t.dueAt < dayStart + DAY) kind = 'today';
+    else if (t.dueAt < dayStart + 7 * DAY) kind = 'upcoming';
     if (kind) items.push({ t, kind });
   });
   const rank = { overdue: 0, today: 1, upcoming: 2 };
@@ -210,11 +217,12 @@ function homeContent() {
 
 function quadrantsView() {
   const items = timeFocus();
-  const lane = items.length ? `<div class="lane">
+  const lane = (items.length && !state.focusLaneDismissed) ? `<div class="lane">
       <div class="lane-head">
         ${itile('schedule', 'var(--secondary)', false)}
         <div class="tx"><b>时间关注</b><span>过期、今天和最近安排</span></div>
         <span class="lane-count">${items.length} 项</span>
+        <button class="icon-button tile lane-dismiss" data-action="focus-dismiss" aria-label="移除时间关注">${itile('close', 'var(--on-surface-variant)')}</button>
       </div>
       <div class="lane-rows">${items.map(({ t, kind }) => {
         const c = kind === 'overdue' ? 'var(--error)' : 'var(--secondary)';
@@ -931,6 +939,7 @@ const actions = {
   'search': () => { state.search = !state.search; if (!state.search) state.query = ''; render(); },
   'search-clear': () => { state.query = ''; render(); const i = $('#searchInput'); if (i) i.focus(); },
   'home-view': el => { state.homeView = el.dataset.view; render(); },
+  'focus-dismiss': () => { state.focusLaneDismissed = true; toast('已移除时间关注'); render(); },
   'group': el => { const k = el.dataset.key; state.openGroups[k] = !state.openGroups[k]; render(); },
   'collapse': el => {
     const k = el.dataset.key;

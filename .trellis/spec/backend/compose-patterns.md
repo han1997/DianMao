@@ -824,13 +824,26 @@ four-quadrant model.
   helper.
 - Classify timed tasks as `Overdue` when the effective due time is before
   `nowMillis`, `Today` when due before the next local midnight, and `Upcoming`
-  otherwise.
+  otherwise. An item due earlier today is therefore `Overdue`, not `Today`.
+- The lane's `Upcoming` window is capped (`FOCUS_LANE_UPCOMING_DAYS`, 7 days from
+  today's midnight, exclusive). Tasks past that horizon are dropped rather than
+  labelled `Upcoming`, so the lane never shows a 近期 row the 「近期」 smart view
+  would reject. `UPCOMING_SMART_VIEW_DAYS` (14 days) must stay greater than or
+  equal to the lane's window; both constants live in `HomeModels.kt` so the two
+  views cannot drift apart again.
 - Sort by focus kind rank (`Overdue`, `Today`, `Upcoming`) and then by due time.
 - Render recurring task due metadata from the effective due time so stale stored
   creation dates do not appear in the lane. Non-recurring tasks may keep their
   stored `dueLabel`.
-- Limit the lane to a small number of rows; the home default is three.
+- Limit the lane to a small number of rows; the home default is four
+  (`FOCUS_LANE_LIMIT`).
 - Hide the lane entirely when no focus items exist.
+- The lane is dismissible for the session: `TimeFocusLane` takes
+  `dismissed: Boolean` and `onDismiss: () -> Unit`, and `MainActivity` holds the
+  flag in `rememberSaveable`. Dismissal is user state, never persisted — a fresh
+  launch shows the lane again whenever it has content, which is what makes the
+  lane both "removable" and "shown on first open". Do not route it through
+  settings or storage.
 - Place the lane between `AppHeader` and `QuadrantBoard`; keep the quadrant
   board visible and primary below it.
 - Tapping a focus row should open task detail, not mutate completion, reminders,
@@ -842,17 +855,23 @@ four-quadrant model.
 ```kotlin
 TimeFocusLane(
     tasks = activeTasks,
-    onTaskSelected = { taskForDetail = it }
+    onTaskSelected = { taskForDetail = it },
+    dismissed = timeFocusDismissed,
+    onDismiss = { timeFocusDismissed = true }
 )
 
 internal fun buildTimeFocusItems(
     tasks: List<TaskUiModel>,
     nowMillis: Long,
     zoneId: ZoneId,
-    limit: Int = 3
+    limit: Int = FOCUS_LANE_LIMIT
 ): List<TimeFocusItem> {
     val today = Instant.ofEpochMilli(nowMillis).atZone(zoneId).toLocalDate()
     val tomorrowStartMillis = today.plusDays(1).atStartOfDay(zoneId)
+        .toInstant()
+        .toEpochMilli()
+    val upcomingEndMillis = today.plusDays(FOCUS_LANE_UPCOMING_DAYS)
+        .atStartOfDay(zoneId)
         .toInstant()
         .toEpochMilli()
 
@@ -868,7 +887,8 @@ internal fun buildTimeFocusItems(
         val kind = when {
             dueAt < nowMillis -> TimeFocusKind.Overdue
             dueAt < tomorrowStartMillis -> TimeFocusKind.Today
-            else -> TimeFocusKind.Upcoming
+            dueAt < upcomingEndMillis -> TimeFocusKind.Upcoming
+            else -> return@mapNotNull null
         }
         TimeFocusItem(task = task, kind = kind, dueAtMillis = dueAt)
     }.sortedWith(compareBy({ it.kind.rank }, { it.dueAtMillis }))
@@ -887,7 +907,9 @@ TodayDashboard(
 
 **Tests Required**:
 - Unit tests for the pure helper must cover overdue/today/upcoming ordering,
-  completed/archived/unscheduled exclusion, and the row limit after sorting.
+  completed/archived/unscheduled exclusion, the row limit after sorting, and the
+  `Upcoming` horizon (a task 7 days out stays out of the lane while the 「近期」
+  smart view keeps showing items through day 13).
 - Recurring-date regression tests must cover both later-today and already-past
   today occurrences so stale stored dates cannot reappear.
 - Compose or build verification must still prove the home screen and task
@@ -1425,7 +1447,8 @@ internal fun HomeSmartTaskList(
 - On a first-run board the time-focus lane is simply absent because it has no
   items — do not add presence logic for it. `TimeFocusLane` already self-hides
   through `AnimatedVisibility(visible = focusItems.isNotEmpty())`, matching the
-  prototype's early `return` before the lane is built.
+  prototype's early `return` before the lane is built. (The lane's session-only
+  `dismissed` flag is user state layered on top of that, not presence logic.)
 
 **Good**:
 ```kotlin

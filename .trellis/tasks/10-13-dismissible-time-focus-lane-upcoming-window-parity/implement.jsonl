@@ -1,0 +1,4 @@
+{"file": ".trellis/spec/frontend/prototype-first.md", "reason": "原型优先契约:UI 变更必须先改原型并记录 BASELINE,再同步实现;含允许偏差表与验收门槛(不使用模拟器)"}
+{"file": ".trellis/spec/frontend/design-prototypes.md", "reason": "原型结构约定、版本号单一来源(APP_VERSION 令牌)、BASELINE.md 与 SHA-256 记录规范"}
+{"file": ".trellis/spec/backend/compose-patterns.md", "reason": "Home Time Focus Lane 契约(Build、排序、limit、自隐藏)与 caller-owned 空态判据、作用域陷阱"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "验证命令与质量门槛(assembleDebug/lintDebug/testDebugUnitTest/git diff --check)"}

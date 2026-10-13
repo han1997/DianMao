@@ -236,13 +236,19 @@ internal fun AppHeader(
 internal fun TimeFocusLane(
     tasks: List<TaskUiModel>,
     onTaskSelected: (TaskUiModel) -> Unit,
-    nowMillis: Long = System.currentTimeMillis()
+    nowMillis: Long = System.currentTimeMillis(),
+    dismissed: Boolean = false,
+    onDismiss: () -> Unit = {}
 ) {
     // Pure projection over the task list — remember it so scrolling/recomposing
     // the lane does not re-run the repeat-cycle math for every task.
     val focusItems = remember(tasks, nowMillis) { buildTimeFocusItems(tasks, nowMillis) }
     AnimatedVisibility(
-        visible = focusItems.isNotEmpty(),
+        // Hides itself when there is nothing to show, and stays hidden for the
+        // session once the user dismisses it. Dismissal is caller state on
+        // purpose: never persisted, so a fresh launch shows the lane again
+        // whenever it has content.
+        visible = !dismissed && focusItems.isNotEmpty(),
         enter = (fadeIn(tween(150)) + slideInVertically(tween(220)) { it / 4 }).withReducedMotion(),
         exit = (fadeOut(tween(120)) + slideOutVertically(tween(180)) { it / 4 }).withReducedMotion()
     ) {
@@ -293,6 +299,16 @@ internal fun TimeFocusLane(
                         suffix = "项",
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
                         color = MaterialTheme.colorScheme.secondary.copy(alpha = DianMaoAlpha.strong)
+                    )
+                    // Prototype .lane-dismiss: a 34dp action with a 30dp tile,
+                    // tighter than the header's 40dp box.
+                    HeaderActionButton(
+                        icon = DianMaoIcons.Close,
+                        contentDescription = "移除时间关注",
+                        onClick = onDismiss,
+                        buttonSize = 34.dp,
+                        iconSize = 18.dp,
+                        tileSize = 30.dp
                     )
                 }
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {

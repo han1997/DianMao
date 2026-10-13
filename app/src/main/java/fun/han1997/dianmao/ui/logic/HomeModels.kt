@@ -29,6 +29,19 @@ internal enum class TimeFocusKind {
     Upcoming
 }
 
+/**
+ * Upcoming horizon of the 时间关注 lane, in days from today's midnight
+ * (exclusive end). The lane must never label something 近期 that the 「近期」
+ * smart view cannot reach, so this stays below [UPCOMING_SMART_VIEW_DAYS].
+ */
+private const val FOCUS_LANE_UPCOMING_DAYS = 7L
+
+/** Upcoming horizon of the 「近期」 smart view, in days (exclusive end). */
+private const val UPCOMING_SMART_VIEW_DAYS = 14L
+
+/** Rows the 时间关注 lane shows at most, after sorting. */
+private const val FOCUS_LANE_LIMIT = 4
+
 internal data class TimeFocusItem(
     val task: TaskUiModel,
     val kind: TimeFocusKind,
@@ -122,18 +135,24 @@ internal fun buildTimeFocusItems(
     tasks: List<TaskUiModel>,
     nowMillis: Long = System.currentTimeMillis(),
     zoneId: ZoneId = ZoneId.systemDefault(),
-    limit: Int = 3
+    limit: Int = FOCUS_LANE_LIMIT
 ): List<TimeFocusItem> {
     val today = Instant.ofEpochMilli(nowMillis).atZone(zoneId).toLocalDate()
     val tomorrowStartMillis = today.plusDays(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
+    val upcomingEndMillis = today.plusDays(FOCUS_LANE_UPCOMING_DAYS)
+        .atStartOfDay(zoneId).toInstant().toEpochMilli()
 
     return tasks.mapNotNull { task ->
         if (!task.isOpenTask()) return@mapNotNull null
         val dueAt = effectiveDueAtMillis(task, nowMillis, zoneId) ?: return@mapNotNull null
+        // An item due earlier today is overdue, not "today" — the same
+        // instant-based rule the prototype's timeFocus() uses. Anything past
+        // the lane horizon is left out entirely rather than labelled 近期.
         val kind = when {
             dueAt < nowMillis -> TimeFocusKind.Overdue
             dueAt < tomorrowStartMillis -> TimeFocusKind.Today
-            else -> TimeFocusKind.Upcoming
+            dueAt < upcomingEndMillis -> TimeFocusKind.Upcoming
+            else -> return@mapNotNull null
         }
         TimeFocusItem(
             task = task,
@@ -158,7 +177,8 @@ internal fun buildHomeSmartTaskItems(
 ): List<HomeSmartTaskItem> {
     val today = Instant.ofEpochMilli(nowMillis).atZone(zoneId).toLocalDate()
     val tomorrowStartMillis = today.plusDays(1).atStartOfDay(zoneId).toInstant().toEpochMilli()
-    val upcomingEndMillis = today.plusDays(7).atStartOfDay(zoneId).toInstant().toEpochMilli()
+    val upcomingEndMillis = today.plusDays(UPCOMING_SMART_VIEW_DAYS)
+        .atStartOfDay(zoneId).toInstant().toEpochMilli()
     val normalizedQuery = query.trim()
 
     val indexedItems = tasks.mapIndexedNotNull { index, task ->

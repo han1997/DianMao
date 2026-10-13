@@ -18,7 +18,7 @@
 ## 覆盖范围(十二页)
 | # | 页面 | 原型入口 | 说明 |
 |---|------|----------|------|
-| 1 | 首页 | 章节导航「首页」 | AppHeader、汇总 pills、智能视图切换(四象限/今天/近期/收集箱)、时间关注 lane、四象限板、FAB;**任务行支持右滑完成 / 左滑删除**,长按进入多选 |
+| 1 | 首页 | 章节导航「首页」 | AppHeader、汇总 pills、智能视图切换(四象限/今天/近期/收集箱)、时间关注 lane(可关闭,session-only)、四象限板、FAB;**任务行支持右滑完成 / 左滑删除**,长按进入多选 |
 | 2 | 象限详情 | 首页点任一象限窗格 | 8% 象限 tint 头、intro 统计、未完成列表、已完成折叠组;**未完成行支持长按拖拽排序(抬起态)** |
 | 3 | 事项详情 | 首页点任一事项 | hero、象限 chip、verb→value 信息行、子事项、完成心得、完成历史折叠、底部操作栏 |
 | 4 | 新增/编辑 | FAB 或章节导航 | capture-first 字段、优先级 segmented、时间与提醒设置行(含提醒提前量)、快捷日期、子事项;日期/时间/重复/提前量均用 **M3 真实控件形态** |
@@ -34,13 +34,15 @@
 ## 文件摘要
 
 基准 commit:`efb5b6f`(原型首次提交)、`3ad307c`(原型优先契约与基准登记)。
-下表 SHA-256 对应 2026-10-13 的 v1.7 修订(含 `bumpVersion` 同步到 v1.2.4 的 `APP_VERSION`);此前版本见「变更记录」。
+下表 SHA-256 对应 2026-10-13 的 v1.8 修订(时间关注可移除 + 近期窗口语义统一);
+`app.js` 的摘要随后又因 `bumpVersion` 将 `APP_VERSION` 同步为 `1.2.5` 而变化(仅版本常量一行),
+其余内容与 v1.8 一致。此前版本见「变更记录」。
 
 | 文件 | SHA-256 |
 |---|---|
 | index.html | `cd3b906cbf1e5ac97f41645519174dc2752374b4aef8dba350f48c48c6ee3a88` |
-| style.css | `0bb4d484c3ab4a78a0a11b2ea8bb5a54c1ab94c7235cbb381362d6949fff6eae` |
-| app.js | `30b1f4d125155ee642c22bb2b5313b6e3bc035cd634a2780fc62db5ecb436e24` |
+| style.css | `43ae55e6c21c8affc643a28575ac9c9330af235e4b78a8be66075d2fcc506cc4` |
+| app.js | `9ab2d0a774f7155a3bae1d90df697ebb15d755851a7cb82d71ed030ec4094e11` |
 
 > 截图与生成脚本(`preview-*.png`、`shots-1013/`、`shots-1013.cjs`、`preview-empty-quadrants.png`)
 > 是本地验收证据,不纳入版本库;需要复现时重跑 `smoke-test.cjs` / `shots-1013.cjs` 即可。
@@ -81,6 +83,39 @@
 登记为**设备侧未验证**的残余风险,交由用户自行确认,不得据编译通过声称视觉验收完成。
 
 ## 变更记录
+
+### v1.8:时间关注可移除 + 近期窗口语义统一(2026-10-13)
+
+**触发**:用户反馈两点——(1)「时间关注」卡片无法移除;(2)「时间关注」里有「近期」,
+但切到「近期」标签页找不到对应事项。用户确认范围与四项决策(见任务
+`10-13-dismissible-time-focus-lane-upcoming-window-parity` 的 prd.md)。
+
+1. **时间关注可移除(session-only)**:`quadrantsView()` 的 `.lane-head` 新增关闭按钮
+   (`.icon-button.tile` 复用 + `close` 图标,`aria-label="移除时间关注"`,
+   `data-action="focus-dismiss"`,`style.css` 新增 `.lane-dismiss` 34px 尺寸规则)。
+   `state.focusLaneDismissed` 为**会话状态、默认 false、刷新即复位** —— 即
+   「可移除,但每次打开都重新出现」;不持久化、不写偏好、不新增设置入口。
+   与实现侧 `rememberSaveable`(进程存活期间隐藏)语义一致。
+2. **近期窗口语义统一**:`timeFocus()` 的过期/今天改按**时刻**判定
+   (`dueAt < NOW` → 过期;`dueAt < 次日 0 点` → 今天),废弃原 `sameDay()` 判定 ——
+   原逻辑会把「今天已过期」的任务显示为「今天」,与实现(按时刻算过期)产生可见的
+   chip 文案差异。upcoming 上限由 `<= 7 天` 收紧为 `< 7 天`,与实现一致。
+3. **「近期」页窗口保持 14 天**(`smartList()` 的 `<= midnight(NOW) + 14*DAY`),与实现对齐后,
+   lane 中标「近期」的事项(7 天内)必然落在近期页窗口(14 天内)内,消除「卡片有、页面没有」。
+
+**验证**:`smoke-test.cjs` 新增 lane 关闭/重载恢复、`≤4` 行、chip 文案集合三组断言,
+全部通过;`:app:testDebugUnitTest` 同步改写窗口断言(见实现侧)。
+
+**确认状态**:用户 2026-10-13 以问询形式确认四项决策(移除=本次启动隐藏重启恢复;窗口按原型对齐;
+过期按时刻判定;空库不显示卡片),视为**范围已确认**;具体呈现待目视复验。
+
+**实施状态(2026-10-13,已完成)**:`HomeModels.kt` 的 `buildTimeFocusItems` 增加 7 天上限
+(`FOCUS_LANE_UPCOMING_DAYS`)、默认 `limit` 3→4(`FOCUS_LANE_LIMIT`),
+`buildHomeSmartTaskItems` 的 Upcoming 窗口 7→14 天(`UPCOMING_SMART_VIEW_DAYS`);
+`HomeScreen.kt` 的 `TimeFocusLane` 新增 `dismissed`/`onDismiss` 与关闭按钮;
+`MainActivity.kt` 以 `rememberSaveable` 持有 `timeFocusDismissed`(会话级,不持久化)。
+验收:`assembleDebug` / `lintDebug` / `testDebugUnitTest`(127 项通过)与原型冒烟测试全部通过;
+按用户指令未执行模拟器/设备截图比对。
 
 ### v1.7:零任务空状态 + 通知设置入口(2026-10-13)
 

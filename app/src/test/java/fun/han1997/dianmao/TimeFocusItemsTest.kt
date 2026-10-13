@@ -77,6 +77,48 @@ class TimeFocusItemsTest {
     }
 
     @Test
+    fun defaultLimitShowsFourRows() {
+        val today = LocalDate.of(2026, 6, 19)
+        val now = millis(today, hour = 10)
+
+        val items = buildTimeFocusItems(
+            tasks = listOf(
+                task(id = 1, dueAtMillis = millis(today.minusDays(1), hour = 9)),
+                task(id = 2, dueAtMillis = millis(today, hour = 8)),
+                task(id = 3, dueAtMillis = millis(today, hour = 18)),
+                task(id = 4, dueAtMillis = millis(today.plusDays(1), hour = 9)),
+                task(id = 5, dueAtMillis = millis(today.plusDays(2), hour = 9))
+            ),
+            nowMillis = now,
+            zoneId = zoneId
+        )
+
+        assertEquals(listOf(1L, 2L, 3L, 4L), items.map { it.task.id })
+    }
+
+    @Test
+    fun laneExcludesUpcomingBeyondSevenDays() {
+        val today = LocalDate.of(2026, 6, 19)
+        val now = millis(today, hour = 10)
+
+        val items = buildTimeFocusItems(
+            tasks = listOf(
+                task(id = 1, dueAtMillis = millis(today.plusDays(1), hour = 9)),
+                task(id = 2, dueAtMillis = millis(today.plusDays(6), hour = 23)),
+                task(id = 3, dueAtMillis = millis(today.plusDays(7), hour = 9)),
+                task(id = 4, dueAtMillis = millis(today.plusDays(10), hour = 9))
+            ),
+            nowMillis = now,
+            zoneId = zoneId
+        )
+
+        // 7 days out is past the lane's horizon, so the lane can never label
+        // anything 近期 that the 「近期」 view's own window would drop.
+        assertEquals(listOf(1L, 2L), items.map { it.task.id })
+        assertEquals(listOf(TimeFocusKind.Upcoming, TimeFocusKind.Upcoming), items.map { it.kind })
+    }
+
+    @Test
     fun dailyRepeatUsesTodayOccurrenceWhenReminderIsLaterToday() {
         val today = LocalDate.of(2026, 6, 19)
         val now = millis(today, hour = 10)
@@ -148,7 +190,7 @@ class TimeFocusItemsTest {
     }
 
     @Test
-    fun upcomingSmartViewShowsNextSevenLocalDaysOnly() {
+    fun upcomingSmartViewShowsNextFourteenLocalDays() {
         val today = LocalDate.of(2026, 6, 19)
         val now = millis(today, hour = 10)
 
@@ -156,9 +198,10 @@ class TimeFocusItemsTest {
             tasks = listOf(
                 task(id = 1, dueAtMillis = millis(today, hour = 18)),
                 task(id = 2, dueAtMillis = millis(today.plusDays(1), hour = 9)),
-                task(id = 3, dueAtMillis = millis(today.plusDays(6), hour = 9)),
-                task(id = 4, dueAtMillis = millis(today.plusDays(7), hour = 9)),
-                task(id = 5, dueAtMillis = null)
+                task(id = 3, dueAtMillis = millis(today.plusDays(7), hour = 9)),
+                task(id = 4, dueAtMillis = millis(today.plusDays(13), hour = 9)),
+                task(id = 5, dueAtMillis = millis(today.plusDays(14), hour = 9)),
+                task(id = 6, dueAtMillis = null)
             ),
             view = HomeSmartView.Upcoming,
             query = "",
@@ -166,7 +209,7 @@ class TimeFocusItemsTest {
             zoneId = zoneId
         )
 
-        assertEquals(listOf(2L, 3L), items.map { it.task.id })
+        assertEquals(listOf(2L, 3L, 4L), items.map { it.task.id })
     }
 
     @Test

@@ -140,6 +140,7 @@ internal fun HeaderActionButton(
     containerColor: Color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f),
     buttonSize: androidx.compose.ui.unit.Dp = 40.dp,
     iconSize: androidx.compose.ui.unit.Dp = 18.dp,
+    tileSize: androidx.compose.ui.unit.Dp = 34.dp,
     tileShape: Shape = IconTileShape
 ) {
     // Prototype-first: the confirmed prototype lays out every header action at
@@ -161,7 +162,7 @@ internal fun HeaderActionButton(
             tint = tint,
             containerColor = containerColor,
             iconSize = iconSize,
-            modifier = Modifier.size(34.dp),
+            modifier = Modifier.size(tileSize),
             shape = tileShape
         )
     }

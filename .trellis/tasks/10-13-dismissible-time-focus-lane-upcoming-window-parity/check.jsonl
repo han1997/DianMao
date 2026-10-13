@@ -1,0 +1,3 @@
+{"file": ".trellis/spec/frontend/prototype-first.md", "reason": "检查原型与实现的窗口语义/chip 文案/关闭态是否对齐,原型改动与确认是否有记录"}
+{"file": ".trellis/spec/backend/compose-patterns.md", "reason": "复核 lane 改动是否符合既有 Build/limit/关闭态契约,以及空态判据"}
+{"file": ".trellis/spec/backend/quality-guidelines.md", "reason": "按质量门槛执行验证命令(unit tests/lint/assemble/git diff --check)"}

@@ -1,5 +1,30 @@
 # Changelog
 
+## v1.2.5 — dismissible time-focus lane + 「近期」 window parity (2026-10-13)
+
+- **The time-focus lane is now removable, and still appears on first open.**
+  `TimeFocusLane` takes `dismissed` / `onDismiss`; `MainActivity` holds the flag
+  in `rememberSaveable`, so tapping the new 移除时间关注 button hides the lane for
+  the rest of the session and a fresh launch brings it back. The flag is never
+  persisted — no settings entry, no storage. The prototype gained the same
+  session-only dismissal (v1.8).
+- **The lane and the 「近期」 smart view finally agree on what 近期 means.** The
+  lane had no upper bound and showed the top 3 items, while the 「近期」 view cut
+  off at 7 days — so a task due 10 days out was labelled 近期 in the lane and
+  then silently dropped from the view. Both now match the prototype: the lane
+  covers `< 7 days` and shows at most 4 rows (`FOCUS_LANE_UPCOMING_DAYS`,
+  `FOCUS_LANE_LIMIT`), the smart view covers `< 14 days`
+  (`UPCOMING_SMART_VIEW_DAYS`). Tasks past the lane's horizon are excluded
+  rather than mislabelled.
+- **Prototype aligned to the implementation's overdue rule.** `timeFocus()` now
+  classifies by instant (`dueAt < NOW` → 过期, `dueAt < 次日 0 点` → 今天), so a
+  task that was due at 9am today and is read at 10am shows 过期 in both places.
+
+Verification: `:app:assembleDebug`, `:app:lintDebug`, `:app:testDebugUnitTest`
+and `git diff --check` pass, and the prototype smoke test — extended with lane
+dismiss/reload, `≤ 4` rows and chip-label assertions — passes. Per the user
+directive, no emulator/device screenshot pass was run this session.
+
 ## v1.2.4 — close three loose ends: About sheet, first-run empty state, notification settings (2026-10-13)
 
 - **About sheet**: the settings row 「关于 DianMao」 was a dead button

@@ -28,6 +28,18 @@ const assert = require('node:assert/strict');
   assert.equal(await page.locator('#fab:not(.hidden)').count(), 1, 'FAB visible on home');
   await page.screenshot({ path: path.join(__dirname, 'preview-desktop.png'), fullPage: true });
 
+  // 1b. time focus lane: dismissible for the session, restored on reload
+  assert.equal(await page.locator('.lane .lane-dismiss').count(), 1, 'lane has a dismiss button');
+  const chips = await page.locator('.lane-chip').allInnerTexts();
+  assert.ok(chips.length <= 4, 'lane shows at most four rows');
+  assert.ok(chips.every(c => ['过期', '今天', '近期'].includes(c.trim())), `lane chips are 过期/今天/近期 (got ${JSON.stringify(chips)})`);
+  await click('.lane .lane-dismiss');
+  assert.equal(await page.locator('.lane').count(), 0, 'dismiss hides the lane for this session');
+  await page.reload();
+  await page.waitForTimeout(150);
+  assert.equal(await page.locator('.lane').count(), 1, 'reload restores the lane (session-only dismissal)');
+  assert.ok(await page.locator('.lane-row').count() <= 4, 'lane rows capped at four after restore');
+
   // 2. smart view switching
   await click('#appHeader [data-action="home-view"][data-view="today"]');
   assert.equal(await page.locator('.group').count(), 2, 'today groups: overdue + today');
