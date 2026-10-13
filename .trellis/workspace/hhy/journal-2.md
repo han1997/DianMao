@@ -313,3 +313,37 @@ Deep code review across UI + data layers. Fixed the ISO-weekly cycle bug (calend
 ### Next Steps
 
 - None - task complete
+
+
+## Session 68: 时间关注可移除 + 近期窗口语义统一
+
+**Date**: 2026-10-13
+**Task**: 时间关注可移除 + 近期窗口语义统一
+**Branch**: `master`
+
+### Summary
+
+时间关注 lane 增加会话级关闭按钮(rememberSaveable,不持久化,冷启动必现);buildTimeFocusItems 增加 7 天上限(FOCUS_LANE_UPCOMING_DAYS)且超限直接剔除、默认 limit 3→4(FOCUS_LANE_LIMIT);buildHomeSmartTaskItems 的近期窗口 7→14 天(UPCOMING_SMART_VIEW_DAYS),消除「lane 有近期、近期页没有」的语义漂移。HeaderActionButton 增加 tileSize 参数以复刻原型 .lane-dismiss(34dp 热区/30dp 块)。原型 v1.8:同类会话级关闭,timeFocus() 改按时刻判定过期/今天。spec 补充 lane 契约与「兄弟视图窗口漂移」常见错误;测试新增 lane 上限、4 行默认、14 天窗口边界与「lane 近期 ⊆ 近期视图」子集断言(TimeFocusItemsTest 13 项)。验证:assembleDebug/lintDebug/testDebugUnitTest(127 项)/git diff --check 与原型冒烟测试全通过;bumpVersion -> 1.2.5 (versionCode 19)。按用户指令未使用模拟器,设备侧比对登记为残余风险。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `0d856f5` | (see git log) |
+| `8f5b679` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
