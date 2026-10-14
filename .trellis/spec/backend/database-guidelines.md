@@ -188,6 +188,14 @@ field in `TaskEntity`.
 * Run `:app:compileDebugKotlin` because the codec uses Android JSON APIs.
 * Run `:app:assembleDebug` to validate the backup UI, repository, and schema
   generation together.
+* The codec's JSON-independent decisions (2026-10 gap-audit task) live in
+  `BackupCodecRules` — the `acceptsPayload(format, version)` gate and the
+  `sanitizeRepeatWeekdays` / `sanitizeReminderLeadExtras` narrowing — with
+  `BackupCodecRulesTest` asserting the accept/reject matrix and clamps. The
+  Room enum decoders use tolerant `quadrantTypeOrNull` / `repeatRuleOrNull`
+  (unknown name -> null, then rethrow at the converter) instead of a raw
+  `valueOf`. Keep JSON plumbing in the codec and pure decisions in
+  `BackupCodecRules` so this coverage stays dependency-free.
 
 ### 7. Wrong vs Correct
 

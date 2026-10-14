@@ -35,7 +35,7 @@ DianMao 是一款自用 Android 工作任务软件，目标是用一套统一的
 - AlarmManager 本机提醒与 Android 13+ 通知权限请求
 - 设备重启或重新打开应用后恢复未来提醒，重复提醒会批量补偿到下一次未来时间
 - Room schema 导出与显式迁移链
-- JSON 本地备份导出/恢复
+- JSON 本地备份导出/恢复;恢复前先把当前数据另存为 `dianmao-backup-before-restore.json`(公共下载目录),两条恢复入口均有确认弹层
 - WebDAV 手动上传备份与下载恢复，支持局域网 HTTP 地址；公网备份建议使用 HTTPS
 - WebDAV 自动备份（可选开关）：启动应用时自动上传，最多每天一次，失败静默下次重试
 - 已添加事项的编辑与删除

@@ -28,6 +28,7 @@ class ReminderScheduler(private val context: Context) {
                 title = task.title,
                 leadMinutes = lead,
                 isRecurring = task.repeatRule != RepeatRule.None,
+                dueAtMillis = dueAt,
                 flags = PendingIntent.FLAG_UPDATE_CURRENT
             )
             if (pendingIntent != null) {
@@ -49,6 +50,7 @@ class ReminderScheduler(private val context: Context) {
                 title = "",
                 leadMinutes = lead,
                 isRecurring = false,
+                dueAtMillis = null,
                 flags = PendingIntent.FLAG_NO_CREATE
             )
             if (pendingIntent != null) {
@@ -61,9 +63,10 @@ class ReminderScheduler(private val context: Context) {
     /**
      * Reschedules a single reminder for [taskId] at [ReminderSnooze] delay
      * from now, reusing the same (taskId, lead) request code so a later
-     * [cancel] also clears the snoozed alarm.
+     * [cancel] also clears the snoozed alarm. [dueAtMillis] is carried through
+     * so a snooze of a recurring task still advances its cycle at most once.
      */
-    fun snooze(taskId: Long, title: String, leadMinutes: Int, isRecurring: Boolean) {
+    fun snooze(taskId: Long, title: String, leadMinutes: Int, isRecurring: Boolean, dueAtMillis: Long?) {
         val triggerAt = ReminderSnooze.triggerAtMillis(System.currentTimeMillis())
         val pendingIntent = reminderPendingIntent(
             context = context,
@@ -71,6 +74,7 @@ class ReminderScheduler(private val context: Context) {
             title = title,
             leadMinutes = leadMinutes,
             isRecurring = isRecurring,
+            dueAtMillis = dueAtMillis,
             flags = PendingIntent.FLAG_UPDATE_CURRENT
         )
         if (pendingIntent != null) {
@@ -107,6 +111,8 @@ internal object ReminderSnooze {
  * Builds the reminder broadcast intent/PendingIntent shared by the schedule,
  * cancel, and snooze paths. Extras do not participate in PendingIntent
  * matching, so FLAG_NO_CREATE callers may pass a bare intent shape.
+ * [dueAtMillis] records the due instant this alarm was armed for, letting the
+ * receiver advance a recurring cycle at most once per occurrence.
  */
 internal fun reminderPendingIntent(
     context: Context,
@@ -114,6 +120,7 @@ internal fun reminderPendingIntent(
     title: String,
     leadMinutes: Int,
     isRecurring: Boolean,
+    dueAtMillis: Long?,
     flags: Int
 ): PendingIntent? {
     val intent = Intent(context, TaskReminderReceiver::class.java).apply {
@@ -121,6 +128,7 @@ internal fun reminderPendingIntent(
         putExtra(TaskReminderReceiver.EXTRA_TASK_ID, taskId)
         putExtra(TaskReminderReceiver.EXTRA_LEAD_MINUTES, leadMinutes)
         putExtra(TaskReminderReceiver.EXTRA_IS_RECURRING, isRecurring)
+        putExtra(TaskReminderReceiver.EXTRA_DUE_AT_MILLIS, dueAtMillis ?: NO_DUE_AT)
     }
     return PendingIntent.getBroadcast(
         context,
@@ -129,6 +137,9 @@ internal fun reminderPendingIntent(
         flags or PendingIntentCompatFlags.immutable()
     )
 }
+
+/** Sentinel for "no due instant" so the extra round-trips through a long. */
+internal const val NO_DUE_AT: Long = Long.MIN_VALUE
 
 /**
  * Stable request code distinct per (taskId, lead time). Long/Int hashCode and

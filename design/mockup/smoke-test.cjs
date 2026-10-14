@@ -227,7 +227,19 @@ const assert = require('node:assert/strict');
 
   // 11. dialogs chapter
   await goChapter('dialogs');
-  assert.equal(await page.locator('.dialog-preview .dlg').count(), 8, 'eight dialog examples');
+  assert.equal(await page.locator('.dialog-preview .dlg').count(), 9, 'nine dialog examples');
+  assert.match(await page.locator('.dialog-preview .dlg').last().innerText(), /恢复备份\?/, 'restore-confirm dialog listed');
+
+  // 11a. backup restore asks for confirmation (local + WebDAV)
+  await goChapter('backup');
+  await click('#content [data-action="revert-local"]');
+  assert.match(await page.locator('#sheetTitle').innerText(), /恢复备份\?/, 'local restore confirms first');
+  await click('#sheetBody [data-action="revert-local-confirm"]');
+  assert.equal(await page.locator('#overlay:not([hidden])').count(), 0, 'local restore confirm closes the sheet');
+  await click('#content [data-action="download"]');
+  assert.match(await page.locator('#sheetTitle').innerText(), /恢复备份\?/, 'WebDAV restore confirms first');
+  await click('#sheetBody [data-action="download-confirm"]');
+  assert.equal(await page.locator('#overlay:not([hidden])').count(), 0, 'WebDAV restore confirm closes the sheet');
 
   // 11b. widget + notification chapter
   await goChapter('widget');

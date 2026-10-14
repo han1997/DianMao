@@ -601,6 +601,38 @@ internal fun AboutDialog(onDismiss: () -> Unit) {
     }
 }
 
+/**
+ * Confirmation for a destructive restore (local file or WebDAV). Both paths
+ * replace every local task and completion, so — like delete and batch delete —
+ * they ask first and name the pre-restore snapshot as the undo path.
+ */
+@Composable
+internal fun RestoreConfirmDialog(
+    leadingIcon: androidx.compose.ui.graphics.vector.ImageVector,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    QuietDialogContainer(
+        onDismiss = onDismiss,
+        title = "恢复备份?",
+        leadingIcon = leadingIcon,
+        leadingIconTint = MaterialTheme.colorScheme.error,
+        actions = {
+            TextButton(onClick = onDismiss) {
+                Text("取消")
+            }
+            TextButton(onClick = onConfirm) {
+                Text("恢复", color = MaterialTheme.colorScheme.error)
+            }
+        }
+    ) {
+        Text(
+            text = "恢复会用备份文件替换本机的全部事项与完成记录。恢复前会自动把当前数据另存一份快照,可再次导入撤回。",
+            style = MaterialTheme.typography.bodyLarge
+        )
+    }
+}
+
 @Composable
 internal fun BatchDeleteConfirmDialog(
     count: Int,

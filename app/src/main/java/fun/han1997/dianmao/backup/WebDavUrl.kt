@@ -13,6 +13,14 @@ const val WEBDAV_BACKUP_FILE_NAME = "dianmao-backup-latest.json"
 const val WEBDAV_PRE_RESTORE_SNAPSHOT_FILE_NAME = "dianmao-backup-before-restore.json"
 
 /**
+ * Safety-net snapshot written to the public Downloads collection before a
+ * destructive *local file* restore. Same role as the WebDAV snapshot, but
+ * local restores have no remote share, so it lands in Downloads where the
+ * existing 本地恢复 file picker can select it back for a manual undo.
+ */
+const val LOCAL_PRE_RESTORE_SNAPSHOT_FILE_NAME = "dianmao-backup-before-restore.json"
+
+/**
  * True when the configured URL points at a concrete backup file (legacy
  * shape) rather than a directory collection.
  */

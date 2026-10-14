@@ -17,6 +17,8 @@ class TaskActionReceiver : BroadcastReceiver() {
         val title = intent.getStringExtra(TaskReminderReceiver.EXTRA_TITLE).orEmpty()
         val leadMinutes = intent.getIntExtra(TaskReminderReceiver.EXTRA_LEAD_MINUTES, 0)
         val isRecurring = intent.getBooleanExtra(TaskReminderReceiver.EXTRA_IS_RECURRING, false)
+        val dueAtMillis = intent.getLongExtra(TaskReminderReceiver.EXTRA_DUE_AT_MILLIS, NO_DUE_AT)
+            .takeIf { it != NO_DUE_AT }
         val appContext = context.applicationContext
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
@@ -36,7 +38,7 @@ class TaskActionReceiver : BroadcastReceiver() {
                         )
                     }
                     ACTION_SNOOZE -> {
-                        ReminderScheduler(appContext).snooze(taskId, title, leadMinutes, isRecurring)
+                        ReminderScheduler(appContext).snooze(taskId, title, leadMinutes, isRecurring, dueAtMillis)
                         NotificationManagerCompat.from(appContext)
                             .cancel(reminderRequestCode(taskId, leadMinutes))
                     }

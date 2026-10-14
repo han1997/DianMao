@@ -1,5 +1,42 @@
 # Changelog
 
+## v1.2.7 — multi-lead recurring advance, restore safety, backup codec tests (2026-10-14)
+
+Gap-audit follow-up covering four defects found by reading the alert, backup,
+and data layers.
+
+- **Multi-lead recurring reminders no longer skip cycles.** A recurring task
+  with several lead alarms (准时 / 提前 30 分 / 提前 1 天) fires one alarm per
+  lead, and each firing used to call `advanceRepeatAfterReminder` — so reaching
+  one occurrence rolled the due date forward once per lead (a 提前 1 天 alarm
+  could advance three cycles). `TaskReminderReceiver` now records the due
+  instant the alarm was armed for (`EXTRA_DUE_AT_MILLIS`), and
+  `advanceRepeatAfterReminder(taskId, expectedDueAt)` / the new pure
+  `shouldAdvanceRepeatAfterReminder` advance only when the firing alarm's due
+  still matches the persisted `dueAtMillis`. The later leads for the same
+  occurrence see an advanced due and no-op; snooze carries the same due so it
+  cannot re-advance a future cycle. Regression: `RepeatReminderAdvanceGuardTest`.
+- **Local file restore gets the same safety net as WebDAV restore.** The local
+  import path replaced every task and completion with no snapshot and no
+  confirmation, while the WebDAV path had both. It now writes
+  `dianmao-backup-before-restore.json` to the public Downloads collection via
+  `writeLocalRestoreSnapshot` (MediaStore) and aborts on snapshot failure, so a
+  wrong pick can be undone by re-importing the snapshot with the existing 本地恢复
+  picker.
+- **Both restores confirm first.** 本地恢复 and 下载恢复 now open a `恢复备份?`
+  dialog (`RestoreConfirmDialog`, sharing the `QuietDialogContainer` used by
+  delete/batch-delete) before proceeding. The prototype gained the same dialog
+  as a ninth example (BASELINE v1.8) and the smoke test asserts it.
+- **Backup import rules are now unit-tested.** The codec's format/version gate
+  and the untrusted-field sanitizers moved into `BackupCodecRules` (pure,
+  `org.json`-free), and the Room enum decoders into tolerant
+  `quadrantTypeOrNull` / `repeatRuleOrNull`; `BackupCodecRulesTest` covers the
+  accept/reject matrix, weekday and lead-time sanitizing, and unknown-name
+  handling. No new test dependency.
+
+Verification: `:app:assembleDebug`, `:app:lintDebug`, `:app:testDebugUnitTest`,
+`git diff --check` and the prototype smoke test pass.
+
 ## v1.2.6 — review window constants + boundary tests (2026-10-13)
 
 Internal cleanup, no user-visible change. The 「近 7 天」 headline count, the

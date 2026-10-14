@@ -7,8 +7,10 @@ import `fun`.han1997.dianmao.alerts.TaskNotificationChannels
 import `fun`.han1997.dianmao.alerts.TaskReminderReceiver
 import `fun`.han1997.dianmao.alerts.completeTaskSilently
 import `fun`.han1997.dianmao.backup.BackupSettingsStore
+import `fun`.han1997.dianmao.backup.WebDavSettings
 import `fun`.han1997.dianmao.backup.WebDavBackupClient
 import `fun`.han1997.dianmao.backup.WEBDAV_PRE_RESTORE_SNAPSHOT_FILE_NAME
+import `fun`.han1997.dianmao.backup.LOCAL_PRE_RESTORE_SNAPSHOT_FILE_NAME
 import `fun`.han1997.dianmao.backup.shouldAutoBackupNow
 import `fun`.han1997.dianmao.data.RepeatRule
 import `fun`.han1997.dianmao.data.TaskPriority
@@ -270,6 +272,12 @@ private fun DianMaoApp(
     var selectedTaskIds by remember { mutableStateOf(setOf<Long>()) }
     var batchMoveQuadrantTarget by remember { mutableStateOf(false) }
     var batchDeleteConfirm by remember { mutableStateOf(false) }
+    // Which destructive restore is waiting on the 恢复备份? confirmation:
+    // "local" (file picker) or "webdav" (cloud download). Null = no pending.
+    // The WebDAV settings are captured when the panel is tapped; the local
+    // picker is opened only after the confirmation, so nothing is read early.
+    var pendingRestoreSource by remember { mutableStateOf<String?>(null) }
+    var pendingRestoreWebDavSettings by remember { mutableStateOf<WebDavSettings?>(null) }
     var taskForNote by remember { mutableStateOf<TaskUiModel?>(null) }
     var taskForEdit by remember { mutableStateOf<TaskUiModel?>(null) }
     var taskForDelete by remember { mutableStateOf<TaskUiModel?>(null) }
@@ -402,7 +410,19 @@ private fun DianMaoApp(
         if (uri != null) {
             scope.launch {
                 runCatching {
-                    val count = repository.importBackupJson(readTextFromUri(context, uri))
+                    val snapshot = repository.exportBackupJson()
+                    val payload = readTextFromUri(context, uri)
+                    // Safety net before the destructive import, matching the
+                    // WebDAV restore: snapshot the current local data to
+                    // Downloads so a wrong or corrupt source can be undone by
+                    // re-importing it. Aborting on snapshot failure - a local
+                    // restore without an undo path is worse than waiting.
+                    writeLocalRestoreSnapshot(
+                        context,
+                        LOCAL_PRE_RESTORE_SNAPSHOT_FILE_NAME,
+                        snapshot
+                    )
+                    val count = repository.importBackupJson(payload)
                     repository.restoreScheduledReminders().forEach { task ->
                         scheduler.schedule(task)
                     }
@@ -571,6 +591,49 @@ private fun DianMaoApp(
                     }
                 } else {
                     removed.forEach { entity -> deleteCalendarEvent(context, entity.calendarEventId) }
+                }
+            }
+        }
+    }
+
+    // WebDAV restore: upload a pre-restore snapshot next to the backup, then
+    // download and import. Aborting on snapshot failure — restoring without an
+    // undo path is worse than waiting. Only runs after the 恢复备份? confirmation.
+    val restoreWebDavBackup: () -> Unit = {
+        val settings = pendingRestoreWebDavSettings
+        pendingRestoreWebDavSettings = null
+        if (settings != null) {
+            scope.launch {
+                backupSyncInProgress = true
+                try {
+                    runCatching {
+                        backupSettingsStore.saveWebDavSettings(settings)
+                        webDavSettings = settings
+                        try {
+                            webDavClient.upload(
+                                settings,
+                                repository.exportBackupJson(),
+                                WEBDAV_PRE_RESTORE_SNAPSHOT_FILE_NAME
+                            )
+                        } catch (error: Exception) {
+                            if (error is CancellationException) throw error
+                            throw IOException(
+                                "恢复前快照上传失败(${error.message.orEmpty().take(120)}),本地数据未被改动",
+                                error
+                            )
+                        }
+                        val count = repository.importBackupJson(webDavClient.download(settings))
+                        repository.restoreScheduledReminders().forEach { task ->
+                            scheduler.schedule(task)
+                        }
+                        count
+                    }.onSuccess { count ->
+                        snackbarHostState.showSnackbar("已从 WebDAV 恢复 $count 个事项")
+                    }.onFailure { error ->
+                        snackbarHostState.showSnackbar("恢复失败:${error.message.orEmpty()}")
+                    }
+                } finally {
+                    backupSyncInProgress = false
                 }
             }
         }
@@ -1298,7 +1361,7 @@ private fun DianMaoApp(
                         localBackupExportLauncher.launch(defaultBackupFileName())
                     },
                     onLocalImport = {
-                        localBackupImportLauncher.launch(arrayOf("application/json", "text/*", "*/*"))
+                        pendingRestoreSource = RESTORE_SOURCE_LOCAL
                     },
                     onSaveWebDav = { settings ->
                         webDavSettings = settings
@@ -1324,47 +1387,8 @@ private fun DianMaoApp(
                         }
                     },
                     onRestoreWebDav = { settings ->
-                        scope.launch {
-                            backupSyncInProgress = true
-                            try {
-                                runCatching {
-                                    backupSettingsStore.saveWebDavSettings(settings)
-                                    webDavSettings = settings
-                                    // Safety net before the destructive
-                                    // import: snapshot the current local
-                                    // data next to the backup on the same
-                                    // WebDAV share, so a wrong or corrupt
-                                    // restore source can be undone by
-                                    // restoring this snapshot. Aborting on
-                                    // snapshot failure — restoring without
-                                    // an undo path is worse than waiting.
-                                    try {
-                                        webDavClient.upload(
-                                            settings,
-                                            repository.exportBackupJson(),
-                                            WEBDAV_PRE_RESTORE_SNAPSHOT_FILE_NAME
-                                        )
-                                    } catch (error: Exception) {
-                                        if (error is CancellationException) throw error
-                                        throw IOException(
-                                            "恢复前快照上传失败（${error.message.orEmpty().take(120)}），本地数据未被改动",
-                                            error
-                                        )
-                                    }
-                                    val count = repository.importBackupJson(webDavClient.download(settings))
-                                    repository.restoreScheduledReminders().forEach { task ->
-                                        scheduler.schedule(task)
-                                    }
-                                    count
-                                }.onSuccess { count ->
-                                    snackbarHostState.showSnackbar("已从 WebDAV 恢复 $count 个事项")
-                                }.onFailure { error ->
-                                    snackbarHostState.showSnackbar("恢复失败：${error.message.orEmpty()}")
-                                }
-                            } finally {
-                                backupSyncInProgress = false
-                            }
-                        }
+                        pendingRestoreWebDavSettings = settings
+                        pendingRestoreSource = RESTORE_SOURCE_WEBDAV
                     }
                 )
                 ReviewScreen(
@@ -1443,6 +1467,31 @@ private fun DianMaoApp(
             onConfirm = {
                 batchDeleteConfirm = false
                 batchDelete()
+            }
+        )
+    }
+
+    // Destructive restore (local file or WebDAV) asks first, matching the
+    // delete/batch-delete convention. Confirming runs the captured action.
+    if (pendingRestoreSource != null) {
+        RestoreConfirmDialog(
+            leadingIcon = if (pendingRestoreSource == RESTORE_SOURCE_WEBDAV) {
+                DianMaoIcons.CloudDown
+            } else {
+                DianMaoIcons.FileDown
+            },
+            onDismiss = {
+                pendingRestoreSource = null
+                pendingRestoreWebDavSettings = null
+            },
+            onConfirm = {
+                val source = pendingRestoreSource
+                pendingRestoreSource = null
+                if (source == RESTORE_SOURCE_WEBDAV) {
+                    restoreWebDavBackup()
+                } else {
+                    localBackupImportLauncher.launch(arrayOf("application/json", "text/*", "*/*"))
+                }
             }
         )
     }
@@ -1723,3 +1772,8 @@ private fun BatchSelectionBar(
         }
     }
 }
+
+/** Restore-source tags for [pendingRestoreSource], kept as constants so the
+ *  confirmation render and its handlers agree on the literal values. */
+private const val RESTORE_SOURCE_LOCAL = "local"
+private const val RESTORE_SOURCE_WEBDAV = "webdav"

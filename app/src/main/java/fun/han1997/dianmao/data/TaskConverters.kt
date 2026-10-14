@@ -6,13 +6,15 @@ import org.json.JSONObject
 
 class TaskConverters {
     @TypeConverter
-    fun toQuadrantType(value: String): QuadrantType = QuadrantType.valueOf(value)
+    fun toQuadrantType(value: String): QuadrantType =
+        quadrantTypeOrNull(value) ?: throw IllegalArgumentException("Unknown quadrant: $value")
 
     @TypeConverter
     fun fromQuadrantType(value: QuadrantType): String = value.name
 
     @TypeConverter
-    fun toRepeatRule(value: String): RepeatRule = RepeatRule.valueOf(value)
+    fun toRepeatRule(value: String): RepeatRule =
+        repeatRuleOrNull(value) ?: throw IllegalArgumentException("Unknown repeat rule: $value")
 
     @TypeConverter
     fun fromRepeatRule(value: RepeatRule): String = value.name

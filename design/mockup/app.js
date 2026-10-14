@@ -16,7 +16,7 @@ const btnIcon = (n, tint, cls = '') => `<span class="itile ${cls}" style="--t:${
 /* App version shown in the settings hero and the about sheet.
    Mirrors `gradle.properties` `app.versionName`; the `bumpVersion` Gradle task
    rewrites this constant in the same run so the prototype never drifts. */
-const APP_VERSION = '1.2.6';
+const APP_VERSION = '1.2.7';
 
 /* Markup writes the literal `__APP_VERSION__` placeholder; every render
    substitutes the constant above so the version has a single source. */
@@ -798,7 +798,9 @@ function dialogsContent() {
     + preview(`<div class="m3-repeat-picker" style="pointer-events:none"><span class="m3-check-row"><span class="m3-check" style="background:var(--q-iu);border-color:var(--q-iu)"></span>重要且紧急</span><span class="m3-check-row"><span class="m3-check" style="background:var(--q-in);border-color:var(--q-in)"></span>重要不紧急</span><span class="m3-check-row"><span class="m3-check" style="background:var(--q-nu);border-color:var(--q-nu)"></span>不重要但紧急</span><span class="m3-check-row"><span class="m3-check" style="background:var(--q-nn);border-color:var(--q-nn)"></span>不重要不紧急</span></div>
       <div class="dlg-actions"><button class="btn text">取消</button></div>`, '移动到象限')
     + preview(`<div style="font-size:14px;line-height:20px;color:var(--on-surface-variant)">确定删除选中的 3 个事项?删除后不会保留提醒和完成备注。</div>
-      <div class="dlg-actions"><button class="btn text">取消</button><button class="btn text" style="color:var(--error)">删除</button></div>`, '批量删除');
+      <div class="dlg-actions"><button class="btn text">取消</button><button class="btn text" style="color:var(--error)">删除</button></div>`, '批量删除')
+    + preview(`<div style="font-size:14px;line-height:20px;color:var(--on-surface-variant)">恢复会用备份文件替换本机的全部事项与完成记录。恢复前会自动把当前数据另存一份快照,可再次导入撤回。</div>
+      <div class="dlg-actions"><button class="btn text">取消</button><button class="btn text" style="color:var(--error)">恢复</button></div>`, '恢复备份?');
 }
 
 /* ---------- navigation + notes ---------- */
@@ -814,7 +816,7 @@ const NOTES = {
   settings: ['07', '先看全局,<br>再进细节。', '一级设置页只列出分组入口:外观、数据、关于。每行一句现状,不堆控件。', ['点「主题」进二级页', '点「备份与恢复」进备份页', '点「小组件与通知」看样式']],
   appearance: ['07', '亮或暗,<br>你说了算。', '二级主题页用单选列表 + 双主题小预览,选择即时生效;跟随系统时自动跟随 OS。', ['切换跟随系统 / 浅色 / 深色', '看下方明暗对比预览']],
   archive: ['08', '旧的完成,<br>不必消失。', '归档行保留象限色点、标题、meta 与一个明确的恢复按钮。', ['点「恢复」把它放回待办']],
-  dialogs: ['09', '同一家族,<br>同一套语气。', '所有紧凑对话框共享同一个容器:暖纸 scrim、18dp 圆角卡、发丝级边框与 6dp 阴影。', ['删除 / 取消完成重复 / 完成心得', '日期 / 重复规则 / 提醒提前量', '移动到象限 / 批量删除']],
+  dialogs: ['09', '同一家族,<br>同一套语气。', '所有紧凑对话框共享同一个容器:暖纸 scrim、18dp 圆角卡、发丝级边框与 6dp 阴影。', ['删除 / 取消完成重复 / 完成心得', '日期 / 重复规则 / 提醒提前量', '移动到象限 / 批量删除 / 恢复备份']],
   widget: ['10', '不打开应用,<br>也知道今天。', '桌面小组件展示今天的待办并可勾选完成;到点提醒的通知带「完成」与「稍后提醒」。', ['看宽/窄两种小组件尺寸', '勾选小组件里的任务(演示)', '看提醒通知的两个动作按钮']],
 };
 const TITLES = Object.fromEntries(PAGES);
@@ -1098,9 +1100,15 @@ const actions = {
   'theme-mode': el => { state.themeMode = el.dataset.mode; applyTheme(); render(); },
   'export': () => toast('演示:已导出本地备份文件'),
   'widget-toggle': () => toast('演示:小组件勾选完成任务(真实应用中会写入 Room 并刷新小组件)'),
-  'revert-local': () => toast('演示:已从本地文件恢复'),
+  'revert-local': () => sheet('恢复备份?', `<div style="font-size:14px;line-height:20px;color:var(--on-surface-variant)">恢复会用备份文件替换本机的全部事项与完成记录。恢复前会自动把当前数据另存一份快照,可再次导入撤回。</div>
+      <div class="dlg-actions"><button class="btn text" data-action="close">取消</button>
+      <button class="btn text" style="color:var(--error)" data-action="revert-local-confirm">恢复</button></div>`, { icon: 'file-down', tint: 'var(--error)' }),
+  'revert-local-confirm': () => { closeSheet(); toast('演示:已从本地文件恢复'); },
   'upload': () => toast('演示:已上传备份到 WebDAV'),
-  'download': () => toast('演示:已从 WebDAV 下载恢复'),
+  'download': () => sheet('恢复备份?', `<div style="font-size:14px;line-height:20px;color:var(--on-surface-variant)">恢复会用备份文件替换本机的全部事项与完成记录。恢复前会自动把当前数据另存一份快照,可再次导入撤回。</div>
+      <div class="dlg-actions"><button class="btn text" data-action="close">取消</button>
+      <button class="btn text" style="color:var(--error)" data-action="download-confirm">恢复</button></div>`, { icon: 'cloud-down', tint: 'var(--error)' }),
+  'download-confirm': () => { closeSheet(); toast('演示:已从 WebDAV 下载恢复'); },
 };
 
 function m3DatePicker() {

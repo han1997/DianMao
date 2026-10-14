@@ -71,6 +71,35 @@ internal suspend fun readTextFromUri(context: android.content.Context, uri: Uri)
     }
 }
 
+/**
+ * Writes the pre-restore safety snapshot into the public Downloads
+ * collection, deleting any previous snapshot of the same name first so the
+ * picker never shows two candidates. Local restores have no remote share to
+ * mirror the WebDAV snapshot, so Downloads is where the existing 本地恢复
+ * picker can select it back for a manual undo. Throws on failure so the
+ * caller can abort the destructive import.
+ */
+internal suspend fun writeLocalRestoreSnapshot(context: android.content.Context, fileName: String, text: String) {
+    withContext(Dispatchers.IO) {
+        val resolver = context.contentResolver
+        val collection = android.provider.MediaStore.Downloads.EXTERNAL_CONTENT_URI
+        resolver.delete(
+            collection,
+            "${android.provider.MediaStore.MediaColumns.DISPLAY_NAME} = ?",
+            arrayOf(fileName)
+        )
+        val values = android.content.ContentValues().apply {
+            put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, fileName)
+            put(android.provider.MediaStore.MediaColumns.MIME_TYPE, "application/json")
+            put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, android.os.Environment.DIRECTORY_DOWNLOADS)
+        }
+        val uri = resolver.insert(collection, values) ?: error("无法创建恢复前快照")
+        resolver.openOutputStream(uri)?.bufferedWriter(Charsets.UTF_8)?.use { writer ->
+            writer.write(text)
+        } ?: error("无法写入恢复前快照")
+    }
+}
+
 internal fun openAppNotificationSettings(context: android.content.Context) {
     val intent = android.content.Intent(android.provider.Settings.ACTION_APP_NOTIFICATION_SETTINGS)
         .putExtra(android.provider.Settings.EXTRA_APP_PACKAGE, context.packageName)

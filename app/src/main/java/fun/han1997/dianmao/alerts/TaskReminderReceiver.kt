@@ -23,6 +23,7 @@ class TaskReminderReceiver : BroadcastReceiver() {
         val taskId = intent.getLongExtra(EXTRA_TASK_ID, 0L)
         val leadMinutes = intent.getIntExtra(EXTRA_LEAD_MINUTES, 0)
         val isRecurring = intent.getBooleanExtra(EXTRA_IS_RECURRING, false)
+        val dueAtMillis = intent.getLongExtra(EXTRA_DUE_AT_MILLIS, NO_DUE_AT).takeIf { it != NO_DUE_AT }
         val contentIntent = PendingIntent.getActivity(
             context,
             taskId.hashCode(),
@@ -48,6 +49,7 @@ class TaskReminderReceiver : BroadcastReceiver() {
                         title,
                         leadMinutes,
                         isRecurring,
+                        dueAtMillis,
                         ReminderActionKind.Complete
                     )
                 )
@@ -62,6 +64,7 @@ class TaskReminderReceiver : BroadcastReceiver() {
                         title,
                         leadMinutes,
                         isRecurring,
+                        dueAtMillis,
                         ReminderActionKind.Snooze
                     )
                 )
@@ -76,10 +79,13 @@ class TaskReminderReceiver : BroadcastReceiver() {
         }
 
         // Recurring tasks advance to their next cycle after the reminder fires.
+        // The whole lead set fires for one occurrence, so the advance is keyed
+        // on the due instant this alarm was armed for: only the first firing
+        // lead still matches the persisted due, the rest see it advanced.
         val pendingResult = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             val repository = TaskRepository(context.applicationContext)
-            val nextTask = repository.advanceRepeatAfterReminder(taskId)
+            val nextTask = repository.advanceRepeatAfterReminder(taskId, dueAtMillis)
             if (nextTask != null) {
                 ReminderScheduler(context.applicationContext).schedule(nextTask)
             }
@@ -92,6 +98,7 @@ class TaskReminderReceiver : BroadcastReceiver() {
         const val EXTRA_TASK_ID = "extra_task_id"
         const val EXTRA_LEAD_MINUTES = "extra_lead_minutes"
         const val EXTRA_IS_RECURRING = "extra_is_recurring"
+        const val EXTRA_DUE_AT_MILLIS = "extra_due_at_millis"
     }
 }
 
@@ -101,6 +108,7 @@ private fun reminderActionPendingIntent(
     title: String,
     leadMinutes: Int,
     isRecurring: Boolean,
+    dueAtMillis: Long?,
     kind: ReminderActionKind
 ): PendingIntent {
     val intent = Intent(context, TaskActionReceiver::class.java).apply {
@@ -112,6 +120,7 @@ private fun reminderActionPendingIntent(
         putExtra(TaskReminderReceiver.EXTRA_TASK_ID, taskId)
         putExtra(TaskReminderReceiver.EXTRA_LEAD_MINUTES, leadMinutes)
         putExtra(TaskReminderReceiver.EXTRA_IS_RECURRING, isRecurring)
+        putExtra(TaskReminderReceiver.EXTRA_DUE_AT_MILLIS, dueAtMillis ?: NO_DUE_AT)
     }
     return PendingIntent.getBroadcast(
         context,

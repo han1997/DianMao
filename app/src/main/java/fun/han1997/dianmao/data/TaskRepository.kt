@@ -440,11 +440,17 @@ class TaskRepository(context: Context) {
     /**
      * Advances a recurring task to its next cycle after its reminder fired;
      * returns the updated task so the caller can reschedule it.
+     *
+     * [expectedDueAt] is the due instant the firing alarm was armed for. A task
+     * with several lead alarms for one occurrence fires them in sequence; only
+     * the lead whose expected due still matches the persisted due advances the
+     * cycle, so the others cannot skip a cycle or re-anchor the later leads.
      */
-    suspend fun advanceRepeatAfterReminder(taskId: Long): TaskUiModel? {
+    suspend fun advanceRepeatAfterReminder(taskId: Long, expectedDueAt: Long? = null): TaskUiModel? {
         val existing = dao.findById(taskId) ?: return null
         val currentDue = existing.dueAtMillis ?: return null
         if (existing.repeatRule == RepeatRule.None || !existing.useLocalReminder || existing.completed) return null
+        if (!shouldAdvanceRepeatAfterReminder(expectedDueAt, currentDue)) return null
         val nextDue = RepeatReminderCalculator.nextFutureDueAfter(
             currentMillis = currentDue,
             repeatRule = existing.repeatRule,

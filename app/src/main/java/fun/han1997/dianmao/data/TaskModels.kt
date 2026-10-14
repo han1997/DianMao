@@ -156,6 +156,19 @@ data class TaskUiModel(
     val archived: Boolean = false
 )
 
+/**
+ * Guards the reminder-fired cycle advance against a task carrying several
+ * lead-time alarms for one occurrence. Each lead alarm carries the due
+ * instant the alarm was armed for; only the first to fire still sees that due
+ * on the persisted task, so only that one advances the cycle. Later leads for
+ * the same occurrence — and a snooze that reuses the occurrence — see an
+ * already-advanced due and must not push it again. A null [expectedDueAt]
+ * (legacy intent shape, cancel/no-create path) skips the check.
+ */
+internal fun shouldAdvanceRepeatAfterReminder(expectedDueAt: Long?, currentDueAt: Long): Boolean {
+    return expectedDueAt == null || expectedDueAt == currentDueAt
+}
+
 internal fun canApplySilentCompletion(expected: TaskUiModel, current: TaskUiModel): Boolean {
     return !current.completed &&
         !current.archived &&

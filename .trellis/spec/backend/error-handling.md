@@ -340,6 +340,15 @@ reminders after boot, app launch, or delayed repeat delivery.
   `reminderRequestCode(...)`; cancelling a task's reminder must cancel every
   lead (the caller passes the task's effective lead set), and notification ids
   use the same per-lead code so multiple reminders stay visible.
+* Automatic repeat advance (2026-10 gap-audit task): all leads of one occurrence
+  fire against the same `dueAtMillis`, so the reminder broadcast must not
+  advance the cycle once per lead. `ReminderScheduler` carries
+  `EXTRA_DUE_AT_MILLIS` (the due instant the alarm was armed for) and the
+  receiver calls `advanceRepeatAfterReminder(taskId, expectedDueAt)`; the pure
+  `shouldAdvanceRepeatAfterReminder(expectedDueAt, currentDueAt)` allows the
+  advance only when the expected due still equals the persisted due (`null`
+  expected skips the check — legacy/cancel paths). Snooze forwards the same due
+  so a snoozed lead cannot re-advance an already-advanced occurrence.
 * Restoration may run from both boot receivers and app launch. It must be
   idempotent because pending intents use task ids with `FLAG_UPDATE_CURRENT`.
 
@@ -472,6 +481,14 @@ WebDAV or another user-configured HTTP endpoint.
 * All network work runs on `Dispatchers.IO`.
 * Failed upload/download must surface status text and leave Room data unchanged.
 * Downloaded backup JSON is decoded before local rows are deleted.
+* Every destructive restore — WebDAV *and* local file — asks for confirmation
+  (`RestoreConfirmDialog`,「恢复备份?」) and writes a pre-restore snapshot before
+  the import, aborting if the snapshot fails (2026-10 gap-audit task). The
+  WebDAV snapshot goes to `dianmao-backup-before-restore.json` on the same
+  share; the local snapshot goes to the public Downloads collection via
+  `writeLocalRestoreSnapshot` (MediaStore), where the 本地恢复 picker can select
+  it back. Both restore entry points share the delete/batch-delete confirm
+  convention; the local picker opens only after confirmation.
 
 ### 4. Validation & Error Matrix
 

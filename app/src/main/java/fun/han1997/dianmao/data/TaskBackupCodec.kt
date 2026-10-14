@@ -7,10 +7,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 object TaskBackupCodec {
-    private const val FORMAT = "dianmao.tasks"
-    private const val BACKUP_VERSION = 7
-    /** Highest backup version this build accepts on import. */
-    private const val SUPPORTED_BACKUP_VERSION = 7
+    private const val FORMAT = BackupCodecRules.FORMAT
+    private const val BACKUP_VERSION = BackupCodecRules.SUPPORTED_VERSION
 
     fun encode(
         tasks: List<TaskEntity>,
@@ -55,8 +53,9 @@ object TaskBackupCodec {
 
     fun decodeForImport(json: String): Pair<List<TaskEntity>, List<TaskCompletionEntity>> {
         val root = JSONObject(json)
-        require(root.getString("format") == FORMAT) { "Unsupported backup format" }
-        require(root.getInt("backupVersion") <= SUPPORTED_BACKUP_VERSION) { "Unsupported backup version" }
+        val format = if (root.has("format")) root.getString("format") else null
+        val version = if (root.has("backupVersion")) root.getInt("backupVersion") else null
+        require(BackupCodecRules.acceptsPayload(format, version)) { "Unsupported backup payload" }
 
         val tasks = root.getJSONArray("tasks")
         val taskList = List(tasks.length()) { index ->
@@ -183,17 +182,17 @@ object TaskBackupCodec {
     private fun repeatWeekdaysFromJson(json: JSONObject): Set<Int> {
         if (!json.has("repeatWeekdays") || json.isNull("repeatWeekdays")) return emptySet()
         val array = json.getJSONArray("repeatWeekdays")
-        return List(array.length()) { index -> array.optInt(index) }
-            .filter { it in 1..7 }
-            .toSet()
+        return BackupCodecRules.sanitizeRepeatWeekdays(
+            List(array.length()) { index -> array.optInt(index) }
+        )
     }
 
     private fun reminderLeadExtraMinutesFromJson(json: JSONObject): Set<Int> {
         if (!json.has("reminderLeadExtraMinutes") || json.isNull("reminderLeadExtraMinutes")) return emptySet()
         val array = json.getJSONArray("reminderLeadExtraMinutes")
-        return List(array.length()) { index -> array.optInt(index) }
-            .filter { it >= 0 }
-            .toSet()
+        return BackupCodecRules.sanitizeReminderLeadExtras(
+            List(array.length()) { index -> array.optInt(index) }
+        )
     }
 
     private fun completionFromJson(json: JSONObject): TaskCompletionEntity {
