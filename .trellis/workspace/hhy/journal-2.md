@@ -380,3 +380,36 @@ Deep code review across UI + data layers. Fixed the ISO-weekly cycle bug (calend
 ### Next Steps
 
 - None - task complete
+
+
+## Session 70: 查缺补漏:D1 多提前量重复推进 / D2 本地恢复快照 / D3 恢复确认 / D4 备份测试
+
+**Date**: 2026-10-15
+**Task**: 查缺补漏:D1 多提前量重复推进 / D2 本地恢复快照 / D3 恢复确认 / D4 备份测试
+**Branch**: `master`
+
+### Summary
+
+全仓盘点后修复四项缺口:v1.2.7。D1 提醒广播按到期时刻幂等推进(A)避免多提前量重复任务一次到期推进多周期;D2 本地恢复补写公共下载目录的恢复前快照并失败即中止;D3 本地/WebDAV 恢复加「恢复备份?」确认弹层(原型新增第 9 对话框,BASELINE v1.8);D4 抽出纯 BackupCodecRules + 容错枚举解码并补 17 项单测。新增 RepeatReminderAdvanceGuardTest/BackupCodecRulesTest。验证 assembleDebug/lintDebug/testDebugUnitTest/diff --check/原型冒烟全通过。
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `25daae0` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
