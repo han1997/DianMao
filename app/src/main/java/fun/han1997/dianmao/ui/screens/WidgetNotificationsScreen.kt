@@ -1,6 +1,9 @@
 package `fun`.han1997.dianmao
 
 import `fun`.han1997.dianmao.data.TaskUiModel
+import `fun`.han1997.dianmao.alerts.NotificationPermissionState
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -41,7 +44,10 @@ import androidx.compose.ui.unit.sp
 internal fun WidgetNotificationsScreen(
     sampleTasks: List<TaskUiModel>,
     onBack: () -> Unit,
-    onOpenNotificationSettings: () -> Unit
+    notificationPermissionState: NotificationPermissionState,
+    onOpenNotificationSettings: () -> Unit,
+    onOpenExactAlarmSettings: () -> Unit,
+    onSendTestNotification: () -> Unit
 ) {
     FullScreenScaffold(
         title = "小组件与通知",
@@ -84,19 +90,52 @@ internal fun WidgetNotificationsScreen(
                 recurring = true
             )
 
-            WidgetSectionLabel("系统")
+            WidgetSectionLabel("权限与测试")
             SettingsGroup {
                 SettingsRow(
                     icon = DianMaoIcons.Bell,
                     iconTint = MaterialTheme.colorScheme.primary,
-                    title = "通知设置",
-                    subtitle = "打开系统的应用通知设置",
-                    onClick = onOpenNotificationSettings
+                    title = "通知权限",
+                    subtitle = if (notificationPermissionState.notificationsEnabled) "已允许接收事项提醒" else "未允许或提醒通知渠道已关闭",
+                    onClick = onOpenNotificationSettings,
+                    trailing = {
+                        Text(
+                            text = if (notificationPermissionState.notificationsEnabled) "已允许" else "需开启",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (notificationPermissionState.notificationsEnabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                        )
+                    }
+                )
+                SettingsRow(
+                    icon = DianMaoIcons.Schedule,
+                    iconTint = MaterialTheme.colorScheme.secondary,
+                    title = "精确闹钟",
+                    subtitle = if (notificationPermissionState.exactAlarmsEnabled) "到点提醒可按设定时间触发" else "尚未授权，提醒可能延迟",
+                    onClick = onOpenExactAlarmSettings,
+                    trailing = {
+                        Text(
+                            text = if (notificationPermissionState.exactAlarmsEnabled) "已授权" else "需授权",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (notificationPermissionState.exactAlarmsEnabled) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.error
+                        )
+                    }
                 )
             }
 
+            Button(
+                onClick = onSendTestNotification,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            ) {
+                Icon(DianMaoIcons.Bell, contentDescription = null, modifier = Modifier.size(18.dp))
+                Text("发送测试通知", modifier = Modifier.padding(start = 8.dp))
+            }
+
             Text(
-                text = "小组件与通知均为演示:勾选/按钮不会真正修改数据或发送通知。",
+                text = "上方小组件与通知卡片为静态演示。测试通知会真实发送，且不包含任务操作。",
                 modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
                 style = MaterialTheme.typography.bodySmall.copy(letterSpacing = 0.sp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = DianMaoAlpha.strong)

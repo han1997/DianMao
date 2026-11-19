@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.2.9 — notification status and test notification (2026-11-19)
+
+- Added live notification-channel/permission and exact-alarm status to the
+  widget and notification settings page, with links to the relevant system
+  settings.
+- Added a real test notification through the existing reminder channel. It has
+  no task actions and is sent only when notifications and the channel are
+  enabled; Android 13+ permission denial and disabled channels report failure
+  and provide a route to app notification settings.
+
+Verification: `:app:testDebugUnitTest`, `:app:lintDebug`, `:app:assembleDebug`, `node --check` for both prototype scripts, and `git diff --check` passed. Browser preview exercised both success and denied-permission feedback. `smoke-test.cjs` could not run because this environment lacks the `playwright` Node module; no new dependency was installed.
+
 ## v1.2.8 — recurring silent-completion history (2026-11-19)
 
 - **Silent completion now records recurring-task history.** Swipe, notification,

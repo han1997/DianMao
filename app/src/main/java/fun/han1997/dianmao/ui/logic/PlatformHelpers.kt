@@ -107,6 +107,14 @@ internal fun openAppNotificationSettings(context: android.content.Context) {
     runCatching { context.startActivity(intent) }
 }
 
+internal fun openExactAlarmSettings(context: android.content.Context) {
+    if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.S) return
+    val intent = android.content.Intent(android.provider.Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+        .setData(android.net.Uri.parse("package:${context.packageName}"))
+        .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+    runCatching { context.startActivity(intent) }
+}
+
 internal fun webDavHost(url: String): String? {
     val trimmed = url.trim()
     if (trimmed.isBlank()) return null

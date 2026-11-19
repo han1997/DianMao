@@ -250,6 +250,17 @@ const assert = require('node:assert/strict');
   assert.equal(await page.locator('#content [data-action="open-notification-settings"]').count(), 1, 'notification settings row on widget page');
   await click('#content [data-action="open-notification-settings"]');
   assert.match(await page.locator('#toast').innerText(), /已打开系统通知设置/, 'notification settings row toasts');
+  assert.equal(await page.locator('#content [data-action="open-exact-alarm-settings"]').count(), 1, 'exact-alarm status row is actionable');
+  await click('#content [data-action="open-exact-alarm-settings"]');
+  assert.match(await page.locator('#toast').innerText(), /精确闹钟设置/, 'exact-alarm row opens its system-settings demo');
+  assert.equal(await page.locator('#content [data-action="test-notification"]').count(), 1, 'test notification action is present');
+  await click('#content [data-action="test-notification"]');
+  assert.match(await page.locator('#content').innerText(), /测试通知已发送/, 'test action reports success in the demo');
+  await page.evaluate(() => { state.notificationAllowed = false; state.testNotificationResult = null; render(); });
+  await click('#content [data-action="test-notification"]');
+  assert.match(await page.locator('#content').innerText(), /未获授权/, 'permission error is visible');
+  assert.match(await page.locator('#content').innerText(), /未发送/, 'denied permission does not claim notification delivery');
+  await page.evaluate(() => { state = initial(); state.page = 'widget'; state.from = 'settings'; render(); });
 
   // 11d. long-press drag lift in quadrant detail (do this before swipes: swipes mutate the list)
   await goChapter('quadrant');

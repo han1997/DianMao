@@ -4,6 +4,9 @@ import `fun`.han1997.dianmao.DianMaoIcons
 
 import `fun`.han1997.dianmao.alerts.ReminderScheduler
 import `fun`.han1997.dianmao.alerts.TaskNotificationChannels
+import `fun`.han1997.dianmao.alerts.NotificationPermissionState
+import `fun`.han1997.dianmao.alerts.postTestNotification
+import `fun`.han1997.dianmao.alerts.readNotificationPermissionState
 import `fun`.han1997.dianmao.alerts.TaskReminderReceiver
 import `fun`.han1997.dianmao.alerts.completeTaskSilently
 import `fun`.han1997.dianmao.backup.BackupSettingsStore
@@ -175,6 +178,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        currentComposeRefreshNotificationState?.invoke()
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
@@ -209,6 +217,9 @@ class MainActivity : ComponentActivity() {
         @Volatile
         var currentComposeOpenAdd: (() -> Unit)? = null
 
+        @Volatile
+        var currentComposeRefreshNotificationState: (() -> Unit)? = null
+
         const val EXTRA_OPEN_ADD = "extra_open_add"
     }
 }
@@ -224,6 +235,9 @@ private fun DianMaoApp(
     val context = LocalContext.current
     val repository = remember(context) { TaskRepository(context.applicationContext) }
     val scheduler = remember(context) { ReminderScheduler(context.applicationContext) }
+    var notificationPermissionState by remember(context) {
+        mutableStateOf(readNotificationPermissionState(context))
+    }
     val backupSettingsStore = remember(context) { BackupSettingsStore(context.applicationContext) }
     val webDavClient = remember { WebDavBackupClient() }
     val scope = rememberCoroutineScope()
@@ -335,6 +349,12 @@ private fun DianMaoApp(
             MainActivity.currentComposeOpenAdd = null
         }
     }
+    DisposableEffect(Unit) {
+        MainActivity.currentComposeRefreshNotificationState = {
+            notificationPermissionState = readNotificationPermissionState(context)
+        }
+        onDispose { MainActivity.currentComposeRefreshNotificationState = null }
+    }
 
     // Quick-add deep link (home-screen widget): open the add sheet once the
     // base surface is up. Cold start passes the flag through initialOpenAdd;
@@ -383,9 +403,34 @@ private fun DianMaoApp(
         }
         autoBackupSettings = backupSettingsStore.loadAutoBackupSettings()
     }
+    var pendingTestNotification by rememberSaveable { mutableStateOf(false) }
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { }
+    ) { granted ->
+        notificationPermissionState = readNotificationPermissionState(context)
+        if (!pendingTestNotification) return@rememberLauncherForActivityResult
+        pendingTestNotification = false
+        if (granted) {
+            val posted = postTestNotification(context)
+            scope.launch {
+                val result = snackbarHostState.showSnackbar(
+                    message = if (posted) "测试通知已发送" else "通知未开启，请检查系统通知设置",
+                    actionLabel = if (posted) null else "打开设置",
+                    duration = if (posted) SnackbarDuration.Short else SnackbarDuration.Long
+                )
+                if (!posted && result == SnackbarResult.ActionPerformed) openAppNotificationSettings(context)
+            }
+        } else {
+            scope.launch {
+                val result = snackbarHostState.showSnackbar(
+                    message = "未授予通知权限，未发送测试通知",
+                    actionLabel = "打开设置",
+                    duration = SnackbarDuration.Long
+                )
+                if (result == SnackbarResult.ActionPerformed) openAppNotificationSettings(context)
+            }
+        }
+    }
     val calendarPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { }
@@ -1323,12 +1368,31 @@ private fun DianMaoApp(
                         sampleTasks = activeTasks
                             .filter { !it.completed }
                             .sortedBy { it.dueAtMillis ?: Long.MAX_VALUE },
+                        notificationPermissionState = notificationPermissionState,
                         onBack = {
                             showWidgetPanel = false
                             showSettingsPanel = true
                         },
-                        onOpenNotificationSettings = {
-                            openAppNotificationSettings(context)
+                        onOpenNotificationSettings = { openAppNotificationSettings(context) },
+                        onOpenExactAlarmSettings = { openExactAlarmSettings(context) },
+                        onSendTestNotification = {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                            ) {
+                                pendingTestNotification = true
+                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            } else if (postTestNotification(context)) {
+                                scope.launch { snackbarHostState.showSnackbar("测试通知已发送") }
+                            } else {
+                                scope.launch {
+                                    val result = snackbarHostState.showSnackbar(
+                                        message = "通知未开启或通知渠道已关闭，未发送测试通知",
+                                        actionLabel = "打开设置",
+                                        duration = SnackbarDuration.Long
+                                    )
+                                    if (result == SnackbarResult.ActionPerformed) openAppNotificationSettings(context)
+                                }
+                            }
                         }
                     )
                 }

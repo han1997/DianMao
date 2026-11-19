@@ -16,7 +16,7 @@ const btnIcon = (n, tint, cls = '') => `<span class="itile ${cls}" style="--t:${
 /* App version shown in the settings hero and the about sheet.
    Mirrors `gradle.properties` `app.versionName`; the `bumpVersion` Gradle task
    rewrites this constant in the same run so the prototype never drifts. */
-const APP_VERSION = '1.2.7';
+const APP_VERSION = '1.2.9';
 
 /* Markup writes the literal `__APP_VERSION__` placeholder; every render
    substitutes the constant above so the version has a single source. */
@@ -85,6 +85,9 @@ function initial() {
     ],
     backup: { url: 'https://dav.example.com/dianmao/', user: 'hanhu', pass: 'correct-horse', visible: false, auto: true },
     themeMode: 'system', // 'system' | 'light' | 'dark' — mirrors a persisted DataStore preference
+    notificationAllowed: true,
+    exactAlarmAllowed: false,
+    testNotificationResult: null,
     review: { last7: 12, last30: 38, daily: [[5, 2], [6, 4], [7, 1], [8, 3], [9, 2], [10, 6], [11, 4]], quad: { iu: 14, in: 9, nu: 10, nn: 5 } },
   };
 }
@@ -732,7 +735,6 @@ function widgetHeader() {
     <div class="header-title"><div class="eyeline">桌面小组件与到点提醒通知</div><h2>小组件与通知</h2></div>`;
 }
 function widgetContent() {
-  const now = new Date(NOW);
   const today = openTasks().filter(t => t.dueAt != null && (t.dueAt < midnight(NOW) + DAY)).slice(0, 8);
   const rows = (limit) => today.slice(0, limit).map(t => `<div class="wg-row">
       <button class="wg-check" data-action="widget-toggle" data-id="${t.id}" aria-label="完成「${esc(t.title)}」">${icon('check-circle', 's20')}</button>
@@ -752,6 +754,11 @@ function widgetContent() {
         <button class="notif-btn">${icon('schedule', 's18')}稍后提醒</button>
       </div>
     </div>`;
+  const testFeedback = state.testNotificationResult === 'sent'
+    ? `<span class="hint" style="color:var(--secondary)">演示：测试通知已发送；真实应用会显示系统通知。</span>`
+    : state.testNotificationResult === 'blocked'
+      ? `<span class="hint" style="color:var(--error)">通知未获授权；请先打开系统通知设置，未发送测试通知。</span>`
+      : '';
   return `<div class="stack">
       <div class="section-label">宽小组件 · 最多 8 条</div>
       ${widget(8, 'wide')}
@@ -761,10 +768,18 @@ function widgetContent() {
       ${notif(false)}
       <div class="section-label">重复事项提醒 · 完成文案变为「记一次完成」</div>
       ${notif(true)}
-      <div class="section-label" style="padding:0 4px 6px">系统</div>
-      <div class="settings-group"><button class="settings-row" data-action="open-notification-settings">
-        ${itile('bell', 'var(--primary)')}<span class="sr-tx"><b>通知设置</b><span>打开系统的应用通知设置</span></span>${icon('chev-right', 's18 set-chev')}</button></div>
-      <span class="hint">小组件与通知均为演示:勾选/按钮不会真正修改数据或发送通知。</span>
+      <div class="section-label" style="padding:0 4px 6px">权限与测试</div>
+      <div class="settings-group">
+        <button class="settings-row" data-action="open-notification-settings">
+          ${itile('bell', 'var(--primary)')}<span class="sr-tx"><b>通知权限</b><span>演示状态：${state.notificationAllowed ? '已允许' : '未允许'}</span></span><span class="set-tag${state.notificationAllowed ? '' : ' warn'}">${state.notificationAllowed ? '已允许' : '需开启'}</span>
+        </button>
+        <button class="settings-row" data-action="open-exact-alarm-settings">
+          ${itile('alarm', 'var(--secondary)')}<span class="sr-tx"><b>精确闹钟</b><span>演示状态：${state.exactAlarmAllowed ? '已授权' : '未授权，提醒可能延迟'}</span></span><span class="set-tag${state.exactAlarmAllowed ? '' : ' warn'}">${state.exactAlarmAllowed ? '已授权' : '需授权'}</span>
+        </button>
+      </div>
+      <button class="btn tonal" data-action="test-notification">${btnIcon('bell', 'var(--on-primary-container)')}发送测试通知</button>
+      ${testFeedback}
+      <span class="hint">上方小组件与通知卡片为静态演示。权限状态为原型示例；测试按钮仅演示成功/未授权反馈，真实系统通知由 Android 实现发送。</span>
     </div>`;
 }
 function dialogsContent() {
@@ -926,6 +941,12 @@ const actions = {
     </div>
     <div class="dlg-actions"><button class="btn text" data-action="close">关闭</button></div>`, { icon: 'compass', tint: 'var(--primary)' }),
   'open-notification-settings': () => toast('演示:已打开系统通知设置'),
+  'open-exact-alarm-settings': () => toast('演示:已打开精确闹钟设置'),
+  'test-notification': () => {
+    state.testNotificationResult = state.notificationAllowed ? 'sent' : 'blocked';
+    render();
+    toast(state.notificationAllowed ? '演示:测试通知已发送' : '演示:通知未授权,请先打开系统设置');
+  },
   'back': () => {
     if (state.page === 'detail') return navigate('home');
     if (state.page === 'quadrant') return navigate('home');
