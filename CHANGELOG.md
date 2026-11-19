@@ -1,5 +1,20 @@
 # Changelog
 
+## v1.2.8 — recurring silent-completion history (2026-11-19)
+
+- **Silent completion now records recurring-task history.** Swipe, notification,
+  and widget completions write a note-less completion row and increment the
+  task's completion count in the same Room transaction. Adding or editing a
+  note after completion still does not count a second completion.
+- Removed the unreachable `toggleCompleted(true)` implementation; uncompletion
+  remains handled by its existing repository paths.
+- Failure notices now use error coloring for reminder/calendar synchronization
+  failures; restore notices use consistent punctuation. Updated the design
+  document to match the implemented single-save form behavior.
+
+Verification: `:app:assembleDebug`, `:app:lintDebug`, `:app:testDebugUnitTest`
+and `git diff --check`.
+
 ## v1.2.7 — multi-lead recurring advance, restore safety, backup codec tests (2026-10-14)
 
 Gap-audit follow-up covering four defects found by reading the alert, backup,

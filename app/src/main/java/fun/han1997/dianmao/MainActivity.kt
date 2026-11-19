@@ -478,7 +478,7 @@ private fun DianMaoApp(
             } else {
                 scope.launch {
                     val succeeded = snackbarHostState.runOrNotifyFailure("标记失败") {
-                        repository.toggleCompleted(target, false)
+                        repository.uncompleteTask(target)
                         if (target.useLocalReminder && target.dueAtMillis != null) {
                             scheduler.schedule(target)
                         }
@@ -630,7 +630,7 @@ private fun DianMaoApp(
                     }.onSuccess { count ->
                         snackbarHostState.showSnackbar("已从 WebDAV 恢复 $count 个事项")
                     }.onFailure { error ->
-                        snackbarHostState.showSnackbar("恢复失败:${error.message.orEmpty()}")
+                        snackbarHostState.showSnackbar("恢复失败：${error.message.orEmpty()}")
                     }
                 } finally {
                     backupSyncInProgress = false
@@ -1513,7 +1513,7 @@ private fun DianMaoApp(
             onSave = { note ->
                 scope.launch {
                     snackbarHostState.runOrNotifyFailure("完成失败") {
-                        val updated = repository.saveCompletionNote(task.id, note)
+                        val updated = repository.saveCompletionNote(task.id, note, task.completionCount)
                         // Completing a non-recurring task settles it — drop the
                         // pending local reminder; recurring tasks reschedule.
                         if (!task.completed) {
@@ -1571,7 +1571,7 @@ private fun DianMaoApp(
             onConfirm = {
                 scope.launch {
                     val succeeded = snackbarHostState.runOrNotifyFailure("恢复失败") {
-                        repository.toggleCompleted(task, false)
+                        repository.uncompleteTask(task)
                         if (task.useLocalReminder && task.dueAtMillis != null) {
                             scheduler.schedule(task)
                         }
@@ -1626,7 +1626,9 @@ private fun TopNoticeHost(hostState: SnackbarHostState) {
         contentAlignment = Alignment.TopCenter
     ) {
         SnackbarHost(hostState) { data ->
-            val isError = data.visuals.message.contains("失败")
+            val isError = data.visuals.message.contains("失败") ||
+                data.visuals.message.contains("未同步") ||
+                data.visuals.message.contains("未重排")
             val toastTint = if (isError) {
                 MaterialTheme.colorScheme.error
             } else {

@@ -7,8 +7,9 @@ import kotlinx.coroutines.flow.map
 import java.time.Instant
 import java.time.ZoneId
 
-class TaskRepository(context: Context) {
-    private val db = TaskDatabase.getInstance(context)
+class TaskRepository internal constructor(private val db: TaskDatabase) {
+    constructor(context: Context) : this(TaskDatabase.getInstance(context))
+
     private val dao = db.taskDao()
     private val completionDao = db.taskCompletionDao()
 
@@ -157,70 +158,23 @@ class TaskRepository(context: Context) {
         return updated.toUiModel()
     }
 
-    suspend fun toggleCompleted(task: TaskUiModel, completed: Boolean) {
+    suspend fun uncompleteTask(task: TaskUiModel) {
         db.withTransaction {
             val existing = dao.findById(task.id) ?: return@withTransaction
-            val now = System.currentTimeMillis()
-
-            val updated = if (completed && existing.repeatRule.isCountBased()) {
-                // Count-based: increment count, no alarm rescheduling
-                existing.copy(
-                    completed = true,
-                    completionCount = existing.completionCount + 1,
-                    lastCompletedAtMillis = now,
-                    completionNote = existing.completionNote,
-                    updatedAtMillis = now
-                )
-            } else if (completed && existing.repeatRule.isCycleBased() && existing.useAlarm && existing.dueAtMillis != null) {
-                // Cycle-based with alarm: advance to next cycle
-                val nextDue = RepeatReminderCalculator.nextDueAt(
-                    existing.dueAtMillis,
-                    existing.repeatRule,
-                    repeatInterval = existing.repeatInterval,
-                    repeatWeekdays = existing.repeatWeekdays
-                )
+            dao.update(
                 existing.copy(
                     completed = false,
-                    lastCompletedAtMillis = now,
-                    dueLabel = DateTimeFormatters.labelFor(midnightMillis(nextDue), minutesOfDay(nextDue)),
-                    dueAtMillis = nextDue,
-                    completionNote = existing.completionNote,
-                    updatedAtMillis = now
+                    updatedAtMillis = System.currentTimeMillis()
                 )
-            } else if (completed && existing.repeatRule.isCycleBased()) {
-                // Cycle-based without alarm: record completion timestamp
-                existing.copy(
-                    completed = true,
-                    lastCompletedAtMillis = now,
-                    completionNote = existing.completionNote,
-                    updatedAtMillis = now
-                )
-            } else if (completed && existing.repeatRule == RepeatRule.None) {
-                // Non-recurring: auto-archive
-                existing.copy(
-                    completed = true,
-                    archived = true,
-                    completionNote = existing.completionNote,
-                    updatedAtMillis = now
-                )
-            } else {
-                // Uncompleting: preserve note
-                existing.copy(
-                    completed = completed,
-                    completionNote = existing.completionNote,
-                    updatedAtMillis = now
-                )
-            }
-
-            dao.update(updated)
+            )
         }
     }
 
+
     /**
-     * Silent completion used by the swipe gesture: completes without a note
-     * (no history row for non-recurring tasks, no dialog interruption). The
-     * top notice's 写心得 action can add a note afterwards via
-     * [saveCompletionNote], which handles the already-completed path.
+     * Silent completion is available to swipe, notification, and widget actions.
+     * Recurring completions are recorded without a note; a later note edit updates
+     * the completed task without recording or counting a second completion.
      */
     suspend fun completeSilently(task: TaskUiModel): Boolean {
         var completed = false
@@ -229,6 +183,15 @@ class TaskRepository(context: Context) {
             val current = entity.toUiModel()
             if (!canApplySilentCompletion(task, current)) return@withTransaction
             val now = System.currentTimeMillis()
+            if (entity.repeatRule != RepeatRule.None) {
+                completionDao.insert(
+                    TaskCompletionEntity(
+                        taskId = entity.id,
+                        completedAtMillis = now,
+                        note = null
+                    )
+                )
+            }
             dao.update(completedEntity(entity, now))
             completed = true
         }
@@ -252,6 +215,7 @@ class TaskRepository(context: Context) {
             )
             existing.copy(
                 completed = false,
+                completionCount = existing.completionCount + 1,
                 lastCompletedAtMillis = now,
                 dueLabel = DateTimeFormatters.labelFor(midnightMillis(nextDue), minutesOfDay(nextDue)),
                 dueAtMillis = nextDue,
@@ -260,6 +224,7 @@ class TaskRepository(context: Context) {
         } else if (existing.repeatRule.isCycleBased()) {
             existing.copy(
                 completed = true,
+                completionCount = existing.completionCount + 1,
                 lastCompletedAtMillis = now,
                 updatedAtMillis = now
             )
@@ -272,16 +237,21 @@ class TaskRepository(context: Context) {
         }
     }
 
-    suspend fun saveCompletionNote(taskId: Long, note: String): TaskEntity? {
+    suspend fun saveCompletionNote(taskId: Long, note: String, completionCountAtAction: Int): TaskEntity? {
         var result: TaskEntity? = null
         db.withTransaction {
             val existing = dao.findById(taskId) ?: return@withTransaction
             val now = System.currentTimeMillis()
             val trimmedNote = note.trim().ifBlank { null }
 
-            // An already completed task uses this dialog to edit its existing
-            // note. Do not create another history row or increment its count.
-            if (existing.completed) {
+            // Note edits update the current completion row without adding a new
+            // history entry or incrementing the count.
+            // A silent alarm-backed cycle completion advances the due date and
+            // leaves the task open. The note action still carries the pre-completion
+            // snapshot, so its older count identifies this as a note edit.
+            if (existing.completed || existing.completionCount > completionCountAtAction) {
+                val completion = completionDao.findCompletions(taskId).firstOrNull()
+                if (completion != null) completionDao.updateNote(completion.id, trimmedNote)
                 val updated = existing.copy(
                     completionNote = trimmedNote,
                     updatedAtMillis = now

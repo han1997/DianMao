@@ -293,6 +293,12 @@ fun observeCompletions(taskId: Long): Flow<List<TaskCompletionEntity>>
   parent `completionNote` without inserting another history row or incrementing
   `completionCount`.
 
+**Silent completion parity:**
+- `TaskRepository.completeSilently(task)` must insert a note-less `TaskCompletionEntity` for every recurring task before updating the parent in the same Room transaction.
+- The parent `completionCount` and `lastCompletedAtMillis` advance together with that history row, including count-based and alarm-backed cycle rules.
+- A follow-up note action carries the original `completionCount`; `saveCompletionNote(taskId, note, completionCountAtAction)` updates the latest history row when the count has already advanced, without creating a second row.
+- Non-recurring silent completions remain archived without a history row.
+
 **Cycle Enforcement:**
 - Check `canCompleteInCurrentCycle()` before allowing completion
 - Compare `lastCompletedAtMillis` against current time using cycle rules

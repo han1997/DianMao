@@ -345,8 +345,8 @@ Confident and restrained. Every interactive element feels native and unhurried. 
 ### Quiet Border Pattern
 A signature DianMao pattern. Borders use the outline color at low alpha (0.10-0.22) instead of full-strength outlines. This creates structure without heaviness. The default is 0.22 alpha; completed items drop to 0.12. Time-sensitive lanes use 0.14. If the border reads as a hard line, the alpha is too high.
 
-### Capture-First Save Pattern
-A signature DianMao flow. When the user saves a newly-created task from the add/edit form, the screen does NOT dismiss. Instead it shows a small save-feedback pill ("已保存到 [quadrant], 可继续记录") in `primaryContainer` at 0.54 alpha with a quiet border at 0.08 alpha, clears the title and detail fields, and stays open so the user can capture the next item. The feedback auto-dismisses after 2200ms. This is the visual expression of "capture before classification": the user keeps flow, structure lands quietly.
+### Task Save Behavior
+New and edited tasks close the form after a successful save. This is a single-save flow; the form does not remain open for continuous capture.
 
 ## 6. Do's and Don'ts
 
