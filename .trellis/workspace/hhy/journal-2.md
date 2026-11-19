@@ -413,3 +413,36 @@ Deep code review across UI + data layers. Fixed the ISO-weekly cycle bug (calend
 ### Next Steps
 
 - None - task complete
+
+
+## Session 71: Complete silent recurring history task
+
+**Date**: 2026-11-19
+**Task**: Complete silent recurring history task
+**Branch**: `master`
+
+### Summary
+
+Implemented recurring completion history for silent swipe, notification, and widget paths; made follow-up note actions idempotent; removed unreachable completion code; fixed notice coloring and restore punctuation; aligned design/spec docs and added instrumentation coverage. Verified unit tests, debug assemble, lint, and diff check. Instrumentation test build passed but execution was unavailable because no connected device was present.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `013089b14c` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
