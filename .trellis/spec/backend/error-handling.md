@@ -539,3 +539,67 @@ val count = repository.importBackupJson(json)
 
 The client owns IO dispatch and HTTP status handling; the repository validates
 JSON before replacing local rows.
+
+## Scenario: Notification Permission Status and Test Delivery
+
+### 1. Scope / Trigger
+
+Apply this contract when the settings UI reads notification or exact-alarm platform state, opens the corresponding system settings, or posts a diagnostic notification through the task reminder channel.
+
+### 2. Signatures
+
+* `readNotificationPermissionState(context: Context): NotificationPermissionState`
+* `postTestNotification(context: Context): Boolean`
+* `canPostTestNotification(runtimePermissionGranted: Boolean, appNotificationsEnabled: Boolean, reminderChannelEnabled: Boolean): Boolean`
+* `openAppNotificationSettings(context: Context)`
+* `openExactAlarmSettings(context: Context)`
+
+### 3. Contracts
+
+* `NotificationPermissionState.notificationsEnabled` is true only when the app-level notification switch and the existing reminder channel are enabled; Android 13+ runtime permission is checked separately immediately before posting.
+* `NotificationPermissionState.exactAlarmsEnabled` is always true below Android 12 and otherwise mirrors `AlarmManager.canScheduleExactAlarms()`.
+* `postTestNotification` uses `TaskNotificationChannels.REMINDERS`, a stable test tag/id, and a dedicated monochrome icon; it has no task id, completion action, snooze action, Room write, alarm scheduling, or widget refresh.
+* A denied runtime permission, disabled app notifications, disabled/missing reminder channel, or `SecurityException` returns `false`; the caller must not show success and must offer app notification settings.
+* Returning from system settings refreshes the projection through the activity lifecycle. Exact-alarm settings are opened only on Android 12+.
+
+### 4. Validation & Error Matrix
+
+* Android 13+ runtime permission missing -> request permission first; on denial, do not call `notify` and show a recoverable settings action.
+* App notification switch or reminder channel disabled -> do not call `notify`; show a recoverable app notification settings action.
+* Exact-alarm permission missing -> display delayed-reminder guidance and provide the Android 12+ exact-alarm settings route; reminder scheduling still uses the existing inexact fallback.
+* Android 11 and lower -> report exact alarms as not requiring an additional permission and do not launch an unsupported settings action.
+
+### 5. Good/Base/Bad Cases
+
+* Good: Keep the permission check inline next to `NotificationManagerCompat.notify(...)` and gate the UI success snackbar on its Boolean result.
+* Base: Reuse the task reminder channel so the diagnostic notification tests the same user-controlled channel as real reminders.
+* Bad: Post a notification with a task `PendingIntent`, mutate Room, or report success when a channel or app-level notification switch is disabled.
+
+### 6. Tests Required
+
+* `NotificationPermissionRulesTest.kt` covers each delivery gate independently.
+* Run `:app:lintDebug` to verify the Android 13+ permission-sensitive call path.
+* Run `:app:assembleDebug` to verify platform API references, manifest permissions, and notification resources.
+* Do not construct framework `Intent` or notification objects in JVM tests; use pure gate tests plus lint/build verification.
+
+### 7. Wrong vs Correct
+
+#### Wrong
+
+```kotlin
+if (notificationManager.areNotificationsEnabled()) {
+    notificationManager.notify(id, notification)
+    showSuccess()
+}
+```
+
+This ignores Android 13 runtime permission and the reminder channel state, so it can claim delivery when the system drops the notification.
+
+#### Correct
+
+```kotlin
+val posted = postTestNotification(context)
+if (posted) showSuccess() else openAppNotificationSettings(context)
+```
+
+`postTestNotification` performs all delivery gates, uses the independent test identity, and returns failure for recoverable platform denial.
