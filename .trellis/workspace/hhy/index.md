@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-2.md`
-- **Total Sessions**: 71
+- **Total Sessions**: 72
 - **Last Active**: 2026-11-19
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-2.md` | ~448 | Active |
+| `journal-2.md` | ~482 | Active |
 | `journal-1.md` | ~1990 | Archived |
 <!-- @@@/auto:active-documents -->
 
@@ -30,6 +30,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits | Branch |
 |---|------|-------|---------|--------|
+| 72 | 2026-11-19 | notification status and test delivery | `ba341bb`, `c7602ce` | `master` |
 | 71 | 2026-11-19 | Complete silent recurring history task | `013089b14c` | `master` |
 | 70 | 2026-10-15 | 查缺补漏:D1 多提前量重复推进 / D2 本地恢复快照 / D3 恢复确认 / D4 备份测试 | `25daae0` | `master` |
 | 69 | 2026-10-13 | 复盘窗口常量收敛 + 边界测试 | `2e1436e` | `master` |

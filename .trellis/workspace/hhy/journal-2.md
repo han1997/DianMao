@@ -446,3 +446,37 @@ Implemented recurring completion history for silent swipe, notification, and wid
 ### Next Steps
 
 - None - task complete
+
+
+## Session 72: notification status and test delivery
+
+**Date**: 2026-11-19
+**Task**: notification status and test delivery
+**Branch**: `master`
+
+### Summary
+
+Delivered notification permission and exact-alarm status, real task-independent test notification, confirmed prototype updates, quality verification, release APK 1.2.9, and pushed commits.
+
+### Main Changes
+
+(Add details)
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ba341bb` | (see git log) |
+| `c7602ce` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
